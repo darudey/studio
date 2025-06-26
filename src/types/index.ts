@@ -1,0 +1,43 @@
+export type Product = {
+  id: string;
+  name: string;
+  description: string;
+  images: string[];
+  category: string;
+  retailPrice: number;
+  wholesalePrice: number;
+  unit: 'kg' | 'g' | 'litre' | 'ml' | 'piece' | 'dozen';
+  stock: number;
+  dataAiHint?: string;
+};
+
+export type UserRole = 'basic' | 'wholesaler' | 'developer';
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+};
+
+export type CartItem = {
+  productId: string;
+  quantity: number;
+};
+
+export type OrderItem = {
+  productId: string;
+  quantity: number;
+  price: number;
+  name: string;
+};
+
+export type Order = {
+  id: string;
+  userId: string;
+  items: OrderItem[];
+  total: number;
+  date: string;
+  status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
+};
