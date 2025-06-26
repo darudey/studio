@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { useCart } from "@/context/CartContext";
 import { ScrollArea } from "../ui/scroll-area";
@@ -18,19 +19,13 @@ import { Separator } from "../ui/separator";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { RelatedProducts } from "./RelatedProducts";
+import type { Product } from "@/types";
 
 export default function ShoppingCartSheet({ children }: { children: React.ReactNode }) {
-  const { cartDetails, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
+  const { cartDetails, updateQuantity, removeFromCart } = useCart();
   const { user } = useAuth();
 
-  const handleCheckout = () => {
-    // In a real app, this would redirect to a checkout page.
-    // For now, we just clear the cart and show a message.
-    alert("Proceeding to checkout!");
-    clearCart();
-  };
-  
-  const getPrice = (product: any) => {
+  const getPrice = (product: Product) => {
       if (user?.role === 'wholesaler' || user?.role === 'developer') {
           return product.wholesalePrice;
       }
@@ -103,9 +98,11 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                     <span>Total</span>
                     <span>${total.toFixed(2)}</span>
                  </div>
-                 <Button onClick={handleCheckout} className="w-full bg-accent hover:bg-accent/90">
-                    Proceed to Checkout
-                 </Button>
+                 <SheetClose asChild>
+                    <Button asChild className="w-full bg-accent hover:bg-accent/90">
+                        <Link href="/checkout">Proceed to Checkout</Link>
+                    </Button>
+                 </SheetClose>
               </div>
             </SheetFooter>
           </>
@@ -113,9 +110,11 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
           <div className="flex flex-1 flex-col items-center justify-center space-y-4">
             <p className="text-muted-foreground">Your cart is empty.</p>
             <SheetTrigger asChild>
+              <SheetClose asChild>
                 <Button asChild variant="outline">
                     <Link href="/">Continue Shopping</Link>
                 </Button>
+              </SheetClose>
             </SheetTrigger>
           </div>
         )}

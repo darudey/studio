@@ -163,6 +163,16 @@ export const orders: Order[] = [
     },
 ];
 
+// Function to add a new order
+export const addOrder = (orderData: Omit<Order, 'id' | 'date'>) => {
+  const newOrder: Order = {
+    id: `ORD${(orders.length + 1).toString().padStart(3, '0')}`,
+    ...orderData,
+    date: new Date().toISOString(),
+  };
+  orders.unshift(newOrder);
+};
+
 // Function to add a new product, for developer use
 export const addProduct = (product: Product) => {
   products.push(product);
