@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -253,18 +252,18 @@ export default function AddItemPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Bulk Import Products</CardTitle>
-                        <CardDescription>Upload an Excel file (.xlsx) to add multiple products at once.</CardDescription>
+                        <CardDescription>Upload an Excel (.xlsx) or CSV file to add multiple products at once.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Label htmlFor="bulk-import" className={cn(buttonVariants({variant: 'outline'}), "w-full cursor-pointer flex items-center justify-center")}>
                             <Upload className="mr-2 h-4 w-4" />
-                            {isImporting ? 'Importing...' : 'Upload Excel File'}
+                            {isImporting ? 'Importing...' : 'Upload File'}
                         </Label>
                         <Input 
                             id="bulk-import" 
                             type="file" 
                             className="hidden" 
-                            accept=".xlsx, .xls"
+                            accept=".xlsx, .xls, .csv"
                             onChange={handleBulkImport}
                             disabled={isImporting}
                         />
