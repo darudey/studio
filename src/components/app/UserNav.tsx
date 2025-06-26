@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { LogOut, ReceiptText, User as UserIcon } from "lucide-react";
+import { LogOut, ReceiptText, User as UserIcon, Users, PlusCircle } from "lucide-react";
 
 export default function UserNav() {
   const { user, logout } = useAuth();
@@ -64,6 +65,28 @@ export default function UserNav() {
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
+        
+        {user.role === 'developer' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Developer</DropdownMenuLabel>
+            <DropdownMenuGroup>
+               <Link href="/developer/users">
+                <DropdownMenuItem>
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>Manage Users</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/developer/add-item">
+                <DropdownMenuItem>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <span>Add Product</span>
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuGroup>
+          </>
+        )}
+
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
