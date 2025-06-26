@@ -119,10 +119,12 @@ export default function EditItemPage() {
 
   const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = (data) => {
     if (!product) return;
+    const imageChanged = imageSrc !== product.images[0];
     const updatedProductData: Product = {
       ...product,
       ...data,
       images: [imageSrc || product.images[0] || 'https://placehold.co/600x400.png'],
+      imageUpdatedAt: imageChanged ? new Date().toISOString() : product.imageUpdatedAt,
     };
     updateProduct(updatedProductData);
     toast({

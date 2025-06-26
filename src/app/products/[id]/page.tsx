@@ -1,23 +1,37 @@
 "use client";
 
-import { products } from "@/lib/data";
+import { products, updateProduct } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { generateProductImage } from "@/ai/flows/generate-product-image";
+import { useToast } from "@/hooks/use-toast";
+import type { Product } from "@/types";
+import { Loader2 } from "lucide-react";
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { toast } = useToast();
   
-  const product = products.find(p => p.id === params.id);
+  const [product, setProduct] = useState<Product | undefined>(() => products.find(p => p.id === params.id));
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    // This effect ensures the product data is fresh if the user navigates
+    // between product pages on the client-side.
+    const foundProduct = products.find(p => p.id === params.id);
+    setProduct(foundProduct);
+  }, [params.id]);
+
 
   if (!product) {
     notFound();
@@ -27,7 +41,43 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     addToCart(product.id, quantity);
   };
   
+  const handleRequestRecentImage = async () => {
+    if (!product) return;
+    setIsGenerating(true);
+    try {
+      const result = await generateProductImage({
+        productName: product.name,
+        productDescription: product.description,
+      });
+      
+      const updatedProductData: Product = {
+        ...product,
+        images: [result.imageDataUri, ...product.images.slice(1)],
+        imageUpdatedAt: new Date().toISOString(),
+      };
+      
+      updateProduct(updatedProductData);
+      setProduct(updatedProductData);
+
+      toast({
+        title: "Image Updated",
+        description: "A new image has been generated for this product.",
+      });
+
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+      toast({
+        variant: "destructive",
+        title: "Image Generation Failed",
+        description: "Could not generate a new image. Please try again later.",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const price = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
+  const imageIsOld = product.imageUpdatedAt && (new Date().getTime() - new Date(product.imageUpdatedAt).getTime()) > (24 * 60 * 60 * 1000);
 
   return (
     <div className="container py-12">
@@ -59,7 +109,18 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         <div className="space-y-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">{product.name}</h1>
-            <Badge variant="outline">{product.category}</Badge>
+            
+            {imageIsOld && (
+              <div className="pt-2">
+                  <Button onClick={handleRequestRecentImage} disabled={isGenerating}>
+                      {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isGenerating ? 'Generating...' : 'Request recent image'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">The current image is more than a day old.</p>
+              </div>
+            )}
+
+            <Badge variant="outline" className="mt-2">{product.category}</Badge>
           </div>
           <p className="text-muted-foreground text-lg">{product.description}</p>
           

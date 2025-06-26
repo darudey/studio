@@ -11,6 +11,7 @@ export type Product = {
   unit: 'kg' | 'g' | 'litre' | 'ml' | 'piece' | 'dozen';
   stock: number;
   dataAiHint?: string;
+  imageUpdatedAt: string;
 };
 
 export type UserRole = 'basic' | 'wholesaler' | 'developer';

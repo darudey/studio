@@ -62,7 +62,7 @@ export default function ManageProductsPage() {
         const newImageSrc = e.target?.result as string;
         setProducts(prevProducts => 
           prevProducts.map(p => 
-            p.id === productId ? { ...p, images: [newImageSrc, ...p.images.slice(1)] } : p
+            p.id === productId ? { ...p, images: [newImageSrc, ...p.images.slice(1)], imageUpdatedAt: new Date().toISOString() } : p
           )
         );
       };

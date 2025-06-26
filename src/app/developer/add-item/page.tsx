@@ -116,6 +116,7 @@ export default function AddItemPage() {
       ...data,
       batchNo: data.batchNo || 'N/A',
       images: [imageSrc || 'https://placehold.co/600x400.png'],
+      imageUpdatedAt: new Date().toISOString(),
     };
     addProduct(newProduct);
     toast({
@@ -204,6 +205,7 @@ export default function AddItemPage() {
               batchNo: row['Batch No.']?.toString() || 'N/A',
               description: row.description || 'No description provided.',
               images: [row.image || 'https://placehold.co/600x400.png'],
+              imageUpdatedAt: new Date().toISOString(),
               category: row.category || 'Uncategorized',
               retailPrice: parseFloat(row['Selling Price']),
               wholesalePrice: parseFloat(row['Purchase Price']),
@@ -373,7 +375,7 @@ export default function AddItemPage() {
                                         <FormItem><FormLabel>Retail Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="wholesalePrice" render={({ field }) => (
-                                        <FormItem><FormLabel>Wholesale Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Wholesale Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormMessage>
                                     )}/>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
