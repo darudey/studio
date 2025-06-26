@@ -1,0 +1,275 @@
+
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter, useParams, notFound } from "next/navigation";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { products, updateProduct } from "@/lib/data";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Product } from "@/types";
+import { Camera, FileImage } from "lucide-react";
+import Image from "next/image";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Product name must be at least 2 characters." }),
+  itemCode: z.string().min(1, { message: "Item code is required." }),
+  batchNo: z.string().optional(),
+  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  category: z.string().min(1, { message: "Category is required." }),
+  retailPrice: z.coerce.number().min(0.01, { message: "Retail price must be positive." }),
+  wholesalePrice: z.coerce.number().min(0.01, { message: "Wholesale price must be positive." }),
+  unit: z.enum(['kg', 'g', 'litre', 'ml', 'piece', 'dozen']),
+  stock: z.coerce.number().int().min(0, { message: "Stock cannot be negative." }),
+});
+
+export default function EditItemPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const params = useParams();
+  const { toast } = useToast();
+  
+  const [product, setProduct] = useState<Product | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      itemCode: "",
+      batchNo: "",
+      description: "",
+      category: "",
+      retailPrice: 0,
+      wholesalePrice: 0,
+      unit: "piece",
+      stock: 0,
+    },
+  });
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/login");
+    } else if (user.role !== 'developer') {
+      toast({ title: "Access Denied", description: "This page is for developers only.", variant: "destructive" });
+      router.push("/");
+    } else {
+        const productId = params.id as string;
+        const foundProduct = products.find(p => p.id === productId);
+        if (foundProduct) {
+            setProduct(foundProduct);
+            form.reset(foundProduct);
+            setImageSrc(foundProduct.images[0] || null);
+            setCategories([...new Set(products.map(p => p.category))].sort());
+        } else {
+            notFound();
+        }
+    }
+  }, [user, router, toast, params.id, form]);
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (!showCamera) {
+         if (videoRef.current?.srcObject) {
+            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+         }
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
+      }
+    };
+    getCameraPermission();
+    
+    return () => {
+       if (videoRef.current?.srcObject) {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+      }
+    }
+  }, [showCamera, toast]);
+
+  const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = (data) => {
+    if (!product) return;
+    const updatedProductData: Product = {
+      ...product,
+      ...data,
+      images: [imageSrc || product.images[0] || 'https://placehold.co/600x400.png'],
+    };
+    updateProduct(updatedProductData);
+    toast({
+      title: "Product Updated",
+      description: `${data.name} has been updated.`,
+    });
+    router.push('/developer/products');
+  };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImageSrc(e.target?.result as string);
+        setShowCamera(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCapture = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (video && canvas && hasCameraPermission) {
+      const context = canvas.getContext('2d');
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        setImageSrc(canvas.toDataURL('image/png'));
+        setShowCamera(false);
+      }
+    }
+  };
+
+  if (!user || user.role !== 'developer' || !product) {
+    return <div className="container text-center py-10">Loading...</div>;
+  }
+
+  return (
+    <div className="container py-12">
+        <Card className="max-w-3xl mx-auto">
+            <CardHeader>
+                <CardTitle>Edit Product</CardTitle>
+                <CardDescription>Update the details for &quot;{product.name}&quot;.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <FormItem>
+                            <FormLabel>Product Image</FormLabel>
+                            <div className="space-y-4">
+                                {imageSrc && (
+                                    <div className="relative w-full aspect-video rounded-md overflow-hidden border">
+                                        <Image src={imageSrc} alt="Product preview" fill className="object-cover" />
+                                    </div>
+                                )}
+                                {showCamera ? (
+                                    <div className="space-y-2">
+                                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                        <canvas ref={canvasRef} className="hidden" />
+                                        {hasCameraPermission === false && (
+                                            <Alert variant="destructive">
+                                                <AlertTitle>Camera Access Required</AlertTitle>
+                                                <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
+                                            </Alert>
+                                        )}
+                                        <div className="flex gap-2">
+                                            <Button type="button" onClick={handleCapture} disabled={!hasCameraPermission} className="w-full">Capture Photo</Button>
+                                            <Button type="button" variant="outline" onClick={() => setShowCamera(false)} className="w-full">Cancel</Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex gap-2 sm:gap-4">
+                                        <Button asChild variant="outline" className="w-full">
+                                            <Label htmlFor="file-upload" className="cursor-pointer flex items-center"><FileImage className="h-4 w-4 mr-2" /> Upload</Label>
+                                        </Button>
+                                        <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
+                                        <Button type="button" onClick={() => setShowCamera(true)} variant="outline" className="w-full"><Camera className="h-4 w-4 mr-2" /> Camera</Button>
+                                    </div>
+                                )}
+                            </div>
+                        </FormItem>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="name" render={({ field }) => (
+                                <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="itemCode" render={({ field }) => (
+                                <FormItem><FormLabel>Item Code</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <FormField control={form.control} name="batchNo" render={({ field }) => (
+                            <FormItem><FormLabel>Batch No. (Optional)</FormLabel><FormControl><Input placeholder="e.g., B20231101" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="description" render={({ field }) => (
+                            <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="category" render={({ field }) => (
+                            <FormItem><FormLabel>Category</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} >
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="retailPrice" render={({ field }) => (
+                                <FormItem><FormLabel>Retail Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="wholesalePrice" render={({ field }) => (
+                                <FormItem><FormLabel>Wholesale Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="unit" render={({ field }) => (
+                                <FormItem><FormLabel>Measuring Unit</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                                        <SelectItem value="g">Gram (g)</SelectItem>
+                                        <SelectItem value="litre">Litre (litre)</SelectItem>
+                                        <SelectItem value="ml">Millilitre (ml)</SelectItem>
+                                        <SelectItem value="piece">Piece</SelectItem>
+                                        <SelectItem value="dozen">Dozen</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="stock" render={({ field }) => (
+                                <FormItem><FormLabel>Stock Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button type="submit">Save Changes</Button>
+                            <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+                        </div>
+                    </form>
+                </Form>
+            </CardContent>
+        </Card>
+    </div>
+  );
+}

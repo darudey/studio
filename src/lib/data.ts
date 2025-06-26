@@ -159,3 +159,20 @@ export const orders: Order[] = [
 export const addProduct = (product: Product) => {
   products.push(product);
 };
+
+// Function to update an existing product
+export const updateProduct = (updatedProduct: Product): boolean => {
+  const productIndex = products.findIndex(p => p.id === updatedProduct.id);
+  if (productIndex !== -1) {
+    products[productIndex] = updatedProduct;
+    return true;
+  }
+  return false;
+};
+
+// Function to delete a product
+export const deleteProduct = (productId: string): boolean => {
+  const initialLength = products.length;
+  products = products.filter(p => p.id !== productId);
+  return products.length < initialLength;
+};
