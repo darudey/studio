@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { orders as allOrders, users as allUsers, updateProduct } from "@/lib/data";
-import type { Order, User, Product } from "@/types";
+import { orders as allOrders, users as allUsers } from "@/lib/data";
+import type { Order, User, OrderItemStatus } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 type EnrichedOrder = Order & { user: User | undefined };
 
@@ -35,7 +38,6 @@ export default function AllOrdersPage() {
         user: allUsers.find(u => u.id === order.userId)
       })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setOrders(enriched);
-      setFilteredOrders(enriched);
     }
   }, [user, router]);
 
@@ -46,20 +48,68 @@ export default function AllOrdersPage() {
       setFilteredOrders(orders.filter(order => order.status.toLowerCase() === statusFilter));
     }
   }, [statusFilter, orders]);
+  
+  const handleItemStatusChange = (orderId: string, productId: string, newStatus: OrderItemStatus) => {
+    setOrders(currentOrders => 
+        currentOrders.map(order => {
+            if (order.id === orderId) {
+                const updatedItems = order.items.map(item => 
+                    item.productId === productId ? { ...item, status: newStatus } : item
+                );
+                return { ...order, items: updatedItems };
+            }
+            return order;
+        })
+    );
+  };
 
-  const handleStatusChange = (orderId: string, newStatus: Order['status']) => {
-    const orderIndex = allOrders.findIndex(o => o.id === orderId);
-    if(orderIndex !== -1) {
-        allOrders[orderIndex].status = newStatus;
-        const enriched = allOrders.map(order => ({
-            ...order,
-            user: allUsers.find(u => u.id === order.userId)
-        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setOrders(enriched);
-        toast({ title: "Order Status Updated", description: `Order #${orderId} is now ${newStatus}.`});
-    }
-  }
+  const handleUpdateOrder = (orderId: string, action: 'ship' | 'cancel') => {
+      const orderIndex = allOrders.findIndex(o => o.id === orderId);
+      if (orderIndex === -1) return;
 
+      const currentOrderInState = orders.find(o => o.id === orderId);
+      if (!currentOrderInState) return;
+
+      let toastTitle = "";
+      let toastDescription = "";
+
+      if (action === 'ship') {
+          allOrders[orderIndex].status = 'Shipped';
+          allOrders[orderIndex].items = currentOrderInState.items.map(item => ({
+              ...item,
+              status: item.status === 'Pending' ? 'Fulfilled' : item.status
+          }));
+          
+          const fulfilledCount = allOrders[orderIndex].items.filter(i => i.status === 'Fulfilled').length;
+          const cancelledCount = allOrders[orderIndex].items.filter(i => i.status === 'Cancelled').length;
+
+          toastTitle = "Order Packed and Shipped";
+          toastDescription = `Order #${orderId} is now shipped. ${fulfilledCount} items fulfilled, ${cancelledCount} items cancelled.`;
+      } else if (action === 'cancel') {
+          allOrders[orderIndex].status = 'Cancelled';
+          allOrders[orderIndex].items.forEach(item => item.status = 'Cancelled');
+          toastTitle = "Order Cancelled";
+          toastDescription = `Order #${orderId} has been cancelled.`;
+      }
+      
+      const enriched = allOrders.map(o => ({...o, user: allUsers.find(u => u.id === o.userId)})).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setOrders(enriched);
+      
+      toast({ title: toastTitle, description: toastDescription });
+  };
+  
+  const handleDeliveryStatusChange = (orderId: string, newStatus: 'Shipped' | 'Delivered') => {
+       const orderIndex = allOrders.findIndex(o => o.id === orderId);
+       if(orderIndex !== -1) {
+          allOrders[orderIndex].status = newStatus;
+          const enriched = allOrders.map(order => ({
+              ...order,
+              user: allUsers.find(u => u.id === order.userId)
+          })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setOrders(enriched);
+          toast({ title: "Order Status Updated", description: `Order #${orderId} is now ${newStatus}.`});
+      }
+  };
 
   if (!user || !['developer', 'shop-owner'].includes(user.role)) {
     return <div className="container text-center py-10">Loading...</div>;
@@ -112,47 +162,79 @@ export default function AllOrdersPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Product</TableHead>
-                                            <TableHead>Quantity</TableHead>
+                                            <TableHead>Qty</TableHead>
                                             <TableHead>Price</TableHead>
-                                            <TableHead className="text-right">Subtotal</TableHead>
+                                            <TableHead>Subtotal</TableHead>
+                                            <TableHead className="text-right">Action</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {order.items.map((item, index) => (
                                             <TableRow key={index}>
-                                                <TableCell>{item.name}</TableCell>
+                                                <TableCell className={cn("font-medium", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>{item.name}</TableCell>
                                                 <TableCell>{item.quantity}</TableCell>
                                                 <TableCell>${item.price.toFixed(2)}</TableCell>
-                                                <TableCell className="text-right">${(item.quantity * item.price).toFixed(2)}</TableCell>
+                                                <TableCell className={cn(item.status === 'Cancelled' && 'line-through text-muted-foreground')}>${(item.quantity * item.price).toFixed(2)}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <RadioGroup
+                                                        value={item.status}
+                                                        onValueChange={(value: OrderItemStatus) => handleItemStatusChange(order.id, item.productId, value)}
+                                                        disabled={order.status !== 'Pending'}
+                                                        className="flex gap-4 justify-end"
+                                                    >
+                                                        <div className="flex items-center space-x-2">
+                                                            <RadioGroupItem value="Fulfilled" id={`fulfilled-${order.id}-${item.productId}`} />
+                                                            <Label htmlFor={`fulfilled-${order.id}-${item.productId}`}>Done</Label>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <RadioGroupItem value="Cancelled" id={`cancelled-${order.id}-${item.productId}`} />
+                                                            <Label htmlFor={`cancelled-${order.id}-${item.productId}`}>Cancel</Label>
+                                                        </div>
+                                                    </RadioGroup>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
                             </div>
                             <div className="space-y-4">
-                                <div>
-                                    <h4 className="font-semibold mb-2">Customer Details</h4>
-                                    <div className="text-sm space-y-1 text-muted-foreground p-4 border rounded-md bg-background">
+                                <Card>
+                                    <CardHeader className="pb-2"><CardTitle className="text-lg">Customer Details</CardTitle></CardHeader>
+                                    <CardContent className="text-sm text-muted-foreground space-y-1">
                                         <p><strong className="text-foreground font-medium">Name:</strong> {order.user?.name}</p>
                                         <p><strong className="text-foreground font-medium">Email:</strong> {order.user?.email}</p>
-                                        <p><strong className="text-foreground font-medium">Phone:</strong> {order.user?.phone}</p>
                                         <p><strong className="text-foreground font-medium">Address:</strong> {order.shippingAddress}</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold mb-2">Update Status</h4>
-                                     <Select onValueChange={(value: Order['status']) => handleStatusChange(order.id, value)} defaultValue={order.status}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Update order status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="shipped">Shipped</SelectItem>
-                                            <SelectItem value="delivered">Delivered</SelectItem>
-                                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="pb-2"><CardTitle className="text-lg">Order Actions</CardTitle></CardHeader>
+                                    <CardContent>
+                                        {order.status === 'Pending' && (
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                <Button className="w-full" onClick={() => handleUpdateOrder(order.id, 'ship')}>Mark as Shipped</Button>
+                                                <Button className="w-full" variant="destructive" onClick={() => handleUpdateOrder(order.id, 'cancel')}>Cancel Order</Button>
+                                            </div>
+                                        )}
+                                        {(order.status === 'Shipped' || order.status === 'Delivered') && (
+                                            <div>
+                                                <Label>Update Delivery Status</Label>
+                                                <Select onValueChange={(value: 'Shipped' | 'Delivered') => handleDeliveryStatusChange(order.id, value)} defaultValue={order.status}>
+                                                    <SelectTrigger className="mt-1">
+                                                        <SelectValue placeholder="Update status" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="shipped">Shipped</SelectItem>
+                                                        <SelectItem value="delivered">Delivered</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                        {order.status === 'Cancelled' && (
+                                            <Badge variant="destructive" className="text-base font-medium">Order Cancelled</Badge>
+                                        )}
+                                    </CardContent>
+                                </Card>
                             </div>
                         </div>
                     </AccordionContent>

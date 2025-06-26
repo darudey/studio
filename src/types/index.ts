@@ -30,11 +30,14 @@ export type CartItem = {
   quantity: number;
 };
 
+export type OrderItemStatus = 'Pending' | 'Fulfilled' | 'Cancelled';
+
 export type OrderItem = {
   productId: string;
   quantity: number;
   price: number;
   name: string;
+  status: OrderItemStatus;
 };
 
 export type Order = {

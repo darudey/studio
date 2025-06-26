@@ -130,13 +130,13 @@ export let products: Product[] = [
   },
 ];
 
-export const orders: Order[] = [
+export let orders: Order[] = [
     {
         id: 'ORD001',
         userId: '2',
         items: [
-            { productId: '1', name: 'Organic Bananas', quantity: 10, price: 0.8 },
-            { productId: '2', name: 'Whole Milk', quantity: 5, price: 2.5 },
+            { productId: '1', name: 'Organic Bananas', quantity: 10, price: 0.8, status: 'Pending' },
+            { productId: '2', name: 'Whole Milk', quantity: 5, price: 2.5, status: 'Pending' },
         ],
         total: (10 * 0.8) + (5 * 2.5),
         date: '2023-10-26T10:00:00Z',
@@ -147,7 +147,7 @@ export const orders: Order[] = [
         id: 'ORD002',
         userId: '2',
         items: [
-            { productId: '3', name: 'Artisanal Sourdough Bread', quantity: 8, price: 3.75 },
+            { productId: '3', name: 'Artisanal Sourdough Bread', quantity: 8, price: 3.75, status: 'Pending' },
         ],
         total: 8 * 3.75,
         date: '2023-10-28T14:30:00Z',
@@ -158,7 +158,7 @@ export const orders: Order[] = [
         id: 'ORD003',
         userId: '3',
         items: [
-            { productId: '5', name: 'Ripe Avocados', quantity: 4, price: 2.0 },
+            { productId: '5', name: 'Ripe Avocados', quantity: 4, price: 2.0, status: 'Pending' },
         ],
         total: 4 * 2.0,
         date: '2023-10-29T09:00:00Z',
@@ -173,6 +173,7 @@ export const addOrder = (orderData: Omit<Order, 'id' | 'date'>) => {
     id: `ORD${(orders.length + 1).toString().padStart(3, '0')}`,
     ...orderData,
     date: new Date().toISOString(),
+    items: orderData.items.map(item => ({ ...item, status: 'Pending' })),
   };
   orders.unshift(newOrder);
 };
