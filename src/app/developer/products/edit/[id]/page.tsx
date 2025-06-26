@@ -67,8 +67,8 @@ export default function EditItemPage() {
   useEffect(() => {
     if (!user) {
       router.push("/login");
-    } else if (user.role !== 'developer') {
-      toast({ title: "Access Denied", description: "This page is for developers only.", variant: "destructive" });
+    } else if (!['developer', 'shop-owner'].includes(user.role)) {
+      toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
     } else {
         const productId = params.id as string;
@@ -161,7 +161,7 @@ export default function EditItemPage() {
     }
   };
 
-  if (!user || user.role !== 'developer' || !product) {
+  if (!user || !['developer', 'shop-owner'].includes(user.role) || !product) {
     return <div className="container text-center py-10">Loading...</div>;
   }
 

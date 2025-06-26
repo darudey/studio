@@ -1,9 +1,10 @@
 import { Product, User, Order } from "@/types";
 
 export const users: User[] = [
-  { id: '1', name: 'Dev Admin', email: 'dev@example.com', phone: '1112223333', role: 'developer' },
-  { id: '2', name: 'Alice Wholesaler', email: 'alice@example.com', phone: '4445556666', role: 'wholesaler' },
-  { id: '3', name: 'Bob Basic', email: 'bob@example.com', phone: '7778889999', role: 'basic' },
+  { id: '1', name: 'Dev Admin', email: 'dev@example.com', phone: '1112223333', role: 'developer', address: '123 Tech Lane, Silicon Valley, CA 94043' },
+  { id: '4', name: 'Sam Shopkeeper', email: 'sam@example.com', phone: '5554443333', role: 'shop-owner', address: '456 Market St, Commerce City, TX 75001' },
+  { id: '2', name: 'Alice Wholesaler', email: 'alice@example.com', phone: '4445556666', role: 'wholesaler', address: '789 Wholesale Row, Bulkville, NY 10001' },
+  { id: '3', name: 'Bob Basic', email: 'bob@example.com', phone: '7778889999', role: 'basic', address: '101 Consumer Ave, Retail Town, FL 33101' },
 ];
 
 export let products: Product[] = [
@@ -140,6 +141,7 @@ export const orders: Order[] = [
         total: (10 * 0.8) + (5 * 2.5),
         date: '2023-10-26T10:00:00Z',
         status: 'Delivered',
+        shippingAddress: '789 Wholesale Row, Bulkville, NY 10001',
     },
     {
         id: 'ORD002',
@@ -150,6 +152,7 @@ export const orders: Order[] = [
         total: 8 * 3.75,
         date: '2023-10-28T14:30:00Z',
         status: 'Shipped',
+        shippingAddress: '789 Wholesale Row, Bulkville, NY 10001',
     },
     {
         id: 'ORD003',
@@ -160,6 +163,7 @@ export const orders: Order[] = [
         total: 4 * 2.0,
         date: '2023-10-29T09:00:00Z',
         status: 'Pending',
+        shippingAddress: '101 Consumer Ave, Retail Town, FL 33101',
     },
 ];
 

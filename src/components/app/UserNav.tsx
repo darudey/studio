@@ -65,6 +65,33 @@ export default function UserNav() {
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
+
+        {user.role === 'shop-owner' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Shop Owner</DropdownMenuLabel>
+            <DropdownMenuGroup>
+               <Link href="/shop-owner/orders">
+                <DropdownMenuItem>
+                  <ReceiptText className="mr-2 h-4 w-4" />
+                  <span>All Orders</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/developer/products">
+                <DropdownMenuItem>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  <span>Manage Products</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/developer/add-item">
+                <DropdownMenuItem>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <span>Add Product</span>
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuGroup>
+          </>
+        )}
         
         {user.role === 'developer' && (
           <>
@@ -87,6 +114,12 @@ export default function UserNav() {
                 <DropdownMenuItem>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   <span>Add Product</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/shop-owner/orders">
+                <DropdownMenuItem>
+                  <ReceiptText className="mr-2 h-4 w-4" />
+                  <span>All Orders</span>
                 </DropdownMenuItem>
               </Link>
             </DropdownMenuGroup>

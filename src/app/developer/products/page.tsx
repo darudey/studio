@@ -38,8 +38,8 @@ export default function ManageProductsPage() {
   useEffect(() => {
     if (!user) {
       router.push("/login");
-    } else if (user.role !== 'developer') {
-      toast({ title: "Access Denied", description: "This page is for developers only.", variant: "destructive" });
+    } else if (!['developer', 'shop-owner'].includes(user.role)) {
+      toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
     } else {
         setProducts(JSON.parse(JSON.stringify(allProducts)));
@@ -84,7 +84,7 @@ export default function ManageProductsPage() {
     toast({ title: "Product Deleted", description: "The product has been removed from the catalog." });
   };
 
-  if (!user || user.role !== 'developer') {
+  if (!user || !['developer', 'shop-owner'].includes(user.role)) {
     return <div className="container text-center py-10">Redirecting...</div>;
   }
 

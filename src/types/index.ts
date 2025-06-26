@@ -14,13 +14,14 @@ export type Product = {
   imageUpdatedAt: string;
 };
 
-export type UserRole = 'basic' | 'wholesaler' | 'developer';
+export type UserRole = 'basic' | 'wholesaler' | 'developer' | 'shop-owner';
 
 export type User = {
   id: string;
   name: string;
   email: string;
   phone: string;
+  address: string;
   role: UserRole;
 };
 
@@ -43,4 +44,5 @@ export type Order = {
   total: number;
   date: string;
   status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
+  shippingAddress: string;
 };

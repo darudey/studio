@@ -65,6 +65,10 @@ export default function ProfilePage() {
                 <Label>Phone</Label>
                 <p className="text-lg font-medium">{user.phone}</p>
             </div>
+             <div>
+                <Label>Address</Label>
+                <p className="text-lg font-medium whitespace-pre-wrap">{user.address}</p>
+            </div>
             <div>
                 <Label>Account Type</Label>
                 <p>

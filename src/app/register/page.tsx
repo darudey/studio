@@ -9,18 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const { register } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const success = register({ name, email, phone });
+    const success = register({ name, email, phone, address });
     if (success) {
       router.push("/");
       toast({ title: "Registration Successful", description: "Your account has been created." });
@@ -55,6 +57,10 @@ export default function RegisterPage() {
             <div className="grid gap-2">
               <Label htmlFor="phone">Phone Number</Label>
               <Input id="phone" type="tel" placeholder="123-456-7890" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="address">Shipping Address</Label>
+              <Textarea id="address" placeholder="123 Main St, Anytown, USA" required value={address} onChange={(e) => setAddress(e.target.value)} />
             </div>
             <Button type="submit" className="w-full">
               Create Account

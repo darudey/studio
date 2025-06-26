@@ -56,8 +56,8 @@ export default function AddItemPage() {
   useEffect(() => {
     if (!user) {
       router.push("/login");
-    } else if (user.role !== 'developer') {
-      toast({ title: "Access Denied", description: "This page is for developers only.", variant: "destructive" });
+    } else if (!['developer', 'shop-owner'].includes(user.role)) {
+      toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
     }
   }, [user, router, toast]);
@@ -243,7 +243,7 @@ export default function AddItemPage() {
   };
 
 
-  if (!user || user.role !== 'developer') {
+  if (!user || !['developer', 'shop-owner'].includes(user.role)) {
     return <div className="container text-center py-10">Redirecting...</div>;
   }
 
