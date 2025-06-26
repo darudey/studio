@@ -17,12 +17,18 @@ import { addProduct, products } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Product } from "@/types";
-import { Camera, FileImage, X } from "lucide-react";
+import { Camera, FileImage, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import * as XLSX from "xlsx";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
+
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Product name must be at least 2 characters." }),
+  itemCode: z.string().min(1, { message: "Item code is required." }),
+  batchNo: z.string().optional(),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   category: z.string().min(1, { message: "Category is required." }),
   retailPrice: z.coerce.number().min(0.01, { message: "Retail price must be positive." }),
@@ -45,6 +51,8 @@ export default function AddItemPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -92,6 +100,8 @@ export default function AddItemPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      itemCode: "",
+      batchNo: "",
       description: "",
       category: "",
       retailPrice: 0,
@@ -105,6 +115,7 @@ export default function AddItemPage() {
     const newProduct: Product = {
       id: (products.length + 2).toString(),
       ...data,
+      batchNo: data.batchNo || 'N/A',
       images: [imageSrc || 'https://placehold.co/600x400.png'],
     };
     addProduct(newProduct);
@@ -159,6 +170,78 @@ export default function AddItemPage() {
     }
   };
 
+  const handleBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target?.result;
+        if (!data) {
+             toast({ title: "Import Failed", description: "Could not read the file.", variant: "destructive" });
+             setIsImporting(false);
+             return;
+        }
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json<any>(worksheet);
+        
+        const importedProducts: Product[] = [];
+        const newCategoriesSet = new Set<string>(categories);
+
+        json.forEach((row, index) => {
+            if (!row.Name || !row['Selling Price'] || !row['Purchase Price']) {
+                console.warn(`Skipping row ${index + 2} due to missing required fields.`);
+                return;
+            }
+
+            const newProduct: Product = {
+              id: (products.length + importedProducts.length + 2).toString(),
+              name: row.Name,
+              itemCode: row['Item Code']?.toString() || `IMP-${Date.now()}-${index}`,
+              batchNo: row['Batch No.']?.toString() || 'N/A',
+              description: row.description || 'No description provided.',
+              images: [row.image || 'https://placehold.co/600x400.png'],
+              category: row.category || 'Uncategorized',
+              retailPrice: parseFloat(row['Selling Price']),
+              wholesalePrice: parseFloat(row['Purchase Price']),
+              unit: 'piece',
+              stock: parseInt(row['Stock Quantity'], 10) || 0,
+              dataAiHint: row.Name.toLowerCase().split(' ').slice(0, 2).join(' ')
+            };
+            
+            addProduct(newProduct);
+            importedProducts.push(newProduct);
+            if (newProduct.category) {
+                newCategoriesSet.add(newProduct.category);
+            }
+        });
+        
+        setCategories(Array.from(newCategoriesSet).sort());
+        toast({
+          title: "Import Successful",
+          description: `${importedProducts.length} products have been imported.`,
+        });
+      };
+      reader.onerror = () => {
+        toast({ title: "Import Failed", description: "Error reading the file.", variant: "destructive" });
+      }
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Bulk import failed:", error);
+      toast({ title: "Import Failed", description: "An unexpected error occurred.", variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+      if (event.target) {
+        event.target.value = "";
+      }
+    }
+  };
+
+
   if (!user || user.role !== 'developer') {
     return <div className="container text-center py-10">Redirecting...</div>;
   }
@@ -167,6 +250,30 @@ export default function AddItemPage() {
     <div className="container py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-1 space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Bulk Import Products</CardTitle>
+                        <CardDescription>Upload an Excel file (.xlsx) to add multiple products at once.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Label htmlFor="bulk-import" className={cn(buttonVariants({variant: 'outline'}), "w-full cursor-pointer flex items-center justify-center")}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            {isImporting ? 'Importing...' : 'Upload Excel File'}
+                        </Label>
+                        <Input 
+                            id="bulk-import" 
+                            type="file" 
+                            className="hidden" 
+                            accept=".xlsx, .xls"
+                            onChange={handleBulkImport}
+                            disabled={isImporting}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">
+                            Required: Name, Purchase Price, Selling Price.
+                        </p>
+                    </CardContent>
+                </Card>
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Manage Categories</CardTitle>
@@ -237,8 +344,16 @@ export default function AddItemPage() {
                                     </div>
                                 </FormItem>
                                 
-                                <FormField control={form.control} name="name" render={({ field }) => (
-                                    <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <FormField control={form.control} name="name" render={({ field }) => (
+                                      <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                   <FormField control={form.control} name="itemCode" render={({ field }) => (
+                                      <FormItem><FormLabel>Item Code</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                </div>
+                                <FormField control={form.control} name="batchNo" render={({ field }) => (
+                                    <FormItem><FormLabel>Batch No. (Optional)</FormLabel><FormControl><Input placeholder="e.g., B20231101" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="description" render={({ field }) => (
                                     <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product" {...field} /></FormControl><FormMessage /></FormItem>

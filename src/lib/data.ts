@@ -6,9 +6,11 @@ export const users: User[] = [
   { id: '3', name: 'Bob Basic', email: 'bob@example.com', phone: '7778889999', role: 'basic' },
 ];
 
-export const products: Product[] = [
+export let products: Product[] = [
   {
     id: '1',
+    itemCode: 'FR-BAN-001',
+    batchNo: 'B20231026',
     name: 'Organic Bananas',
     description: 'A bunch of fresh, organic bananas, rich in potassium and perfect for a healthy snack.',
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x600.png', 'https://placehold.co/600x600.png'],
@@ -21,6 +23,8 @@ export const products: Product[] = [
   },
   {
     id: '2',
+    itemCode: 'DY-MLK-001',
+    batchNo: 'M20231025',
     name: 'Whole Milk',
     description: 'One gallon of fresh whole milk, pasteurized and great for drinking, cooking, or baking.',
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x600.png'],
@@ -33,6 +37,8 @@ export const products: Product[] = [
   },
   {
     id: '3',
+    itemCode: 'BK-BRD-001',
+    batchNo: 'SDB20231024',
     name: 'Artisanal Sourdough Bread',
     description: 'A freshly baked loaf of artisanal sourdough bread with a crispy crust and soft, airy interior.',
     images: ['https://placehold.co/600x600.png'],
@@ -45,6 +51,8 @@ export const products: Product[] = [
   },
   {
     id: '4',
+    itemCode: 'DY-EGG-001',
+    batchNo: 'E20231023',
     name: 'Free-Range Eggs',
     description: 'A dozen large, brown free-range eggs from happy chickens.',
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x600.png'],
@@ -57,6 +65,8 @@ export const products: Product[] = [
   },
   {
     id: '5',
+    itemCode: 'FR-AVO-001',
+    batchNo: 'A20231022',
     name: 'Ripe Avocados',
     description: 'Creamy and delicious ripe avocados, perfect for toast, salads, or guacamole.',
     images: ['https://placehold.co/600x600.png'],
@@ -69,6 +79,8 @@ export const products: Product[] = [
   },
   {
     id: '6',
+    itemCode: 'PN-RIC-001',
+    batchNo: 'R20231021',
     name: 'Basmati Rice',
     description: 'Premium quality long-grain Basmati rice, ideal for a variety of Indian dishes.',
     images: ['https://placehold.co/600x600.png'],
@@ -81,6 +93,8 @@ export const products: Product[] = [
   },
     {
     id: '7',
+    itemCode: 'DY-CHS-001',
+    batchNo: 'C20231020',
     name: 'Cheddar Cheese Block',
     description: 'A block of sharp cheddar cheese, perfect for slicing, shredding, or melting.',
     images: ['https://placehold.co/600x600.png'],
@@ -93,6 +107,8 @@ export const products: Product[] = [
   },
   {
     id: '8',
+    itemCode: 'VG-TOM-001',
+    batchNo: 'T20231019',
     name: 'Fresh Tomatoes',
     description: 'Juicy, red tomatoes on the vine, bursting with flavor. Excellent for salads, sauces, and sandwiches.',
     images: ['https://placehold.co/600x600.png'],

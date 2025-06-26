@@ -1,5 +1,7 @@
 export type Product = {
   id: string;
+  itemCode: string;
+  batchNo: string;
   name: string;
   description: string;
   images: string[];
