@@ -45,12 +45,7 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Log in or <Link href="/register" className="underline">sign up</Link>.
-            For special roles, sign up with:
-            <ul className="list-disc list-inside text-sm mt-2">
-                <li><strong>Developer:</strong> dev@example.com</li>
-                <li><strong>Shop Owner:</strong> sam@example.com</li>
-            </ul>
+            Enter your email and password to access your account.
           </CardDescription>
         </CardHeader>
         <CardContent>
