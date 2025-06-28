@@ -1,0 +1,13 @@
+# Netlify configuration for Next.js projects.
+# https://docs.netlify.com/integrations/frameworks/next-js/
+[build]
+  # Command to build the site.
+  command = "next build"
+
+  # Directory to publish, containing the built site.
+  publish = ".next"
+
+# The Essential Next.js Build Plugin is automatically installed for all
+# Next.js projects. This ensures that the plugin is used.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
