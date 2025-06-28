@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -13,7 +14,7 @@ import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("dev@example.com");
-  const [password, setPassword] = useState("password");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
@@ -44,8 +45,12 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Enter your email and password below to login. <br/>
-            (Dev: dev@example.com / password)
+            Log in or <Link href="/register" className="underline">sign up</Link>.
+            For special roles, sign up with:
+            <ul className="list-disc list-inside text-sm mt-2">
+                <li><strong>Developer:</strong> dev@example.com</li>
+                <li><strong>Shop Owner:</strong> sam@example.com</li>
+            </ul>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -71,6 +76,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
+                placeholder="********"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
@@ -76,7 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const authUser = userCredential.user;
         
-        const role: UserRole = email.toLowerCase() === 'dev@example.com' ? 'developer' : 'basic';
+        let role: UserRole = 'basic';
+        const lowerCaseEmail = email.toLowerCase();
+        if (lowerCaseEmail === 'dev@example.com') {
+          role = 'developer';
+        } else if (lowerCaseEmail === 'sam@example.com') {
+          role = 'shop-owner';
+        }
 
         const newUser: User = { id: authUser.uid, name, email, phone, address, role };
         await createUserProfile(newUser);
