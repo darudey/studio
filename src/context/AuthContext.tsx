@@ -101,7 +101,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { success: false, error: mapFirebaseError(error as AuthError) };
         }
         console.error("Non-Auth error during registration:", error);
-        return { success: false, error: "An unexpected error occurred while creating your profile. Please try again." };
+        const errorMessage = (error instanceof Error) ? error.message : "Please check your Firebase Firestore console for issues.";
+        return { success: false, error: `An unexpected error occurred. Details: ${errorMessage}` };
      }
   };
 
