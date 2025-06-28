@@ -100,9 +100,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if ((error as AuthError).code) {
           return { success: false, error: mapFirebaseError(error as AuthError) };
         }
+        
         console.error("Non-Auth error during registration:", error);
-        const errorMessage = (error instanceof Error) ? error.message : "Please check your Firebase Firestore console for issues.";
-        return { success: false, error: `An unexpected error occurred. Details: ${errorMessage}` };
+        
+        let detailedError = "An unknown error occurred.";
+        if (error instanceof Error) {
+            detailedError = error.message;
+        } else if (typeof error === 'object' && error !== null) {
+            detailedError = JSON.stringify(error);
+        } else if (error) {
+            detailedError = String(error);
+        }
+
+        const finalMessage = `Registration failed while saving profile. Please check your Firestore security rules or database setup in the Firebase Console. Details: ${detailedError}`;
+        
+        return { success: false, error: finalMessage };
      }
   };
 
