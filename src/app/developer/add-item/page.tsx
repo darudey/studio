@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -375,7 +376,7 @@ export default function AddItemPage() {
                                         <FormItem><FormLabel>Retail Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="wholesalePrice" render={({ field }) => (
-                                        <FormItem><FormLabel>Wholesale Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormMessage>
+                                        <FormItem><FormLabel>Wholesale Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -409,3 +410,5 @@ export default function AddItemPage() {
     </div>
   );
 }
+
+    
