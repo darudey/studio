@@ -12,6 +12,8 @@ export type Product = {
   stock: number;
   dataAiHint?: string;
   imageUpdatedAt: string;
+  isRecommended: boolean;
+  createdAt: string;
 };
 
 export type UserRole = 'basic' | 'wholesaler' | 'developer' | 'shop-owner';

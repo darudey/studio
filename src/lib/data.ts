@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit } from 'firebase/firestore';
 import type { Product, User, Order, OrderItem, Coupon } from "@/types";
 
 // USER FUNCTIONS
@@ -146,3 +146,42 @@ export const markCouponAsUsed = async (couponId: string, userId: string): Promis
         usedBy: userId
     });
 };
+
+// HOMEPAGE FUNCTIONS
+export const getRecommendedProducts = async (): Promise<Product[]> => {
+    const q = query(productsCollection, where("isRecommended", "==", true), limit(10));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+}
+
+export const getNewestProducts = async (limitCount = 10): Promise<Product[]> => {
+    const q = query(productsCollection, orderBy("createdAt", "desc"), limit(limitCount));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+}
+
+export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> => {
+    const orders = await getAllOrders();
+    if (orders.length === 0) return [];
+
+    const productCounts = new Map<string, number>();
+    orders.forEach(order => {
+        order.items.forEach(item => {
+            productCounts.set(item.productId, (productCounts.get(item.productId) || 0) + item.quantity);
+        });
+    });
+
+    const sortedProductIds = Array.from(productCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limitCount)
+        .map(entry => entry[0]);
+    
+    if (sortedProductIds.length === 0) return [];
+
+    const trendingProducts = await getProductsByIds(sortedProductIds);
+
+    // Re-sort based on trending order
+    return trendingProducts.sort((a, b) => {
+        return sortedProductIds.indexOf(a.id) - sortedProductIds.indexOf(b.id);
+    });
+}

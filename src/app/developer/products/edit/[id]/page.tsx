@@ -14,13 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getProductById, getProducts, updateProduct } from "@/lib/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Product } from "@/types";
 import { Camera, FileImage, Star, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Product name must be at least 2 characters." }),
@@ -32,6 +34,7 @@ const formSchema = z.object({
   wholesalePrice: z.coerce.number().min(0.01, { message: "Wholesale price must be positive." }),
   unit: z.enum(['kg', 'g', 'litre', 'ml', 'piece', 'dozen']),
   stock: z.coerce.number().int().min(0, { message: "Stock cannot be negative." }),
+  isRecommended: z.boolean().optional(),
 });
 
 export default function EditItemPage() {
@@ -53,6 +56,9 @@ export default function EditItemPage() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      isRecommended: false,
+    }
   });
 
   useEffect(() => {
@@ -76,7 +82,10 @@ export default function EditItemPage() {
 
             if (foundProduct) {
                 setProduct(foundProduct);
-                form.reset(foundProduct);
+                form.reset({
+                  ...foundProduct,
+                  isRecommended: foundProduct.isRecommended || false,
+                });
                 setImages(foundProduct.images);
                 setCategories([...new Set(allProducts.map(p => p.category))].sort());
             } else {
@@ -133,6 +142,7 @@ export default function EditItemPage() {
     const updatedProductData: Product = {
       ...product,
       ...data,
+      isRecommended: data.isRecommended || false,
       images: images.length > 0 ? images : ['https://placehold.co/600x400.png'],
       imageUpdatedAt: imageChanged ? new Date().toISOString() : product.imageUpdatedAt,
     };
@@ -217,13 +227,14 @@ export default function EditItemPage() {
   return (
     <div className="container py-12">
         <Card className="max-w-3xl mx-auto">
-            <CardHeader>
-                <CardTitle>Edit Product</CardTitle>
-                <CardDescription>Update the details for &quot;{product.name}&quot;.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <CardHeader>
+                        <CardTitle>Edit Product</CardTitle>
+                        <CardDescription>Update the details for &quot;{product.name}&quot;.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        
                         <FormItem>
                             <FormLabel>Product Images</FormLabel>
                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -280,6 +291,30 @@ export default function EditItemPage() {
                         <FormField control={form.control} name="description" render={({ field }) => (
                             <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
+
+                        <FormField
+                            control={form.control}
+                            name="isRecommended"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                    <FormLabel className="text-base">
+                                        Recommend Product
+                                    </FormLabel>
+                                    <FormDescription>
+                                        Feature this product on the homepage in the &quot;Recommended&quot; section.
+                                    </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+
                         <FormField control={form.control} name="category" render={({ field }) => (
                             <FormItem><FormLabel>Category</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} >
@@ -320,13 +355,15 @@ export default function EditItemPage() {
                                 <FormItem><FormLabel>Stock Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
-                        <div className="flex gap-2">
-                            <Button type="submit">Save Changes</Button>
-                            <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-                        </div>
-                    </form>
-                </Form>
-            </CardContent>
+                    </CardContent>
+                    <CardFooter>
+                      <div className="flex gap-2">
+                          <Button type="submit">Save Changes</Button>
+                          <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+                      </div>
+                    </CardFooter>
+                </form>
+            </Form>
         </Card>
     </div>
   );

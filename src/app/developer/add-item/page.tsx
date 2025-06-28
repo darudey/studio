@@ -122,6 +122,9 @@ export default function AddItemPage() {
       batchNo: data.batchNo || 'N/A',
       images: [imageSrc || 'https://placehold.co/600x400.png'],
       imageUpdatedAt: new Date().toISOString(),
+      isRecommended: false,
+      createdAt: new Date().toISOString(),
+      dataAiHint: data.name.toLowerCase().split(' ').slice(0, 2).join(' ')
     };
     await addProduct(newProductData);
     toast({
@@ -196,6 +199,7 @@ export default function AddItemPage() {
         
         const importedProducts: Omit<Product, 'id'>[] = [];
         const newCategoriesSet = new Set<string>(categories);
+        const now = new Date().toISOString();
 
         json.forEach((row, index) => {
             if (!row.Name || !row['Selling Price'] || !row['Purchase Price']) {
@@ -209,13 +213,15 @@ export default function AddItemPage() {
               batchNo: row['Batch No.']?.toString() || 'N/A',
               description: row.description || 'No description provided.',
               images: [row.image || 'https://placehold.co/600x400.png'],
-              imageUpdatedAt: new Date().toISOString(),
+              imageUpdatedAt: now,
               category: row.category || 'Uncategorized',
               retailPrice: parseFloat(row['Selling Price']),
               wholesalePrice: parseFloat(row['Purchase Price']),
               unit: 'piece',
               stock: parseInt(row['Stock Quantity'], 10) || 0,
-              dataAiHint: row.Name.toLowerCase().split(' ').slice(0, 2).join(' ')
+              dataAiHint: row.Name.toLowerCase().split(' ').slice(0, 2).join(' '),
+              isRecommended: false,
+              createdAt: now,
             };
             
             importedProducts.push(newProductData);
