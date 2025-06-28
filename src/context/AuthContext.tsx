@@ -79,9 +79,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         let role: UserRole = 'basic';
         const lowerCaseEmail = email.toLowerCase();
-        if (lowerCaseEmail === 'dev@example.com') {
+        if (lowerCaseEmail.startsWith('dev@')) {
           role = 'developer';
-        } else if (lowerCaseEmail === 'sam@example.com') {
+        } else if (lowerCaseEmail.startsWith('sam@')) {
           role = 'shop-owner';
         }
 
