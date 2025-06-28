@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCart } from "@/context/CartContext";
@@ -143,7 +144,7 @@ export default function CheckoutPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Order Total</CardTitle>
-                </Header>
+                </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex justify-between text-lg font-semibold">
                         <span>Total</span>
