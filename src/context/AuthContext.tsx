@@ -3,7 +3,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { User, UserRole } from '@/types';
-import { getUserById, createUserProfile, updateUser } from '@/lib/data';
+import { getUserById, createUserProfile, updateUser, findCouponByCode, markCouponAsUsed } from '@/lib/data';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, AuthError } from 'firebase/auth';
 
@@ -18,7 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthResult>;
   logout: () => void;
   register: (userData: Omit<User, 'id' | 'role'> & {password: string}) => Promise<AuthResult>;
-  upgradeToWholesaler: (code: string) => Promise<boolean>;
+  redeemUpgradeCode: (code: string) => Promise<{success: boolean; message: string;}>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -79,10 +79,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         let role: UserRole = 'basic';
         const lowerCaseEmail = email.toLowerCase();
-        if (lowerCaseEmail.startsWith('dev@')) {
+        
+        if (lowerCaseEmail === 'yollo.sark9tceone@gmail.com') {
           role = 'developer';
-        } else if (lowerCaseEmail.startsWith('sam@')) {
-          role = 'shop-owner';
         }
 
         const newUser: User = { id: authUser.uid, name, email, phone, address, role };
@@ -95,18 +94,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
      }
   };
 
-  const upgradeToWholesaler = async (code: string) => {
-    if (user && code === 'WHOLESALE123' && user.role === 'basic') {
-      const updatedUser: User = { ...user, role: 'wholesaler' as UserRole };
-      await updateUser(updatedUser);
-      setUser(updatedUser);
-      return true;
+  const redeemUpgradeCode = async (code: string) => {
+    if (!user) return { success: false, message: "You must be logged in." };
+    if (user.role !== 'basic') return { success: false, message: "Your account is already upgraded." };
+
+    const coupon = await findCouponByCode(code);
+
+    if (!coupon) {
+      return { success: false, message: "Invalid or already used code." };
     }
-    return false;
+
+    try {
+      const updatedUser: User = { ...user, role: coupon.role };
+      await updateUser(updatedUser);
+      await markCouponAsUsed(coupon.id, user.id);
+      
+      setUser(updatedUser); // Update state locally
+      return { success: true, message: `Your account has been upgraded to ${coupon.role}!` };
+    } catch(error) {
+        console.error("Failed to redeem code:", error);
+        return { success: false, message: "An error occurred during the upgrade process." };
+    }
   };
 
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register, upgradeToWholesaler }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, redeemUpgradeCode }}>
       {children}
     </AuthContext.Provider>
   );

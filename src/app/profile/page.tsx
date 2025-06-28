@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,7 +14,7 @@ import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
-  const { user, upgradeToWholesaler, loading: authLoading } = useAuth();
+  const { user, redeemUpgradeCode, loading: authLoading } = useAuth();
   const [upgradeCode, setUpgradeCode] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -28,17 +29,17 @@ export default function ProfilePage() {
   const handleUpgrade = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const success = await upgradeToWholesaler(upgradeCode);
-    if (success) {
+    const result = await redeemUpgradeCode(upgradeCode);
+    if (result.success) {
       toast({
         title: "Upgrade Successful!",
-        description: "You now have access to wholesale pricing.",
+        description: result.message,
       });
       setUpgradeCode("");
     } else {
       toast({
         title: "Upgrade Failed",
-        description: "The upgrade code is incorrect.",
+        description: result.message,
         variant: "destructive",
       });
     }
@@ -105,8 +106,8 @@ export default function ProfilePage() {
         {user.role === 'basic' && (
           <Card className="mt-8">
             <CardHeader>
-              <CardTitle>Upgrade to Wholesaler</CardTitle>
-              <CardDescription>Enter your unique code to unlock wholesale pricing.</CardDescription>
+              <CardTitle>Upgrade Account</CardTitle>
+              <CardDescription>Enter a code to upgrade your account role (e.g., to Wholesaler or Shop Owner).</CardDescription>
             </CardHeader>
             <form onSubmit={handleUpgrade}>
                 <CardContent>
@@ -124,7 +125,7 @@ export default function ProfilePage() {
                 <CardFooter>
                     <Button type="submit" disabled={loading}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Upgrade Account
+                        Redeem Code
                     </Button>
                 </CardFooter>
             </form>

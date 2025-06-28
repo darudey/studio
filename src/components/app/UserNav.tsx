@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { LogOut, ReceiptText, User as UserIcon, Users, PlusCircle, ClipboardList } from "lucide-react";
+import { LogOut, ReceiptText, User as UserIcon, Users, PlusCircle, ClipboardList, Ticket } from "lucide-react";
 
 export default function UserNav() {
   const { user, logout } = useAuth();
@@ -102,6 +102,12 @@ export default function UserNav() {
                 <DropdownMenuItem>
                   <Users className="mr-2 h-4 w-4" />
                   <span>Manage Users</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/developer/coupons">
+                <DropdownMenuItem>
+                  <Ticket className="mr-2 h-4 w-4" />
+                  <span>Manage Coupons</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/products">

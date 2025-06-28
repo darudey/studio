@@ -49,3 +49,13 @@ export type Order = {
   status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
   shippingAddress: string;
 };
+
+export type Coupon = {
+    id: string;
+    code: string;
+    role: 'shop-owner' | 'wholesaler';
+    isUsed: boolean;
+    usedBy?: string;
+    createdAt: string;
+    createdBy: string;
+};

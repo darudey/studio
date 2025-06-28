@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc } from 'firebase/firestore';
-import type { Product, User, Order, OrderItem } from "@/types";
+import type { Product, User, Order, OrderItem, Coupon } from "@/types";
 
 // USER FUNCTIONS
 const usersCollection = collection(db, 'users');
@@ -116,3 +116,33 @@ export const updateOrder = async (order: Order): Promise<void> => {
     const { id, ...orderData } = order;
     await updateDoc(orderRef, orderData);
 }
+
+// COUPON FUNCTIONS
+const couponsCollection = collection(db, 'coupons');
+
+export const getUnusedCoupons = async (): Promise<Coupon[]> => {
+    const q = query(couponsCollection, where("isUsed", "==", false));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+};
+
+export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon> => {
+    const docRef = await addDoc(couponsCollection, couponData);
+    return { id: docRef.id, ...couponData };
+};
+
+export const findCouponByCode = async (code: string): Promise<Coupon | null> => {
+    const q = query(couponsCollection, where("code", "==", code), where("isUsed", "==", false));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() } as Coupon;
+};
+
+export const markCouponAsUsed = async (couponId: string, userId: string): Promise<void> => {
+    const couponRef = doc(db, 'coupons', couponId);
+    await updateDoc(couponRef, {
+        isUsed: true,
+        usedBy: userId
+    });
+};
