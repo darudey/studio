@@ -84,7 +84,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           role = 'developer';
         }
 
-        const newUser: User = { id: authUser.uid, name, email, phone, address, role };
+        const newUser: User = { 
+          id: authUser.uid, 
+          name: name || "New User", 
+          email, 
+          phone: phone || "", 
+          address: address || "", 
+          role 
+        };
         await createUserProfile(newUser);
         setUser(newUser); // Set user immediately after profile creation
         return { success: true };
