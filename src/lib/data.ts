@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc } from 'firebase/firestore';
 import type { Product, User, Order, OrderItem } from "@/types";
 
 // USER FUNCTIONS
@@ -24,14 +24,17 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     return { id: doc.id, ...doc.data() } as User;
 }
 
-export const addUser = async (userData: Omit<User, 'id'>): Promise<User> => {
-    const docRef = await addDoc(usersCollection, userData);
-    return { id: docRef.id, ...userData };
+export const createUserProfile = async (user: User): Promise<void> => {
+    const userRef = doc(db, 'users', user.id);
+    // Don't save the id inside the document, it's the document's name
+    const { id, ...userData } = user;
+    await setDoc(userRef, userData);
 };
 
 export const updateUser = async (user: User): Promise<void> => {
     const userRef = doc(db, 'users', user.id);
-    await updateDoc(userRef, { ...user });
+    const { id, ...userData } = user;
+    await updateDoc(userRef, userData);
 }
 
 
@@ -73,7 +76,8 @@ export const addMultipleProducts = async (productsData: Omit<Product, 'id'>[]): 
 
 export const updateProduct = async (product: Product): Promise<void> => {
     const productRef = doc(db, 'products', product.id);
-    await updateDoc(productRef, { ...product });
+    const { id, ...productData } = product;
+    await updateDoc(productRef, productData);
 };
 
 export const deleteProduct = async (productId: string): Promise<void> => {
@@ -109,5 +113,6 @@ export const addOrder = async (orderData: Omit<Order, 'id' | 'date' | 'items'> &
 
 export const updateOrder = async (order: Order): Promise<void> => {
     const orderRef = doc(db, 'orders', order.id);
-    await updateDoc(orderRef, { ...order });
+    const { id, ...orderData } = order;
+    await updateDoc(orderRef, orderData);
 }

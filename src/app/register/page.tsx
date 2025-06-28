@@ -15,6 +15,7 @@ import { Loader2 } from "lucide-react";
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,14 +26,14 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const success = await register({ name, email, phone, address });
+    const { success, error } = await register({ name, email, password, phone, address });
     if (success) {
       router.push("/");
       toast({ title: "Registration Successful", description: "Your account has been created." });
     } else {
       toast({
         title: "Registration Failed",
-        description: "An account with this email already exists.",
+        description: error || "An unexpected error occurred.",
         variant: "destructive",
       });
     }
@@ -57,6 +58,10 @@ export default function RegisterPage() {
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
+            </div>
+             <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phone">Phone Number</Label>

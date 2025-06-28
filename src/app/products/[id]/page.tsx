@@ -81,7 +81,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
       
       const updatedProductData: Product = {
         ...product,
-        images: [result.imageDataUri, ...product.images.slice(1)],
+        images: [result.imageDataUri, ...product.images.filter(img => img !== product.images[0])],
         imageUpdatedAt: new Date().toISOString(),
       };
       
@@ -106,7 +106,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   };
 
   const price = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
-  const imageIsOld = product.imageUpdatedAt && (new Date().getTime() - new Date(product.imageUpdatedAt).getTime()) > (24 * 60 * 60 * 1000);
+  const imageIsOld = product.imageUpdatedAt && (new Date().getTime() - new Date(product.imageUpdatedAt).getTime()) > (7 * 24 * 60 * 60 * 1000);
 
   return (
     <div className="container py-12">
@@ -145,7 +145,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                       {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {isGenerating ? 'Generating...' : 'Request recent image'}
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-1">The current image is more than a day old.</p>
+                  <p className="text-xs text-muted-foreground mt-1">The current image is more than a week old.</p>
               </div>
             )}
 

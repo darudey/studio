@@ -17,7 +17,7 @@ import { getProductById, getProducts, updateProduct } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Product } from "@/types";
-import { Camera, FileImage } from "lucide-react";
+import { Camera, FileImage, Star, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,7 +44,7 @@ export default function EditItemPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [showCamera, setShowCamera] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -53,17 +53,6 @@ export default function EditItemPage() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      itemCode: "",
-      batchNo: "",
-      description: "",
-      category: "",
-      retailPrice: 0,
-      wholesalePrice: 0,
-      unit: "piece",
-      stock: 0,
-    },
   });
 
   useEffect(() => {
@@ -88,7 +77,7 @@ export default function EditItemPage() {
             if (foundProduct) {
                 setProduct(foundProduct);
                 form.reset(foundProduct);
-                setImageSrc(foundProduct.images[0] || null);
+                setImages(foundProduct.images);
                 setCategories([...new Set(allProducts.map(p => p.category))].sort());
             } else {
                 notFound();
@@ -140,11 +129,11 @@ export default function EditItemPage() {
 
   const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = async (data) => {
     if (!product) return;
-    const imageChanged = imageSrc !== product.images[0];
+    const imageChanged = JSON.stringify(images) !== JSON.stringify(product.images);
     const updatedProductData: Product = {
       ...product,
       ...data,
-      images: [imageSrc || product.images[0] || 'https://placehold.co/600x400.png'],
+      images: images.length > 0 ? images : ['https://placehold.co/600x400.png'],
       imageUpdatedAt: imageChanged ? new Date().toISOString() : product.imageUpdatedAt,
     };
     await updateProduct(updatedProductData);
@@ -160,7 +149,8 @@ export default function EditItemPage() {
       const file = event.target.files[0];
       const reader = new FileReader();
       reader.onload = (e) => {
-        setImageSrc(e.target?.result as string);
+        const newImage = e.target?.result as string;
+        setImages(prev => [...prev, newImage]);
         setShowCamera(false);
       };
       reader.readAsDataURL(file);
@@ -176,11 +166,28 @@ export default function EditItemPage() {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        setImageSrc(canvas.toDataURL('image/png'));
+        const newImage = canvas.toDataURL('image/png');
+        setImages(prev => [...prev, newImage]);
         setShowCamera(false);
       }
     }
   };
+
+  const handleSetPrimary = (indexToMakePrimary: number) => {
+    if (indexToMakePrimary === 0) return;
+    const newPrimaryImage = images[indexToMakePrimary];
+    const otherImages = images.filter((_, index) => index !== indexToMakePrimary);
+    setImages([newPrimaryImage, ...otherImages]);
+  }
+
+  const handleDeleteImage = (indexToDelete: number) => {
+    if (images.length === 1) {
+        toast({title: "Cannot delete the last image.", variant: "destructive"});
+        return;
+    }
+    setImages(images.filter((_, index) => index !== indexToDelete));
+  }
+
 
   if (loading) {
     return (
@@ -218,13 +225,20 @@ export default function EditItemPage() {
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormItem>
-                            <FormLabel>Product Image</FormLabel>
-                            <div className="space-y-4">
-                                {imageSrc && (
-                                    <div className="relative w-full aspect-video rounded-md overflow-hidden border">
-                                        <Image src={imageSrc} alt="Product preview" fill className="object-cover" />
+                            <FormLabel>Product Images</FormLabel>
+                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {images.map((src, index) => (
+                                    <div key={index} className="relative group aspect-square">
+                                        <Image src={src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md border" />
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-1 p-1">
+                                           {index > 0 && <Button type="button" size="sm" className="w-full text-xs" onClick={() => handleSetPrimary(index)}><Star className="h-3 w-3 mr-1"/>Primary</Button>}
+                                           <Button type="button" size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteImage(index)}><Trash2 className="h-3 w-3 mr-1"/>Delete</Button>
+                                        </div>
+                                         {index === 0 && <Badge className="absolute top-1 left-1">Primary</Badge>}
                                     </div>
-                                )}
+                                ))}
+                            </div>
+                            <div className="space-y-4 mt-4">
                                 {showCamera ? (
                                     <div className="space-y-2">
                                         <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />

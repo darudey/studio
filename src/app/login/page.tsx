@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("dev@example.com");
+  const [password, setPassword] = useState("password");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const success = await login(email);
+    const { success, error } = await login(email, password);
     if (success) {
       const redirectUrl = searchParams.get('redirect') || '/';
       router.push(redirectUrl);
@@ -30,7 +31,7 @@ export default function LoginPage() {
     } else {
       toast({
         title: "Login Failed",
-        description: "Invalid email or user not found.",
+        description: error || "Invalid email or password.",
         variant: "destructive",
       });
     }
@@ -43,8 +44,8 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account. <br/>
-            (e.g., dev@example.com, sam@example.com, alice@example.com, bob@example.com)
+            Enter your email and password below to login. <br/>
+            (Dev: dev@example.com / password)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,6 +59,17 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
               />
             </div>
