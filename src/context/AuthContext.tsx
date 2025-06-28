@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<AuthResult> => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.toLowerCase(), password);
       return { success: true };
     } catch (error) {
       return { success: false, error: mapFirebaseError(error as AuthError) };
@@ -74,11 +74,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: Omit<User, 'id' | 'role'> & {password: string}): Promise<AuthResult> => {
      try {
         const { email, password, name, phone, address } = userData;
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const lowerCaseEmail = email.toLowerCase();
+        const userCredential = await createUserWithEmailAndPassword(auth, lowerCaseEmail, password);
         const authUser = userCredential.user;
         
         let role: UserRole = 'basic';
-        const lowerCaseEmail = email.toLowerCase();
         
         if (lowerCaseEmail === 'yollo.sark9tceone@gmail.com') {
           role = 'developer';
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const newUser: User = { 
           id: authUser.uid, 
           name: name || "New User", 
-          email, 
+          email: lowerCaseEmail, 
           phone: phone || "", 
           address: address || "", 
           role 
@@ -97,7 +97,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
 
      } catch (error) {
-        return { success: false, error: mapFirebaseError(error as AuthError) };
+        if ((error as AuthError).code) {
+          return { success: false, error: mapFirebaseError(error as AuthError) };
+        }
+        console.error("Non-Auth error during registration:", error);
+        return { success: false, error: "An unexpected error occurred while creating your profile. Please try again." };
      }
   };
 
