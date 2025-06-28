@@ -1,6 +1,6 @@
 "use client";
 
-import { products, updateProduct } from "@/lib/data";
+import { getProductById, updateProduct } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { generateProductImage } from "@/ai/flows/generate-product-image";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/types";
 import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const [quantity, setQuantity] = useState(1);
@@ -22,23 +23,51 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [product, setProduct] = useState<Product | undefined>(() => products.find(p => p.id === params.id));
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    // This effect ensures the product data is fresh if the user navigates
-    // between product pages on the client-side.
-    const foundProduct = products.find(p => p.id === params.id);
-    setProduct(foundProduct);
+    const fetchProduct = async () => {
+      setLoading(true);
+      const foundProduct = await getProductById(params.id);
+      if (foundProduct) {
+        setProduct(foundProduct);
+      } else {
+        notFound();
+      }
+      setLoading(false);
+    };
+    fetchProduct();
   }, [params.id]);
 
 
+  if (loading) {
+    return (
+        <div className="container py-12">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+                <Skeleton className="w-full aspect-square" />
+                <div className="space-y-6">
+                    <Skeleton className="h-10 w-3/4" />
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-8 w-1/3" />
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-12 w-20" />
+                        <Skeleton className="h-12 flex-1" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+  }
+
   if (!product) {
-    notFound();
+    return null; // notFound() is called from useEffect
   }
 
   const handleAddToCart = () => {
-    addToCart(product.id, quantity);
+    addToCart(product.id, quantity, product.stock);
   };
   
   const handleRequestRecentImage = async () => {
@@ -56,7 +85,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         imageUpdatedAt: new Date().toISOString(),
       };
       
-      updateProduct(updatedProductData);
+      await updateProduct(updatedProductData);
       setProduct(updatedProductData);
 
       toast({

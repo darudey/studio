@@ -2,25 +2,30 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(email);
+    setLoading(true);
+    const success = await login(email);
     if (success) {
-      router.push("/");
+      const redirectUrl = searchParams.get('redirect') || '/';
+      router.push(redirectUrl);
       toast({ title: "Login Successful", description: "Welcome back!" });
     } else {
       toast({
@@ -29,6 +34,7 @@ export default function LoginPage() {
         variant: "destructive",
       });
     }
+    setLoading(false);
   };
 
   return (
@@ -37,7 +43,8 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account.
+            Enter your email below to login to your account. <br/>
+            (e.g., dev@example.com, sam@example.com, alice@example.com, bob@example.com)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -51,9 +58,11 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>
             <div className="mt-4 text-center text-sm">

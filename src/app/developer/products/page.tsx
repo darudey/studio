@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { products as allProducts, deleteProduct as removeProduct, updateProduct } from "@/lib/data";
+import { getProducts, deleteProduct as removeProduct, updateProduct } from "@/lib/data";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,23 +27,40 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ManageProductsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
 
   useEffect(() => {
     if (!user) {
       router.push("/login");
-    } else if (!['developer', 'shop-owner'].includes(user.role)) {
+      return;
+    } 
+    if (!['developer', 'shop-owner'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
-    } else {
-        setProducts(JSON.parse(JSON.stringify(allProducts)));
+      return;
     }
+    
+    const fetchProducts = async () => {
+        try {
+            const fetchedProducts = await getProducts();
+            setProducts(fetchedProducts);
+        } catch(error) {
+            console.error(error);
+            toast({ title: "Error", description: "Failed to load products.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    }
+    fetchProducts();
+
   }, [user, router, toast]);
 
   const handleFieldChange = (productId: string, field: keyof Product, value: any) => {
@@ -70,22 +87,39 @@ export default function ManageProductsPage() {
     }
   };
 
-  const handleSaveProduct = (productId: string) => {
+  const handleSaveProduct = async (productId: string) => {
     const productToSave = products.find(p => p.id === productId);
     if (productToSave) {
-      updateProduct(productToSave);
+      await updateProduct(productToSave);
       toast({ title: "Product Saved", description: `${productToSave.name} has been updated.` });
     }
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    removeProduct(productId);
+  const handleDeleteProduct = async (productId: string) => {
+    await removeProduct(productId);
     setProducts(products.filter(p => p.id !== productId)); 
     toast({ title: "Product Deleted", description: "The product has been removed from the catalog." });
   };
 
-  if (!user || !['developer', 'shop-owner'].includes(user.role)) {
-    return <div className="container text-center py-10">Redirecting...</div>;
+  if (loading) {
+      return (
+          <div className="container py-12">
+              <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                       <div>
+                            <Skeleton className="h-8 w-48" />
+                            <Skeleton className="h-4 w-72 mt-2" />
+                        </div>
+                        <Skeleton className="h-10 w-32" />
+                  </CardHeader>
+                  <CardContent>
+                      <div className="space-y-2">
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                      </div>
+                  </CardContent>
+              </Card>
+          </div>
+      )
   }
 
   return (

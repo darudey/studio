@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useParams } from "next/navigation";
-import { orders as allOrders, users as allUsers } from "@/lib/data";
+import { getOrdersByUserId, getUserById, updateOrder } from "@/lib/data";
 import type { Order, User, OrderItemStatus } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,8 +17,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-
-type EnrichedOrder = Order & { user: User | undefined };
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function UserOrdersPage() {
   const { user: authUser } = useAuth();
@@ -29,28 +28,36 @@ export default function UserOrdersPage() {
   const userId = params.userId as string;
 
   const [customer, setCustomer] = useState<User | null>(null);
-  const [orders, setOrders] = useState<EnrichedOrder[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     if (!authUser) {
       router.push("/login");
-    } else if (!['developer', 'shop-owner'].includes(authUser.role)) {
-      router.push("/");
-    } else {
-      const foundCustomer = allUsers.find(u => u.id === userId);
-      setCustomer(foundCustomer || null);
-      
-      const userOrders = allOrders
-        .filter(order => order.userId === userId)
-        .map(order => ({
-          ...order,
-          user: foundCustomer
-        }))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-      setOrders(userOrders);
+      return;
     }
-  }, [authUser, router, userId]);
+    if (!['developer', 'shop-owner'].includes(authUser.role)) {
+      router.push("/");
+      return;
+    }
+    
+    const fetchData = async () => {
+        try {
+            const [foundCustomer, userOrders] = await Promise.all([
+                getUserById(userId),
+                getOrdersByUserId(userId)
+            ]);
+            setCustomer(foundCustomer);
+            setOrders(userOrders);
+        } catch(error) {
+            console.error(error);
+            toast({ title: "Error", description: "Failed to load order data.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    }
+    fetchData();
+  }, [authUser, router, userId, toast]);
 
   const handleItemStatusChange = (orderId: string, productId: string, newStatus: OrderItemStatus) => {
     setOrders(currentOrders => 
@@ -59,11 +66,6 @@ export default function UserOrdersPage() {
                 const updatedItems = order.items.map(item => 
                     item.productId === productId ? { ...item, status: newStatus } : item
                 );
-                // Also update the master `allOrders` array in data.ts
-                const masterOrderIndex = allOrders.findIndex(o => o.id === orderId);
-                if (masterOrderIndex !== -1) {
-                  allOrders[masterOrderIndex].items = updatedItems;
-                }
                 return { ...order, items: updatedItems };
             }
             return order;
@@ -71,68 +73,70 @@ export default function UserOrdersPage() {
     );
   };
   
-  const handleUpdateOrder = (orderId: string, action: 'ship' | 'cancel') => {
-      const orderIndex = allOrders.findIndex(o => o.id === orderId);
-      if (orderIndex === -1) return;
-
-      const currentOrderInState = orders.find(o => o.id === orderId);
-      if (!currentOrderInState) return;
+  const handleUpdateOrder = async (orderId: string, action: 'ship' | 'cancel') => {
+      const orderToUpdate = orders.find(o => o.id === orderId);
+      if (!orderToUpdate) return;
 
       let toastTitle = "";
       let toastDescription = "";
 
       if (action === 'ship') {
-          allOrders[orderIndex].status = 'Shipped';
-          allOrders[orderIndex].items = currentOrderInState.items.map(item => ({
+          orderToUpdate.status = 'Shipped';
+          orderToUpdate.items = orderToUpdate.items.map(item => ({
               ...item,
               status: item.status === 'Pending' ? 'Fulfilled' : item.status
           }));
           
-          const fulfilledCount = allOrders[orderIndex].items.filter(i => i.status === 'Fulfilled').length;
-          const cancelledCount = allOrders[orderIndex].items.filter(i => i.status === 'Cancelled').length;
+          const fulfilledCount = orderToUpdate.items.filter(i => i.status === 'Fulfilled').length;
+          const cancelledCount = orderToUpdate.items.filter(i => i.status === 'Cancelled').length;
 
           toastTitle = "Order Packed and Shipped";
-          toastDescription = `Order #${orderId} is now shipped. ${fulfilledCount} items fulfilled, ${cancelledCount} items cancelled.`;
+          toastDescription = `Order #${orderId.substring(0,6)}... is now shipped. ${fulfilledCount} items fulfilled, ${cancelledCount} items cancelled.`;
       } else if (action === 'cancel') {
-          allOrders[orderIndex].status = 'Cancelled';
-          allOrders[orderIndex].items.forEach(item => item.status = 'Cancelled');
+          orderToUpdate.status = 'Cancelled';
+          orderToUpdate.items.forEach(item => item.status = 'Cancelled');
           toastTitle = "Order Cancelled";
-          toastDescription = `Order #${orderId} has been cancelled.`;
+          toastDescription = `Order #${orderId.substring(0,6)}... has been cancelled.`;
       }
       
-      const foundCustomer = allUsers.find(u => u.id === userId);
-      const userOrders = allOrders
-        .filter(order => order.userId === userId)
-        .map(order => ({
-          ...order,
-          user: foundCustomer
-        }))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
-      setOrders(userOrders);
+      await updateOrder(orderToUpdate);
+      setOrders([...orders]); // Trigger re-render
       
       toast({ title: toastTitle, description: toastDescription });
   };
   
-  const handleDeliveryStatusChange = (orderId: string, newStatus: 'Shipped' | 'Delivered') => {
-       const orderIndex = allOrders.findIndex(o => o.id === orderId);
-       if(orderIndex !== -1) {
-          allOrders[orderIndex].status = newStatus;
-          const foundCustomer = allUsers.find(u => u.id === userId);
-          const userOrders = allOrders
-            .filter(order => order.userId === userId)
-            .map(order => ({
-              ...order,
-              user: foundCustomer
-            }))
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setOrders(userOrders);
-          toast({ title: "Order Status Updated", description: `Order #${orderId} is now ${newStatus}.`});
+  const handleDeliveryStatusChange = async (orderId: string, newStatus: 'Shipped' | 'Delivered') => {
+       const orderToUpdate = orders.find(o => o.id === orderId);
+       if(orderToUpdate) {
+          orderToUpdate.status = newStatus;
+          await updateOrder(orderToUpdate);
+          setOrders([...orders]); // Trigger re-render
+          toast({ title: "Order Status Updated", description: `Order #${orderId.substring(0,6)}... is now ${newStatus}.`});
       }
   };
 
-  if (!authUser || !['developer', 'shop-owner'].includes(authUser.role) || !customer) {
-    return <div className="container text-center py-10">Loading...</div>;
+  if (loading) {
+    return (
+        <div className="container py-12">
+            <div className="flex items-center mb-6">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-8 w-48 ml-4" />
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-64 mt-2" />
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
+  if (!customer) {
+    return <div className="container text-center py-10">Customer not found.</div>;
   }
 
   return (
@@ -153,12 +157,12 @@ export default function UserOrdersPage() {
             </CardHeader>
             <CardContent>
                 {orders.length > 0 ? (
-                    <Accordion type="single" collapsible className="w-full">
+                    <Accordion type="single" collapsible className="w-full" defaultValue={orders[0]?.id}>
                         {orders.map(order => (
                           <AccordionItem value={order.id} key={order.id}>
                               <AccordionTrigger>
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-left md:items-center w-full pr-4 text-sm">
-                                      <span className="font-medium text-left">Order #{order.id}</span>
+                                      <span className="font-medium text-left">Order #{order.id.substring(0,6)}...</span>
                                       <span className="text-left md:text-center">{new Date(order.date).toLocaleDateString()}</span>
                                       <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="w-fit md:justify-self-center">{order.status}</Badge>
                                       <span className="font-semibold text-left md:text-right">${order.total.toFixed(2)}</span>
@@ -211,8 +215,8 @@ export default function UserOrdersPage() {
                                         <Card>
                                             <CardHeader className="pb-2"><CardTitle className="text-lg">Customer Details</CardTitle></CardHeader>
                                             <CardContent className="text-sm text-muted-foreground space-y-1">
-                                                <p><strong className="text-foreground font-medium">Name:</strong> {order.user?.name}</p>
-                                                <p><strong className="text-foreground font-medium">Email:</strong> {order.user?.email}</p>
+                                                <p><strong className="text-foreground font-medium">Name:</strong> {customer.name}</p>
+                                                <p><strong className="text-foreground font-medium">Email:</strong> {customer.email}</p>
                                                 <p><strong className="text-foreground font-medium">Address:</strong> {order.shippingAddress}</p>
                                             </CardContent>
                                         </Card>

@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { orders as allOrders, users as allUsers } from "@/lib/data";
-import type { User } from "@/types";
+import { getAllOrders, getUsers } from "@/lib/data";
+import type { User, Order } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CustomerWithOrderInfo extends User {
   orderCount: number;
@@ -19,46 +20,70 @@ interface CustomerWithOrderInfo extends User {
 export default function CustomersWithOrdersPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const [customers, setCustomers] = useState<CustomerWithOrderInfo[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       router.push("/login");
-    } else if (!['developer', 'shop-owner'].includes(user.role)) {
-      router.push("/");
+      return;
     }
-  }, [user, router]);
+    if (!['developer', 'shop-owner'].includes(user.role)) {
+      router.push("/");
+      return;
+    }
 
-  const customers = useMemo(() => {
-    const ordersByUser = allOrders.reduce((acc, order) => {
-      if (!acc[order.userId]) {
-        acc[order.userId] = [];
-      }
-      acc[order.userId].push(order);
-      return acc;
-    }, {} as Record<string, typeof allOrders>);
-
-    const customerList: CustomerWithOrderInfo[] = Object.keys(ordersByUser)
-      .map(userId => {
-        const customer = allUsers.find(u => u.id === userId);
-        if (!customer) return null;
-
-        const userOrders = ordersByUser[userId];
-        const lastOrder = userOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    const fetchData = async () => {
+        const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
         
-        return {
-          ...customer,
-          orderCount: userOrders.length,
-          lastOrderDate: lastOrder.date,
-        };
-      })
-      .filter((c): c is CustomerWithOrderInfo => c !== null)
-      .sort((a, b) => new Date(b.lastOrderDate).getTime() - new Date(a.lastOrderDate).getTime());
-      
-    return customerList;
-  }, []);
+        const ordersByUser = allOrders.reduce((acc, order) => {
+            if (!acc[order.userId]) {
+                acc[order.userId] = [];
+            }
+            acc[order.userId].push(order);
+            return acc;
+            }, {} as Record<string, Order[]>);
+
+        const customerList: CustomerWithOrderInfo[] = Object.keys(ordersByUser)
+            .map(userId => {
+                const customer = allUsers.find(u => u.id === userId);
+                if (!customer) return null;
+
+                const userOrders = ordersByUser[userId];
+                const lastOrder = userOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                
+                return {
+                ...customer,
+                orderCount: userOrders.length,
+                lastOrderDate: lastOrder.date,
+                };
+            })
+            .filter((c): c is CustomerWithOrderInfo => c !== null)
+            .sort((a, b) => new Date(b.lastOrderDate).getTime() - new Date(a.lastOrderDate).getTime());
+            
+        setCustomers(customerList);
+        setLoading(false);
+    }
+    fetchData();
+
+  }, [user, router]);
   
-  if (!user || !['developer', 'shop-owner'].includes(user.role)) {
-    return <div className="container text-center py-10">Loading...</div>;
+  if (loading) {
+    return (
+        <div className="container py-12">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
   }
 
   return (

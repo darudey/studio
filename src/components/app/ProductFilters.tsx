@@ -3,7 +3,6 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { products } from "@/lib/data";
 import { Search } from "lucide-react";
 import React from 'react';
 
@@ -14,12 +13,11 @@ interface ProductFiltersProps {
     priceRange: [number, number];
   };
   onFilterChange: (filters: ProductFiltersProps['filters']) => void;
+  categories: string[];
+  maxPrice: number;
 }
 
-const categories = ["All", ...Array.from(new Set(products.map(p => p.category)))];
-const maxPrice = Math.max(...products.map(p => p.retailPrice));
-
-export default function ProductFilters({ filters, onFilterChange }: ProductFiltersProps) {
+export default function ProductFilters({ filters, onFilterChange, categories, maxPrice }: ProductFiltersProps) {
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({ ...filters, search: e.target.value });
@@ -51,7 +49,7 @@ export default function ProductFilters({ filters, onFilterChange }: ProductFilte
                     <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
-                    {categories.map(cat => (
+                    {["All", ...categories].map(cat => (
                         <SelectItem key={cat} value={cat}>
                             {cat}
                         </SelectItem>

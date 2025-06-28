@@ -10,7 +10,7 @@ import { useCart } from "@/context/CartContext";
 import { Badge } from "../ui/badge";
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { cartCount } = useCart();
 
   return (
@@ -37,7 +37,7 @@ export default function Header() {
               </Button>
             </ShoppingCartSheet>
 
-            {user ? (
+            {loading ? null : user ? (
               <UserNav />
             ) : (
               <Button asChild>

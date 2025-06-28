@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { addProduct, products } from "@/lib/data";
+import { addProduct, getProducts, addMultipleProducts } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Product } from "@/types";
@@ -42,7 +42,7 @@ export default function AddItemPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [categories, setCategories] = useState(() => [...new Set(products.map(p => p.category))].sort());
+  const [categories, setCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState("");
   
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -60,6 +60,11 @@ export default function AddItemPage() {
     } else if (!['developer', 'shop-owner'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
+    } else {
+        getProducts().then(products => {
+            const fetchedCategories = [...new Set(products.map(p => p.category))].sort();
+            setCategories(fetchedCategories);
+        })
     }
   }, [user, router, toast]);
 
@@ -111,15 +116,14 @@ export default function AddItemPage() {
     },
   });
 
-  const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = (data) => {
-    const newProduct: Product = {
-      id: (products.length + 2).toString(),
+  const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = async (data) => {
+    const newProductData: Omit<Product, 'id'> = {
       ...data,
       batchNo: data.batchNo || 'N/A',
       images: [imageSrc || 'https://placehold.co/600x400.png'],
       imageUpdatedAt: new Date().toISOString(),
     };
-    addProduct(newProduct);
+    await addProduct(newProductData);
     toast({
       title: "Product Added",
       description: `${data.name} has been added to the catalog.`,
@@ -178,7 +182,7 @@ export default function AddItemPage() {
     setIsImporting(true);
     try {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const data = e.target?.result;
         if (!data) {
              toast({ title: "Import Failed", description: "Could not read the file.", variant: "destructive" });
@@ -190,7 +194,7 @@ export default function AddItemPage() {
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json<any>(worksheet);
         
-        const importedProducts: Product[] = [];
+        const importedProducts: Omit<Product, 'id'>[] = [];
         const newCategoriesSet = new Set<string>(categories);
 
         json.forEach((row, index) => {
@@ -199,8 +203,7 @@ export default function AddItemPage() {
                 return;
             }
 
-            const newProduct: Product = {
-              id: (products.length + importedProducts.length + 2).toString(),
+            const newProductData: Omit<Product, 'id'> = {
               name: row.Name,
               itemCode: row['Item Code']?.toString() || `IMP-${Date.now()}-${index}`,
               batchNo: row['Batch No.']?.toString() || 'N/A',
@@ -215,13 +218,16 @@ export default function AddItemPage() {
               dataAiHint: row.Name.toLowerCase().split(' ').slice(0, 2).join(' ')
             };
             
-            addProduct(newProduct);
-            importedProducts.push(newProduct);
-            if (newProduct.category) {
-                newCategoriesSet.add(newProduct.category);
+            importedProducts.push(newProductData);
+            if (newProductData.category) {
+                newCategoriesSet.add(newProductData.category);
             }
         });
         
+        if (importedProducts.length > 0) {
+            await addMultipleProducts(importedProducts);
+        }
+
         setCategories(Array.from(newCategoriesSet).sort());
         toast({
           title: "Import Successful",
@@ -410,5 +416,3 @@ export default function AddItemPage() {
     </div>
   );
 }
-
-    

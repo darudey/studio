@@ -13,13 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { products, updateProduct } from "@/lib/data";
+import { getProductById, getProducts, updateProduct } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Product } from "@/types";
 import { Camera, FileImage } from "lucide-react";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Product name must be at least 2 characters." }),
@@ -41,6 +42,7 @@ export default function EditItemPage() {
   
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -67,21 +69,40 @@ export default function EditItemPage() {
   useEffect(() => {
     if (!user) {
       router.push("/login");
-    } else if (!['developer', 'shop-owner'].includes(user.role)) {
+      return;
+    }
+    if (!['developer', 'shop-owner'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
-    } else {
-        const productId = params.id as string;
-        const foundProduct = products.find(p => p.id === productId);
-        if (foundProduct) {
-            setProduct(foundProduct);
-            form.reset(foundProduct);
-            setImageSrc(foundProduct.images[0] || null);
-            setCategories([...new Set(products.map(p => p.category))].sort());
-        } else {
-            notFound();
-        }
+      return;
     }
+
+    const productId = params.id as string;
+    const fetchData = async () => {
+        try {
+            const [foundProduct, allProducts] = await Promise.all([
+                getProductById(productId),
+                getProducts()
+            ]);
+
+            if (foundProduct) {
+                setProduct(foundProduct);
+                form.reset(foundProduct);
+                setImageSrc(foundProduct.images[0] || null);
+                setCategories([...new Set(allProducts.map(p => p.category))].sort());
+            } else {
+                notFound();
+            }
+        } catch (error) {
+            console.error("Failed to fetch product data", error);
+            toast({ title: "Error", description: "Failed to load product data.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    fetchData();
+
   }, [user, router, toast, params.id, form]);
 
   useEffect(() => {
@@ -117,7 +138,7 @@ export default function EditItemPage() {
     }
   }, [showCamera, toast]);
 
-  const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = (data) => {
+  const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = async (data) => {
     if (!product) return;
     const imageChanged = imageSrc !== product.images[0];
     const updatedProductData: Product = {
@@ -126,7 +147,7 @@ export default function EditItemPage() {
       images: [imageSrc || product.images[0] || 'https://placehold.co/600x400.png'],
       imageUpdatedAt: imageChanged ? new Date().toISOString() : product.imageUpdatedAt,
     };
-    updateProduct(updatedProductData);
+    await updateProduct(updatedProductData);
     toast({
       title: "Product Updated",
       description: `${data.name} has been updated.`,
@@ -161,8 +182,29 @@ export default function EditItemPage() {
     }
   };
 
-  if (!user || !['developer', 'shop-owner'].includes(user.role) || !product) {
-    return <div className="container text-center py-10">Loading...</div>;
+  if (loading) {
+    return (
+        <div className="container py-12">
+            <Card className="max-w-3xl mx-auto">
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/2" />
+                    <Skeleton className="h-4 w-3/4" />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <Skeleton className="h-48 w-full" />
+                    <div className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
+  if (!product) {
+    return null; // notFound() is called in useEffect
   }
 
   return (

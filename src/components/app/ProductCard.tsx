@@ -51,7 +51,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Button 
             size="sm" 
             className="bg-accent hover:bg-accent/90"
-            onClick={() => addToCart(product.id, 1)}
+            onClick={() => addToCart(product.id, 1, product.stock)}
           >
             <Plus className="h-4 w-4 mr-1"/>
             Add

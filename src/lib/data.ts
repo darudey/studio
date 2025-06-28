@@ -1,201 +1,113 @@
-import { Product, User, Order } from "@/types";
+import { db } from './firebase';
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch } from 'firebase/firestore';
+import type { Product, User, Order, OrderItem } from "@/types";
 
-export const users: User[] = [
-  { id: '1', name: 'Dev Admin', email: 'dev@example.com', phone: '1112223333', role: 'developer', address: '123 Tech Lane, Silicon Valley, CA 94043' },
-  { id: '4', name: 'Sam Shopkeeper', email: 'sam@example.com', phone: '5554443333', role: 'shop-owner', address: '456 Market St, Commerce City, TX 75001' },
-  { id: '2', name: 'Alice Wholesaler', email: 'alice@example.com', phone: '4445556666', role: 'wholesaler', address: '789 Wholesale Row, Bulkville, NY 10001' },
-  { id: '3', name: 'Bob Basic', email: 'bob@example.com', phone: '7778889999', role: 'basic', address: '101 Consumer Ave, Retail Town, FL 33101' },
-];
+// USER FUNCTIONS
+const usersCollection = collection(db, 'users');
 
-export let products: Product[] = [
-  {
-    id: '1',
-    itemCode: 'FR-BAN-001',
-    batchNo: 'B20231026',
-    name: 'Organic Bananas',
-    description: 'A bunch of fresh, organic bananas, rich in potassium and perfect for a healthy snack.',
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x600.png', 'https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Fruits',
-    retailPrice: 1.2,
-    wholesalePrice: 0.8,
-    unit: 'piece',
-    stock: 150,
-    dataAiHint: 'organic bananas'
-  },
-  {
-    id: '2',
-    itemCode: 'DY-MLK-001',
-    batchNo: 'M20231025',
-    name: 'Whole Milk',
-    description: 'One gallon of fresh whole milk, pasteurized and great for drinking, cooking, or baking.',
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Dairy',
-    retailPrice: 3.5,
-    wholesalePrice: 2.5,
-    unit: 'litre',
-    stock: 80,
-    dataAiHint: 'milk gallon'
-  },
-  {
-    id: '3',
-    itemCode: 'BK-BRD-001',
-    batchNo: 'SDB20231024',
-    name: 'Artisanal Sourdough Bread',
-    description: 'A freshly baked loaf of artisanal sourdough bread with a crispy crust and soft, airy interior.',
-    images: ['https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date().toISOString(),
-    category: 'Bakery',
-    retailPrice: 5.0,
-    wholesalePrice: 3.75,
-    unit: 'piece',
-    stock: 50,
-    dataAiHint: 'sourdough bread'
-  },
-  {
-    id: '4',
-    itemCode: 'DY-EGG-001',
-    batchNo: 'E20231023',
-    name: 'Free-Range Eggs',
-    description: 'A dozen large, brown free-range eggs from happy chickens.',
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date().toISOString(),
-    category: 'Dairy',
-    retailPrice: 4.0,
-    wholesalePrice: 3.0,
-    unit: 'dozen',
-    stock: 100,
-    dataAiHint: 'brown eggs'
-  },
-  {
-    id: '5',
-    itemCode: 'FR-AVO-001',
-    batchNo: 'A20231022',
-    name: 'Ripe Avocados',
-    description: 'Creamy and delicious ripe avocados, perfect for toast, salads, or guacamole.',
-    images: ['https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date().toISOString(),
-    category: 'Fruits',
-    retailPrice: 2.0,
-    wholesalePrice: 1.5,
-    unit: 'piece',
-    stock: 200,
-    dataAiHint: 'ripe avocados'
-  },
-  {
-    id: '6',
-    itemCode: 'PN-RIC-001',
-    batchNo: 'R20231021',
-    name: 'Basmati Rice',
-    description: 'Premium quality long-grain Basmati rice, ideal for a variety of Indian dishes.',
-    images: ['https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date().toISOString(),
-    category: 'Pantry',
-    retailPrice: 10.0,
-    wholesalePrice: 7.5,
-    unit: 'kg',
-    stock: 120,
-    dataAiHint: 'basmati rice'
-  },
-    {
-    id: '7',
-    itemCode: 'DY-CHS-001',
-    batchNo: 'C20231020',
-    name: 'Cheddar Cheese Block',
-    description: 'A block of sharp cheddar cheese, perfect for slicing, shredding, or melting.',
-    images: ['https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date().toISOString(),
-    category: 'Dairy',
-    retailPrice: 6.5,
-    wholesalePrice: 5.0,
-    unit: 'g',
-    stock: 70,
-    dataAiHint: 'cheddar cheese'
-  },
-  {
-    id: '8',
-    itemCode: 'VG-TOM-001',
-    batchNo: 'T20231019',
-    name: 'Fresh Tomatoes',
-    description: 'Juicy, red tomatoes on the vine, bursting with flavor. Excellent for salads, sauces, and sandwiches.',
-    images: ['https://placehold.co/600x600.png'],
-    imageUpdatedAt: new Date().toISOString(),
-    category: 'Vegetables',
-    retailPrice: 2.5,
-    wholesalePrice: 1.8,
-    unit: 'kg',
-    stock: 90,
-    dataAiHint: 'fresh tomatoes'
-  },
-];
-
-export let orders: Order[] = [
-    {
-        id: 'ORD001',
-        userId: '2',
-        items: [
-            { productId: '1', name: 'Organic Bananas', quantity: 10, price: 0.8, status: 'Pending' },
-            { productId: '2', name: 'Whole Milk', quantity: 5, price: 2.5, status: 'Pending' },
-        ],
-        total: (10 * 0.8) + (5 * 2.5),
-        date: '2023-10-26T10:00:00Z',
-        status: 'Delivered',
-        shippingAddress: '789 Wholesale Row, Bulkville, NY 10001',
-    },
-    {
-        id: 'ORD002',
-        userId: '2',
-        items: [
-            { productId: '3', name: 'Artisanal Sourdough Bread', quantity: 8, price: 3.75, status: 'Pending' },
-        ],
-        total: 8 * 3.75,
-        date: '2023-10-28T14:30:00Z',
-        status: 'Shipped',
-        shippingAddress: '789 Wholesale Row, Bulkville, NY 10001',
-    },
-    {
-        id: 'ORD003',
-        userId: '3',
-        items: [
-            { productId: '5', name: 'Ripe Avocados', quantity: 4, price: 2.0, status: 'Pending' },
-        ],
-        total: 4 * 2.0,
-        date: '2023-10-29T09:00:00Z',
-        status: 'Pending',
-        shippingAddress: '101 Consumer Ave, Retail Town, FL 33101',
-    },
-];
-
-// Function to add a new order
-export const addOrder = (orderData: Omit<Order, 'id' | 'date'>) => {
-  const newOrder: Order = {
-    id: `ORD${(orders.length + 1).toString().padStart(3, '0')}`,
-    ...orderData,
-    date: new Date().toISOString(),
-    items: orderData.items.map(item => ({ ...item, status: 'Pending' })),
-  };
-  orders.unshift(newOrder);
+export const getUsers = async (): Promise<User[]> => {
+    const snapshot = await getDocs(usersCollection);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
 };
 
-// Function to add a new product, for developer use
-export const addProduct = (product: Product) => {
-  products.push(product);
+export const getUserById = async (id: string): Promise<User | null> => {
+    const docRef = doc(db, 'users', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as User : null;
+}
+
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+    const q = query(usersCollection, where("email", "==", email.toLowerCase()));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() } as User;
+}
+
+export const addUser = async (userData: Omit<User, 'id'>): Promise<User> => {
+    const docRef = await addDoc(usersCollection, userData);
+    return { id: docRef.id, ...userData };
 };
 
-// Function to update an existing product
-export const updateProduct = (updatedProduct: Product): boolean => {
-  const productIndex = products.findIndex(p => p.id === updatedProduct.id);
-  if (productIndex !== -1) {
-    products[productIndex] = updatedProduct;
-    return true;
-  }
-  return false;
+export const updateUser = async (user: User): Promise<void> => {
+    const userRef = doc(db, 'users', user.id);
+    await updateDoc(userRef, { ...user });
+}
+
+
+// PRODUCT FUNCTIONS
+const productsCollection = collection(db, 'products');
+
+export const getProducts = async (): Promise<Product[]> => {
+    const snapshot = await getDocs(productsCollection);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 };
 
-// Function to delete a product
-export const deleteProduct = (productId: string): boolean => {
-  const initialLength = products.length;
-  products = products.filter(p => p.id !== productId);
-  return products.length < initialLength;
+export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
+    if (ids.length === 0) return [];
+    const q = query(productsCollection, where(documentId(), 'in', ids));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 };
+
+export const getProductById = async (id: string): Promise<Product | null> => {
+    const docRef = doc(db, 'products', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Product : null;
+}
+
+export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
+    const docRef = await addDoc(productsCollection, productData);
+    return { id: docRef.id, ...productData };
+};
+
+export const addMultipleProducts = async (productsData: Omit<Product, 'id'>[]): Promise<void> => {
+    const batch = writeBatch(db);
+    productsData.forEach(product => {
+        const docRef = doc(productsCollection);
+        batch.set(docRef, product);
+    });
+    await batch.commit();
+}
+
+
+export const updateProduct = async (product: Product): Promise<void> => {
+    const productRef = doc(db, 'products', product.id);
+    await updateDoc(productRef, { ...product });
+};
+
+export const deleteProduct = async (productId: string): Promise<void> => {
+    const productRef = doc(db, 'products', productId);
+    await deleteDoc(productRef);
+};
+
+
+// ORDER FUNCTIONS
+const ordersCollection = collection(db, 'orders');
+
+export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
+    const q = query(ordersCollection, where("userId", "==", userId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+};
+
+export const getAllOrders = async (): Promise<Order[]> => {
+    const snapshot = await getDocs(ordersCollection);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+};
+
+
+export const addOrder = async (orderData: Omit<Order, 'id' | 'date' | 'items'> & { items: Omit<OrderItem, 'status'>[] }): Promise<Order> => {
+    const newOrderData = {
+        ...orderData,
+        date: new Date().toISOString(),
+        items: orderData.items.map(item => ({...item, status: 'Pending'}))
+    }
+    const docRef = await addDoc(ordersCollection, newOrderData);
+    return { id: docRef.id, ...newOrderData } as Order;
+};
+
+export const updateOrder = async (order: Order): Promise<void> => {
+    const orderRef = doc(db, 'orders', order.id);
+    await updateDoc(orderRef, { ...order });
+}

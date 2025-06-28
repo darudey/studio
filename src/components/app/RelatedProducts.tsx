@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { suggestRelatedProducts } from '@/ai/flows/suggest-related-products';
 import { Skeleton } from '@/components/ui/skeleton';
-import { products } from '@/lib/data';
+import { getProducts } from '@/lib/data';
+import type { Product } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '../ui/button';
@@ -11,7 +12,7 @@ import { Plus } from 'lucide-react';
 
 export function RelatedProducts() {
   const { cartDetails, addToCart } = useCart();
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -28,7 +29,12 @@ export function RelatedProducts() {
 
         if (cartItemNames.length > 0) {
             const result = await suggestRelatedProducts({ cartItems: cartItemNames });
-            setSuggestions(result);
+            const allProducts = await getProducts();
+            const suggestedProducts = result.map(name => 
+                allProducts.find(p => p.name.toLowerCase() === name.toLowerCase())
+            ).filter((p): p is Product => p !== undefined);
+
+            setSuggestions(suggestedProducts);
         }
       } catch (error) {
         console.error("Failed to fetch related products:", error);
@@ -46,10 +52,6 @@ export function RelatedProducts() {
 
   }, [cartDetails]);
 
-  const suggestedProducts = suggestions.map(name => 
-    products.find(p => p.name.toLowerCase() === name.toLowerCase())
-  ).filter(p => p !== undefined);
-
   if (loading) {
     return (
       <div className="space-y-2">
@@ -63,7 +65,7 @@ export function RelatedProducts() {
     );
   }
 
-  if (suggestedProducts.length === 0) {
+  if (suggestions.length === 0) {
     return null;
   }
 
@@ -71,7 +73,7 @@ export function RelatedProducts() {
     <div className="space-y-3">
       <h4 className="font-semibold text-foreground">You might also like...</h4>
       <div className="grid grid-cols-1 gap-4">
-        {suggestedProducts.map(product => product && (
+        {suggestions.map(product => product && (
           <div key={product.id} className="flex items-center space-x-3 rounded-md border p-2">
             <Link href={`/products/${product.id}`} className='w-16 h-16'>
                 <div className="relative h-16 w-16 overflow-hidden rounded">
@@ -82,7 +84,7 @@ export function RelatedProducts() {
               <Link href={`/products/${product.id}`} className='text-sm font-medium hover:underline'>{product.name}</Link>
               <p className="text-xs text-muted-foreground">${product.retailPrice.toFixed(2)}</p>
             </div>
-            <Button size="sm" variant="outline" onClick={() => addToCart(product.id, 1)}>
+            <Button size="sm" variant="outline" onClick={() => addToCart(product.id, 1, product.stock)}>
                 <Plus className="h-4 w-4" />
             </Button>
           </div>

@@ -7,14 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { addOrder, products as allProducts } from "@/lib/data";
+import { addOrder } from "@/lib/data";
 import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CheckoutPage() {
   const { user } = useAuth();
-  const { cartDetails, clearCart } = useCart();
+  const { cartDetails, clearCart, loading: cartLoading } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -30,7 +31,7 @@ export default function CheckoutPage() {
     return acc + getPrice(item.product) * item.quantity;
   }, 0);
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!user) {
       toast({ title: "Please login to place an order.", variant: "destructive" });
       router.push("/login?redirect=/checkout");
@@ -42,14 +43,19 @@ export default function CheckoutPage() {
       return;
     }
 
-    addOrder({
+    const orderItems = cartDetails.map(item => {
+        if (!item.product) throw new Error("Product details missing in cart");
+        return {
+          productId: item.productId,
+          name: item.product.name,
+          quantity: item.quantity,
+          price: getPrice(item.product),
+        }
+    });
+
+    await addOrder({
       userId: user.id,
-      items: cartDetails.map(item => ({
-        productId: item.productId,
-        name: item.product!.name,
-        quantity: item.quantity,
-        price: getPrice(item.product!),
-      })),
+      items: orderItems,
       total: total,
       status: 'Pending',
       shippingAddress: user.address,
@@ -59,6 +65,22 @@ export default function CheckoutPage() {
     toast({ title: "Order Placed!", description: "Thank you for your purchase." });
     router.push("/orders");
   };
+
+  if (cartLoading) {
+    return (
+        <div className="container py-12">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+                <div className="lg:col-span-2 space-y-4">
+                    <Skeleton className="h-12 w-1/2" />
+                    <Skeleton className="h-48 w-full" />
+                </div>
+                <div className="lg:col-span-1 space-y-6">
+                    <Skeleton className="h-48 w-full" />
+                </div>
+            </div>
+        </div>
+    )
+  }
 
   if (cartDetails.length === 0) {
     return (
@@ -121,7 +143,7 @@ export default function CheckoutPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Order Total</CardTitle>
-                </CardHeader>
+                </Header>
                 <CardContent className="space-y-4">
                     <div className="flex justify-between text-lg font-semibold">
                         <span>Total</span>

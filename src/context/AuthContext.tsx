@@ -2,34 +2,40 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { User, UserRole } from '@/types';
-import { users as mockUsers } from '@/lib/data';
+import { getUserByEmail, addUser, getUserById, updateUser } from '@/lib/data';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string) => boolean;
+  loading: boolean;
+  login: (email: string) => Promise<boolean>;
   logout: () => void;
-  register: (userData: Omit<User, 'id' | 'role'>) => boolean;
-  upgradeToWholesaler: (code: string) => boolean;
+  register: (userData: Omit<User, 'id' | 'role'>) => Promise<boolean>;
+  upgradeToWholesaler: (code: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate checking for a logged-in user in local storage
-    const storedUser = localStorage.getItem('wholesale-user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const checkUser = async () => {
+      const storedUserId = localStorage.getItem('wholesale-user-id');
+      if (storedUserId) {
+        const foundUser = await getUserById(storedUserId);
+        setUser(foundUser);
+      }
+      setLoading(false);
     }
+    checkUser();
   }, []);
 
-  const login = (email: string) => {
-    const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const login = async (email: string) => {
+    const foundUser = await getUserByEmail(email);
     if (foundUser) {
       setUser(foundUser);
-      localStorage.setItem('wholesale-user', JSON.stringify(foundUser));
+      localStorage.setItem('wholesale-user-id', foundUser.id);
       return true;
     }
     return false;
@@ -37,43 +43,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('wholesale-user');
+    localStorage.removeItem('wholesale-user-id');
   };
   
-  const register = (userData: Omit<User, 'id' | 'role'>) => {
-    const existingUser = mockUsers.find(u => u.email.toLowerCase() === userData.email.toLowerCase());
+  const register = async (userData: Omit<User, 'id' | 'role'>) => {
+    const existingUser = await getUserByEmail(userData.email);
     if (existingUser) {
         return false; // User already exists
     }
-    const newUser: User = {
-        ...userData,
-        id: (mockUsers.length + 1).toString(),
-        role: 'basic',
-    };
-    mockUsers.push(newUser);
+    
+    // Special role for the developer account
+    const role = userData.email.toLowerCase() === 'dev@example.com' ? 'developer' : 'basic';
+
+    const newUserBase = { ...userData, role };
+    const newUser = await addUser(newUserBase);
+
     setUser(newUser);
-    localStorage.setItem('wholesale-user', JSON.stringify(newUser));
+    localStorage.setItem('wholesale-user-id', newUser.id);
     return true;
   };
 
-  const upgradeToWholesaler = (code: string) => {
-    // Simple mock upgrade logic
+  const upgradeToWholesaler = async (code: string) => {
     if (user && code === 'WHOLESALE123' && user.role === 'basic') {
-      const updatedUser = { ...user, role: 'wholesaler' as UserRole };
+      const updatedUser: User = { ...user, role: 'wholesaler' as UserRole };
+      await updateUser(updatedUser);
       setUser(updatedUser);
-      // Update the user in our mock data array
-      const userIndex = mockUsers.findIndex(u => u.id === user.id);
-      if (userIndex !== -1) {
-          mockUsers[userIndex] = updatedUser;
-      }
-      localStorage.setItem('wholesale-user', JSON.stringify(updatedUser));
       return true;
     }
     return false;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, upgradeToWholesaler }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, upgradeToWholesaler }}>
       {children}
     </AuthContext.Provider>
   );

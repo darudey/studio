@@ -20,9 +20,10 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { RelatedProducts } from "./RelatedProducts";
 import type { Product } from "@/types";
+import { Skeleton } from "../ui/skeleton";
 
 export default function ShoppingCartSheet({ children }: { children: React.ReactNode }) {
-  const { cartDetails, updateQuantity, removeFromCart } = useCart();
+  const { cartDetails, updateQuantity, removeFromCart, loading: cartLoading, cartCount } = useCart();
   const { user } = useAuth();
 
   const getPrice = (product: Product) => {
@@ -43,10 +44,15 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
         <SheetHeader className="px-6">
-          <SheetTitle>Shopping Cart</SheetTitle>
+          <SheetTitle>Shopping Cart ({cartCount})</SheetTitle>
         </SheetHeader>
         <Separator />
-        {cartDetails.length > 0 ? (
+        {cartLoading ? (
+            <div className="p-6 space-y-4">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+            </div>
+        ) : cartDetails.length > 0 ? (
           <>
             <ScrollArea className="flex-1">
               <div className="flex flex-col gap-6 p-6">
@@ -71,7 +77,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                            <Input
                               type="number"
                               value={quantity}
-                              onChange={(e) => updateQuantity(product.id, parseInt(e.target.value))}
+                              onChange={(e) => updateQuantity(product.id, parseInt(e.target.value), product.stock)}
                               className="h-8 w-16"
                               min="1"
                               max={product.stock}

@@ -3,28 +3,55 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { orders as allOrders } from "@/lib/data";
+import { getOrdersByUserId } from "@/lib/data";
 import { Order } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [userOrders, setUserOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!user) {
       router.push("/login");
-    } else {
-      setUserOrders(allOrders.filter(order => order.userId === user.id));
+      return;
     }
-  }, [user, router]);
+    
+    setLoading(true);
+    getOrdersByUserId(user.id)
+      .then(orders => {
+        setUserOrders(orders);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch orders:", err);
+        setLoading(false);
+      });
 
-  if (!user) {
-    return <div className="container text-center py-10">Loading...</div>;
+  }, [user, authLoading, router]);
+
+  if (loading || authLoading) {
+    return (
+        <div className="container py-12">
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-64 mt-2" />
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                </CardContent>
+            </Card>
+        </div>
+    );
   }
 
   return (
@@ -41,7 +68,7 @@ export default function OrdersPage() {
                 <AccordionItem value={order.id} key={order.id}>
                     <AccordionTrigger>
                         <div className="flex justify-between w-full pr-4 text-sm">
-                            <span>Order #{order.id}</span>
+                            <span>Order #{order.id.substring(0,6)}...</span>
                             <span>{new Date(order.date).toLocaleDateString()}</span>
                             <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
                             <span>${order.total.toFixed(2)}</span>

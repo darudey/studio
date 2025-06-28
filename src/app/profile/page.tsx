@@ -9,22 +9,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
-  const { user, upgradeToWholesaler } = useAuth();
+  const { user, upgradeToWholesaler, loading: authLoading } = useAuth();
   const [upgradeCode, setUpgradeCode] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       router.push("/login");
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
-  const handleUpgrade = (e: React.FormEvent) => {
+  const handleUpgrade = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = upgradeToWholesaler(upgradeCode);
+    setLoading(true);
+    const success = await upgradeToWholesaler(upgradeCode);
     if (success) {
       toast({
         title: "Upgrade Successful!",
@@ -38,10 +42,28 @@ export default function ProfilePage() {
         variant: "destructive",
       });
     }
+    setLoading(false);
   };
 
-  if (!user) {
-    return <div className="container text-center py-10">Loading...</div>;
+  if (authLoading || !user) {
+    return (
+        <div className="container py-12">
+            <div className="mx-auto max-w-2xl">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-64 mt-2" />
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-6 w-3/4" />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
   }
 
   return (
@@ -95,11 +117,15 @@ export default function ProfilePage() {
                             value={upgradeCode}
                             onChange={(e) => setUpgradeCode(e.target.value)}
                             placeholder="Enter code"
+                            disabled={loading}
                         />
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button type="submit">Upgrade Account</Button>
+                    <Button type="submit" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Upgrade Account
+                    </Button>
                 </CardFooter>
             </form>
           </Card>
