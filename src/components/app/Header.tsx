@@ -80,18 +80,18 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        <div className="mr-auto md:mr-4 flex items-center">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
+      <div className="container flex h-16 items-center gap-2">
+        <div className="mr-4 hidden md:flex">
+          <Link href="/" className="flex items-center space-x-2">
             <Package2 className="h-6 w-6 text-primary" />
-            <span className="hidden font-bold sm:inline-block">
-              KundanShop
+            <span className="font-bold">
+              Wholesale Hub
             </span>
           </Link>
         </div>
         
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm px-4 md:px-0 md:relative md:left-0 md:top-0 md:translate-x-0 md:translate-y-0 md:flex-1 md:max-w-md">
-           <form onSubmit={handleSearchSubmit} className="w-full relative">
+        <div className="relative w-full md:flex-1 md:w-auto">
+           <form onSubmit={handleSearchSubmit} className="w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
@@ -107,7 +107,7 @@ export default function Header() {
             </form>
         </div>
 
-        <div className="ml-auto flex flex-1 items-center justify-end space-x-2 md:flex-initial">
+        <div className="flex flex-shrink-0 items-center justify-end space-x-2">
           <nav className="flex items-center space-x-2">
             <ShoppingCartSheet>
               <Button variant="ghost" size="icon" className="relative">
