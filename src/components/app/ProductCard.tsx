@@ -53,16 +53,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
           </Link>
           {quantityInCart === 0 && (
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
-              <Button 
-                variant="secondary"
-                className="w-full"
-                onClick={handleAddToCart}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add to Cart
-              </Button>
-            </div>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="absolute bottom-2 right-2 h-8 w-8 rounded-full shadow-md"
+              onClick={handleAddToCart}
+              aria-label="Add to Cart"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           )}
         </div>
       </CardHeader>
