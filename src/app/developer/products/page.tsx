@@ -94,7 +94,7 @@ export default function ManageProductsPage() {
       }
 
       // Fallback to consonant search
-      if (consonantFilter.length > 2) {
+      if (consonantFilter.length > 1) {
         const nameConsonants = getConsonants(product.name);
         const itemCodeConsonants = getConsonants(product.itemCode);
         const categoryConsonants = getConsonants(product.category);

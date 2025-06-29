@@ -82,7 +82,7 @@ export default function ProductPage() {
         const nameLower = product.name.toLowerCase();
         if (nameLower.includes(lowercasedSearch)) {
           matchesSearch = true;
-        } else if (consonantSearch.length > 2) { // Fallback to consonant search
+        } else if (consonantSearch.length > 1) { // Fallback to consonant search
           if (getConsonants(product.name).includes(consonantSearch)) {
             matchesSearch = true;
           }
