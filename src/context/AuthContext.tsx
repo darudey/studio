@@ -3,9 +3,10 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { User, UserRole } from '@/types';
-import { getUserById, createUserProfile, updateUser, findCouponByCode, markCouponAsUsed } from '@/lib/data';
+import { getUserById, createUserProfile } from '@/lib/data';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, AuthError } from 'firebase/auth';
+import { redeemCoupon } from '@/ai/flows/redeem-coupon';
 
 type AuthResult = {
   success: boolean;
@@ -118,29 +119,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
      }
   };
 
-  const redeemUpgradeCode = async (code: string) => {
-    if (!user) return { success: false, message: "You must be logged in." };
-    if (user.role !== 'basic') return { success: false, message: "Your account is already upgraded." };
+  const redeemUpgradeCode = async (code: string): Promise<{success: boolean; message: string;}> => {
+    if (!user) {
+      return { success: false, message: "You must be logged in to redeem a code." };
+    }
 
     try {
-      const coupon = await findCouponByCode(code);
-
-      if (!coupon) {
-        return { success: false, message: "Invalid or already used code." };
+      const result = await redeemCoupon({ code, userId: user.id });
+      
+      if (result.success && result.newRole) {
+        // Update state locally on success
+        setUser(currentUser => {
+          if (!currentUser) return null;
+          return { ...currentUser, role: result.newRole as UserRole };
+        });
       }
-      
-      const updatedUser: User = { ...user, role: coupon.role };
-      await updateUser(updatedUser);
-      await markCouponAsUsed(coupon.id, user.id);
-      
-      setUser(updatedUser); // Update state locally
-      return { success: true, message: `Your account has been upgraded to ${coupon.role}!` };
+
+      return { success: result.success, message: result.message };
+
     } catch (error) {
-        console.error("Failed to redeem code:", error);
-        if (error instanceof Error && (error as any).code === 'permission-denied') {
-            return { success: false, message: "Permission denied. Please check your Firestore security rules." };
-        }
-        return { success: false, message: "An error occurred during the upgrade process." };
+      console.error("Error calling redeem coupon flow:", error);
+      let message = "An unexpected error occurred while contacting the server.";
+      if (error instanceof Error) {
+          message = error.message;
+      }
+      return { success: false, message };
     }
   };
 

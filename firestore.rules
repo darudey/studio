@@ -2,41 +2,38 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Users can read their own data.
+    // Admins ('developer', 'shop-owner') can read any user's data.
+    // A user can update their own data, but cannot change their own role.
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
-      allow write: if request.auth.uid == userId;
+      allow read: if request.auth.uid == userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow create: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId && request.resource.data.role == resource.data.role;
     }
 
+    // Products are publicly readable.
+    // Only admins can create, update, or delete products.
     match /products/{productId} {
-      allow read;
+      allow read: if true;
       allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
 
-    match /coupons/{couponId} {
-      // Any authenticated user can query for coupons and read their data.
-      // This is needed to find the coupon by its code. The codes are non-guessable.
-      allow list, read: if request.auth != null;
-      
-      // Rule to redeem (update) a coupon.
-      allow update: if request.auth != null
-                    // The coupon must not have been used before.
-                    && resource.data.isUsed == false
-                    // The update must mark the coupon as used.
-                    && request.resource.data.isUsed == true
-                    // The 'usedBy' field must be set to the current user's ID.
-                    && request.resource.data.usedBy == request.auth.uid
-                    // Ensure other critical fields are not being modified.
-                    && request.resource.data.code == resource.data.code
-                    && request.resource.data.role == resource.data.role
-                    && request.resource.data.createdAt == resource.data.createdAt
-                    && request.resource.data.createdBy == resource.data.createdBy;
-                    
-      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
-    }
-
+    // Users can read and create their own orders.
+    // Admins can read all orders and update their status.
     match /orders/{orderId} {
-      allow read, create: if request.auth.uid == request.resource.data.userId;
-      allow list, update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow read: if request.auth.uid == resource.data.userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+    }
+    
+    // Developers can read and create coupons.
+    // Coupons can NOT be updated by any client; this must be done via the trusted backend flow.
+    match /coupons/{couponId} {
+      allow read, create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+      allow update, delete: if false; // All updates must go through the trusted backend flow
     }
   }
 }
