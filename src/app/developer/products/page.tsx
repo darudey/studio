@@ -204,20 +204,22 @@ export default function ManageProductsPage() {
   };
   
   const handleBulkUpdate = async () => {
-    if (!bulkUpdateCategory) {
-      toast({ title: "Please select a category", variant: "destructive" });
+    if (!bulkUpdateCategory.trim()) {
+      toast({ title: "Please enter a category name", variant: "destructive" });
       return;
     }
     if (selectedProductIds.length === 0) {
       toast({ title: "No products selected", variant: "destructive" });
       return;
     }
+    
+    const categoryToUpdate = bulkUpdateCategory.trim();
 
-    await updateProductsCategory(selectedProductIds, bulkUpdateCategory);
+    await updateProductsCategory(selectedProductIds, categoryToUpdate);
     await fetchProductsAndCategories();
     setSelectedProductIds([]);
     setBulkUpdateCategory("");
-    toast({ title: "Bulk Update Successful", description: `${selectedProductIds.length} products moved to "${bulkUpdateCategory}".`});
+    toast({ title: "Bulk Update Successful", description: `${selectedProductIds.length} products moved to "${categoryToUpdate}".`});
   };
 
   const handleBulkDelete = async () => {
@@ -377,17 +379,19 @@ export default function ManageProductsPage() {
 
         <CardContent>
             {selectedProductIds.length > 0 && (
-            <div className="flex flex-wrap items-center gap-4 p-4 mb-4 border rounded-lg bg-muted/50">
+            <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 p-4 mb-4 border rounded-lg bg-muted/50">
                 <p className="text-sm font-medium">{selectedProductIds.length} selected</p>
-                <div className="flex items-center gap-2">
-                    <Select value={bulkUpdateCategory} onValueChange={setBulkUpdateCategory}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Move to category..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                <div className="flex items-center gap-2 w-full sm:w-auto sm:max-w-xs">
+                    <Input
+                        placeholder="Enter category to move..."
+                        value={bulkUpdateCategory}
+                        onChange={(e) => setBulkUpdateCategory(e.target.value)}
+                        list="bulk-categories-list"
+                        className="w-full"
+                    />
+                    <datalist id="bulk-categories-list">
+                        {allCategories.map(cat => <option key={cat} value={cat} />)}
+                    </datalist>
                     <Button onClick={handleBulkUpdate} size="sm">Apply</Button>
                 </div>
                 <AlertDialog>
@@ -463,3 +467,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
