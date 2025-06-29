@@ -1,9 +1,11 @@
+
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
 import { CartItem, Product } from '@/types';
 import { getProductsByIds } from '@/lib/data';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from './AuthContext';
 
 type CartDetailItem = CartItem & { product: Product | undefined };
 
@@ -25,22 +27,42 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [productsInCart, setProductsInCart] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
 
+  const cartStorageKey = useMemo(() => {
+    if (authLoading) return null;
+    return user ? `wholesale-cart-${user.id}` : 'wholesale-cart-guest';
+  }, [user, authLoading]);
+
+  // Effect to load cart from localStorage when user (and key) changes
   useEffect(() => {
-    const storedCart = localStorage.getItem('wholesale-cart');
+    if (!cartStorageKey) return;
+
+    setLoading(true);
+    const storedCart = localStorage.getItem(cartStorageKey);
     if (storedCart) {
-      setCartItems(JSON.parse(storedCart));
+      try {
+        setCartItems(JSON.parse(storedCart));
+      } catch (e) {
+        console.error("Failed to parse cart from localStorage", e);
+        setCartItems([]);
+      }
+    } else {
+      setCartItems([]);
     }
     setLoading(false);
-  }, []);
+  }, [cartStorageKey]);
 
+  // Effect to save to localStorage and fetch product details
   useEffect(() => {
-    localStorage.setItem('wholesale-cart', JSON.stringify(cartItems));
+    if (cartStorageKey) {
+      localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
+    }
     
     const fetchProductDetails = async () => {
       setLoading(true);
       const productIds = cartItems.map(item => item.productId);
-      if(productIds.length > 0) {
+      if (productIds.length > 0) {
         const products = await getProductsByIds(productIds);
         setProductsInCart(products);
       } else {
@@ -50,11 +72,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchProductDetails();
-  }, [cartItems]);
+  }, [cartItems, cartStorageKey]);
 
   const addToCart = (productId: string, quantity: number, stock: number) => {
-    const product = productsInCart.find(p => p.id === productId);
-
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.productId === productId);
 
