@@ -127,12 +127,16 @@ export default function ProductPage() {
 
   return (
     <div className="container">
-      {sections.map((section, index) => (
-        <ProductCarousel key={index} title={section.title} products={section.products} />
-      ))}
+      {!searchTerm && (
+        <>
+          {sections.map((section, index) => (
+            <ProductCarousel key={index} title={section.title} products={section.products} />
+          ))}
+          
+          {sections.length > 0 && <Separator className="my-8" />}
+        </>
+      )}
       
-      {sections.length > 0 && <Separator className="my-8" />}
-
       {selectedProduct && (
         <div className="py-8">
             <h2 className="text-3xl font-bold tracking-tight mb-6">Your Item</h2>
