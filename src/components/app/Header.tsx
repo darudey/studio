@@ -10,14 +10,24 @@ import { useCart } from "@/context/CartContext";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, useMemo } from "react";
+import { getProducts } from "@/lib/data";
+import { Product } from "@/types";
+import SearchSuggestions from "./SearchSuggestions";
 
 export default function Header() {
   const { user, loading } = useAuth();
   const { cartCount } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
+  
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    getProducts().then(setAllProducts);
+  }, []);
 
   useEffect(() => {
       setSearchTerm(searchParams.get("search") || "");
@@ -25,8 +35,25 @@ export default function Header() {
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
+    setShowSuggestions(false);
     router.push(`/?search=${searchTerm}`);
   };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchTerm(suggestion);
+    setShowSuggestions(false);
+    router.push(`/?search=${suggestion}`);
+  }
+
+  const filteredSuggestions = useMemo(() => {
+    if (!searchTerm || !showSuggestions) {
+      return [];
+    }
+    const lowercasedFilter = searchTerm.toLowerCase();
+    return allProducts
+      .filter(product => product.name.toLowerCase().includes(lowercasedFilter))
+      .slice(0, 5);
+  }, [searchTerm, allProducts, showSuggestions]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,14 +69,18 @@ export default function Header() {
         
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm px-4 md:px-0 md:relative md:left-0 md:top-0 md:translate-x-0 md:translate-y-0 md:flex-1 md:max-w-md">
            <form onSubmit={handleSearchSubmit} className="w-full relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
                 placeholder="Search products..."
                 className="w-full rounded-full bg-muted pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)} // Delay to allow click on suggestions
+                autoComplete="off"
               />
+              {showSuggestions && <SearchSuggestions suggestions={filteredSuggestions} onSuggestionClick={handleSuggestionClick} />}
             </form>
         </div>
 
