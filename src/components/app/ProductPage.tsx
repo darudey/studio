@@ -30,21 +30,20 @@ export default function ProductPage() {
 
   useEffect(() => {
     const fetchHomepageData = async () => {
+        setLoading(true);
         try {
+            // Fetch non-problematic data first
             const [
-                products, 
-                trending, 
-                newest, 
+                products,
+                newest,
                 recommended
             ] = await Promise.all([
                 getProducts(),
-                getTrendingProducts(),
                 getNewestProducts(),
                 getRecommendedProducts()
             ]);
-            
+
             setAllProducts(products);
-            setTrendingProducts(trending);
             setNewestProducts(newest);
             setRecommendedProducts(recommended);
 
@@ -52,8 +51,18 @@ export default function ProductPage() {
                 const maxPrice = Math.ceil(Math.max(...products.map(p => p.retailPrice), 0));
                 setFilters(prev => ({...prev, priceRange: [0, maxPrice || 100]}));
             }
-        } catch(e) {
-            console.error(e);
+
+            // Now, try to fetch trending products, and fail gracefully
+            try {
+                const trending = await getTrendingProducts();
+                setTrendingProducts(trending);
+            } catch (err) {
+                console.warn("Could not fetch trending products. This is expected for users without sufficient permissions.", err);
+                setTrendingProducts([]); // Set to empty on failure
+            }
+
+        } catch (e) {
+            console.error("Failed to fetch main product data:", e);
         } finally {
             setLoading(false);
         }
