@@ -21,9 +21,9 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   
   const searchParams = useSearchParams();
+  const searchTerm = searchParams.get('search') || '';
 
   const [filters, setFilters] = useState({
-    search: searchParams.get('search') || '',
     category: 'All',
     priceRange: [0, 100],
   });
@@ -61,23 +61,18 @@ export default function ProductPage() {
     fetchHomepageData();
   }, []);
   
-  useEffect(() => {
-    setFilters(prev => ({...prev, search: searchParams.get('search') || ''}));
-  }, [searchParams]);
-
-
   const { filteredProducts, categories, maxPrice } = useMemo(() => {
     const categories = [...new Set(allProducts.map(p => p.category))].sort();
     const maxPriceVal = allProducts.length > 0 ? Math.ceil(Math.max(...allProducts.map(p => p.retailPrice), 0)) : 100;
 
     const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
-    const lowercasedSearch = filters.search.toLowerCase();
-    const consonantSearch = getConsonants(filters.search);
+    const lowercasedSearch = searchTerm.toLowerCase();
+    const consonantSearch = getConsonants(searchTerm);
 
     const filtered = allProducts.filter(product => {
       const price = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
 
-      let matchesSearch = filters.search.trim() === '';
+      let matchesSearch = searchTerm.trim() === '';
       if (!matchesSearch) {
         const nameLower = product.name.toLowerCase();
         if (nameLower.includes(lowercasedSearch)) {
@@ -96,7 +91,7 @@ export default function ProductPage() {
     });
 
     return { filteredProducts: filtered, categories, maxPrice: maxPriceVal };
-  }, [filters, user, allProducts]);
+  }, [searchTerm, filters, user, allProducts]);
 
   const handleFilterChange = (newFilters: { category: string, priceRange: [number, number] }) => {
     setFilters(prev => ({
