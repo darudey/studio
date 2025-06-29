@@ -465,7 +465,7 @@ export default function ManageProductsPage() {
                     <TableHead>Category</TableHead>
                     <TableHead>Retail (₹)</TableHead>
                     <TableHead>Wholesale (₹)</TableHead>
-                    <TableHead>Stock</TableHead>
+                    <TableHead>Stock / Unit</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -529,7 +529,19 @@ export default function ManageProductsPage() {
                                 onBlur={(e) => handleFieldUpdate(product.id, { stock: parseInt(e.target.value, 10) || 0 })}
                                 className="h-9 w-20"
                             />
-                            <span className="text-muted-foreground text-sm">{product.unit}</span>
+                            <Select value={product.unit} onValueChange={(newUnit: Product['unit']) => handleFieldUpdate(product.id, { unit: newUnit })}>
+                                <SelectTrigger className="h-9 w-[90px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="kg">kg</SelectItem>
+                                    <SelectItem value="g">g</SelectItem>
+                                    <SelectItem value="litre">litre</SelectItem>
+                                    <SelectItem value="ml">ml</SelectItem>
+                                    <SelectItem value="piece">piece</SelectItem>
+                                    <SelectItem value="dozen">dozen</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -561,3 +573,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
