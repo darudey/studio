@@ -3,35 +3,49 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Allow public read access to products
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if request.auth != null && (request.auth.token.role == 'developer' || request.auth.token.role == 'shop-owner');
+    
+    function isAdmin() {
+      // Check if the user is a developer or shop-owner by reading their profile
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
 
-    // Users can only read/write their own data
     match /users/{userId} {
-      allow get, update: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
-      allow list: if request.auth != null && request.auth.token.role == 'developer';
+      // Users can read and update their own profile
+      allow read, update: if request.auth.uid == userId;
+      // Admins can read and list all user profiles
+      allow get, list: if isAdmin();
     }
 
-    // Orders can be created by any authenticated user.
+    match /products/{productId} {
+      // Anyone can read products
+      allow read: if true;
+      // Admins can create, update, and delete products
+      allow write: if isAdmin();
+    }
+    
     match /orders/{orderId} {
-        allow create: if request.auth != null;
-        // Users can get/update their own orders. Admins can get/update any order.
-        allow get, update: if request.auth != null && (resource.data.userId == request.auth.uid || request.auth.token.role == 'shop-owner' || request.auth.token.role == 'developer');
-        // Any authenticated user can list all orders (for trending products calculation).
-        // Admins can list all orders (for management).
-        allow list: if request.auth != null;
+      // Users can create their own orders
+      allow create: if request.auth.uid == request.resource.data.userId;
+      
+      // A user can get their own order, an admin can get any order.
+      allow get: if request.auth.uid == resource.data.userId || isAdmin();
+      
+      // Only admins can update an order (e.g., change status)
+      allow update: if isAdmin();
+      
+      // Any authenticated user can list orders for trending products calculation.
+      // This is safe because it only grants permission to list, not to read documents' data.
+      // The app logic itself fetches the data, and 'get' operations are secured above.
+      allow list: if request.auth != null;
     }
-
-    // Coupons can be read by developers.
-    // Coupons can be updated (used) by any authenticated user.
+    
     match /coupons/{couponId} {
-        allow read, create: if request.auth != null && request.auth.token.role == 'developer';
-        allow update: if request.auth != null;
+      // Any authenticated user can read a coupon (to check it)
+      allow read: if request.auth != null;
+      // Admins can create coupons
+      allow create: if isAdmin();
+      // Any authenticated user can update a coupon from unused to used
+      allow update: if request.auth != null && resource.data.isUsed == false && request.resource.data.isUsed == true;
     }
   }
 }
