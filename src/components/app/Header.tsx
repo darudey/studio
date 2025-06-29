@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -46,14 +47,33 @@ export default function Header() {
   }
 
   const filteredSuggestions = useMemo(() => {
-    if (!searchTerm || !showSuggestions) {
+    if (!searchTerm.trim() || !showSuggestions) {
       return [];
     }
+
     const lowercasedFilter = searchTerm.toLowerCase();
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    const consonantFilter = getConsonants(searchTerm);
+
     return allProducts
-      .filter(product => product.name.toLowerCase().includes(lowercasedFilter))
+      .filter(product => {
+        const nameLower = product.name.toLowerCase();
+        // Direct match
+        if (nameLower.includes(lowercasedFilter)) {
+          return true;
+        }
+        // Consonant match fallback
+        if (consonantFilter.length > 1) {
+            const nameConsonants = getConsonants(product.name);
+            if (nameConsonants.includes(consonantFilter)) {
+                return true;
+            }
+        }
+        return false;
+      })
       .slice(0, 5);
   }, [searchTerm, allProducts, showSuggestions]);
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
