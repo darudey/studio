@@ -200,12 +200,26 @@ export default function AddItemPage() {
         const importedProducts: Omit<Product, 'id'>[] = [];
         const newCategoriesSet = new Set<string>(categories);
         const now = new Date().toISOString();
+        
+        const skippedRows: { row: number, reason: string }[] = [];
+        const validUnits = ['kg', 'g', 'litre', 'ml', 'piece', 'dozen'];
 
         json.forEach((row, index) => {
-            if (!row.Name || !row['Selling Price'] || !row['Purchase Price']) {
-                console.warn(`Skipping row ${index + 2} due to missing required fields.`);
+            const rowNumber = index + 2;
+            // A name is the only hard requirement.
+            if (!row.Name || typeof row.Name !== 'string' || !row.Name.trim()) {
+                skippedRows.push({ row: rowNumber, reason: "Missing Product Name" });
                 return;
             }
+
+            // Provide safe fallbacks for prices if they are empty or invalid
+            const retailPrice = parseFloat(row['Selling Price']);
+            const wholesalePrice = parseFloat(row['Purchase Price']);
+            const stock = parseInt(row['Stock Quantity'], 10);
+
+            // Check if Unit is valid, otherwise default to 'piece'
+            const rowUnit = typeof row.Unit === 'string' ? row.Unit.toLowerCase().trim() : 'piece';
+            const unit = validUnits.includes(rowUnit) ? rowUnit : 'piece';
 
             const newProductData: Omit<Product, 'id'> = {
               name: row.Name,
@@ -215,10 +229,10 @@ export default function AddItemPage() {
               images: [row.image || 'https://placehold.co/600x400.png'],
               imageUpdatedAt: now,
               category: row.category || 'Uncategorized',
-              retailPrice: parseFloat(row['Selling Price']),
-              wholesalePrice: parseFloat(row['Purchase Price']),
-              unit: 'piece',
-              stock: parseInt(row['Stock Quantity'], 10) || 0,
+              retailPrice: !isNaN(retailPrice) ? retailPrice : 0,
+              wholesalePrice: !isNaN(wholesalePrice) ? wholesalePrice : 0,
+              unit: unit as Product['unit'],
+              stock: !isNaN(stock) ? stock : 0,
               dataAiHint: row.Name.toLowerCase().split(' ').slice(0, 2).join(' '),
               isRecommended: false,
               createdAt: now,
@@ -235,9 +249,15 @@ export default function AddItemPage() {
         }
 
         setCategories(Array.from(newCategoriesSet).sort());
+        
+        let description = `${importedProducts.length} products have been imported.`;
+        if (skippedRows.length > 0) {
+            description += ` ${skippedRows.length} rows were skipped due to missing product names.`;
+        }
+        
         toast({
-          title: "Import Successful",
-          description: `${importedProducts.length} products have been imported.`,
+          title: "Import Complete",
+          description: description,
         });
       };
       reader.onerror = () => {
@@ -283,7 +303,7 @@ export default function AddItemPage() {
                             disabled={isImporting}
                         />
                         <p className="text-xs text-muted-foreground mt-2">
-                            Required: Name, Purchase Price, Selling Price.
+                            Required: Name. All other fields like prices and stock are optional.
                         </p>
                     </CardContent>
                 </Card>
@@ -422,3 +442,5 @@ export default function AddItemPage() {
     </div>
   );
 }
+
+    
