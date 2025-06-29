@@ -15,6 +15,10 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
+if (!firebaseConfig.apiKey) {
+    throw new Error("Firebase API Key is missing. Please add NEXT_PUBLIC_FIREBASE_API_KEY to your .env.local file and restart the development server.");
+}
+
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
