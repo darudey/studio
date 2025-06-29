@@ -2,30 +2,53 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
+
+    // Helper functions
+    function isDeveloper() {
+      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
     }
 
-    match /products/{productId} {
-      allow read;
-      allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+    function isShopOwner() {
+      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
 
-    match /orders/{orderId} {
-      // Admins can perform any action on any order.
-      allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
-      
-      // A user can create their own order.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      
-      // A user can read an order if they are the owner. This covers `get` and constrained `list` queries.
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+    function isSignedIn() {
+      return request.auth.uid != null;
     }
     
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Products: All signed-in users can read, but only admins can write.
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow write: if isShopOwner();
+    }
+
+    // Users: Users can read their own profile. Admins can read all profiles. Users can create their own profile. Users can update their own data.
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isDeveloper();
+      allow list: if isDeveloper();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isDeveloper();
+    }
+
+    // Orders: Users can read their own orders. Admins can read all orders.
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.userId) || isShopOwner();
+      // Users can create orders for themselves.
+      allow create: if isOwner(request.resource.data.userId);
+      // Admins can update orders.
+      allow update: if isShopOwner();
+      // Orders should generally not be deleted.
+      allow delete: if false;
+    }
+    
+    // Coupons: Only developers can manage coupons.
     match /coupons/{couponId} {
-      allow read, create, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+        allow read, write: if isDeveloper();
     }
   }
 }
