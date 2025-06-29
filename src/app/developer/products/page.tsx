@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getProducts, deleteProduct as removeProduct, updateProduct, updateProductsCategory } from "@/lib/data";
+import { getProducts, deleteProduct as removeProduct, updateProductsCategory, addProduct, deleteMultipleProducts } from "@/lib/data";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,23 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+
+const addProductSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  category: z.string().min(1, "Category is required"),
+  retailPrice: z.coerce.number().min(0),
+  wholesalePrice: z.coerce.number().min(0),
+  stock: z.coerce.number().int().min(0),
+  unit: z.enum(['kg', 'g', 'litre', 'ml', 'piece', 'dozen']),
+  itemCode: z.string().optional(),
+  description: z.string().optional(),
+});
+
 
 export default function ManageProductsPage() {
   const { user } = useAuth();
@@ -44,7 +61,7 @@ export default function ManageProductsPage() {
   const [newCategory, setNewCategory] = useState("");
   const [bulkUpdateCategory, setBulkUpdateCategory] = useState("");
   
-  const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
+  const [isAdding, setIsAdding] = useState(false);
 
   const fetchProductsAndCategories = async () => {
     setLoading(true);
@@ -75,6 +92,47 @@ export default function ManageProductsPage() {
     fetchProductsAndCategories();
   }, [user, router, toast]);
 
+  const addForm = useForm<z.infer<typeof addProductSchema>>({
+    resolver: zodResolver(addProductSchema),
+    defaultValues: {
+      name: "",
+      category: "",
+      retailPrice: 0,
+      wholesalePrice: 0,
+      stock: 0,
+      unit: "piece",
+      itemCode: "",
+      description: "",
+    },
+  });
+
+  const onQuickAddSubmit = async (data: z.infer<typeof addProductSchema>) => {
+    const now = new Date().toISOString();
+    const newProductData: Omit<Product, 'id'> = {
+      name: data.name,
+      category: data.category,
+      retailPrice: data.retailPrice,
+      wholesalePrice: data.wholesalePrice,
+      stock: data.stock,
+      unit: data.unit,
+      itemCode: data.itemCode || `QA-${Date.now()}`,
+      description: data.description || "No description provided.",
+      images: ['https://placehold.co/600x400.png'],
+      batchNo: 'N/A',
+      imageUpdatedAt: now,
+      isRecommended: false,
+      createdAt: now,
+      dataAiHint: data.name.toLowerCase().split(' ').slice(0, 2).join(' ')
+    };
+    
+    await addProduct(newProductData);
+    toast({ title: "Product Added", description: `${data.name} has been added.` });
+    addForm.reset();
+    setIsAdding(false);
+    fetchProductsAndCategories();
+  };
+
+
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) {
       return products;
@@ -92,19 +150,11 @@ export default function ManageProductsPage() {
       if (nameMatch || itemCodeMatch || categoryMatch) {
         return true;
       }
-
-      // Fallback to consonant search
+      
       if (consonantFilter.length > 1) {
         const nameConsonants = getConsonants(product.name);
-        const itemCodeConsonants = getConsonants(product.itemCode);
-        const categoryConsonants = getConsonants(product.category);
-
-        if (
-          nameConsonants.includes(consonantFilter) ||
-          itemCodeConsonants.includes(consonantFilter) ||
-          categoryConsonants.includes(consonantFilter)
-        ) {
-          return true;
+        if (nameConsonants.includes(consonantFilter)) {
+            return true;
         }
       }
 
@@ -132,8 +182,12 @@ export default function ManageProductsPage() {
   const handleAddCategory = () => {
     const trimmedCategory = newCategory.trim();
     if (trimmedCategory && !allCategories.includes(trimmedCategory)) {
-      setAllCategories([...allCategories, trimmedCategory].sort());
+      const newCats = [...allCategories, trimmedCategory].sort()
+      setAllCategories(newCats);
       setNewCategory("");
+      if (!addForm.getValues("category")) {
+          addForm.setValue("category", trimmedCategory);
+      }
     }
   };
 
@@ -158,37 +212,13 @@ export default function ManageProductsPage() {
     toast({ title: "Bulk Update Successful", description: `${selectedProductIds.length} products moved to "${bulkUpdateCategory}".`});
   };
 
-  const handleFieldChange = (productId: string, field: keyof Product, value: any) => {
-    setProducts(prevProducts => 
-      prevProducts.map(p => 
-        p.id === productId ? { ...p, [field]: value } : p
-      )
-    );
-  };
-  
-  const handleImageChange = (productId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newImageSrc = e.target?.result as string;
-        setProducts(prevProducts => 
-          prevProducts.map(p => 
-            p.id === productId ? { ...p, images: [newImageSrc, ...p.images.slice(1)], imageUpdatedAt: new Date().toISOString() } : p
-          )
-        );
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSaveProduct = async (productId: string) => {
-    const productToSave = products.find(p => p.id === productId);
-    if (productToSave) {
-      await updateProduct(productToSave);
-      toast({ title: "Product Saved", description: `${productToSave.name} has been updated.` });
-    }
-  };
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+    await deleteMultipleProducts(selectedProductIds);
+    toast({ title: "Products Deleted", description: `${selectedProductIds.length} products have been removed.` });
+    fetchProductsAndCategories();
+    setSelectedProductIds([]);
+  }
 
   const handleDeleteProduct = async (productId: string) => {
     await removeProduct(productId);
@@ -227,7 +257,7 @@ export default function ManageProductsPage() {
   return (
     <div className="container py-12">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        <div className="lg:col-span-1 space-y-8">
+        <div className="lg:col-span-1 space-y-8 sticky top-20">
             <Card>
                 <CardHeader>
                     <CardTitle>Manage Categories</CardTitle>
@@ -260,7 +290,7 @@ export default function ManageProductsPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div>
                       <CardTitle>Manage Products</CardTitle>
-                      <CardDescription>View, search, and edit products.</CardDescription>
+                      <CardDescription>View, search, and manage products.</CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
                     <Input 
@@ -269,28 +299,104 @@ export default function ManageProductsPage() {
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full sm:w-auto"
                     />
-                    <Button asChild>
-                        <Link href="/developer/add-item">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add 
-                        </Link>
+                    <Button onClick={() => setIsAdding(!isAdding)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        {isAdding ? 'Cancel' : 'Add Product'}
                     </Button>
                   </div>
                 </div>
             </CardHeader>
+
+            {isAdding && (
+                <CardContent>
+                    <Form {...addForm}>
+                        <form onSubmit={addForm.handleSubmit(onQuickAddSubmit)} className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                             <h3 className="text-lg font-semibold">Add a New Product</h3>
+                             <FormField control={addForm.control} name="name" render={({ field }) => (
+                                <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={addForm.control} name="category" render={({ field }) => (
+                                    <FormItem><FormLabel>Category</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} >
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="itemCode" render={({ field }) => (
+                                    <FormItem><FormLabel>Item Code (Optional)</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <FormField control={addForm.control} name="retailPrice" render={({ field }) => (
+                                    <FormItem><FormLabel>Retail (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="wholesalePrice" render={({ field }) => (
+                                    <FormItem><FormLabel>Wholesale (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="stock" render={({ field }) => (
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="unit" render={({ field }) => (
+                                    <FormItem><FormLabel>Unit</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="piece">Piece</SelectItem><SelectItem value="kg">Kg</SelectItem><SelectItem value="g">Gram</SelectItem><SelectItem value="litre">Litre</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="dozen">Dozen</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}/>
+                             </div>
+                             <FormField control={addForm.control} name="description" render={({ field }) => (
+                                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Product description" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            <div className="flex gap-2">
+                                <Button type="submit">Save Product</Button>
+                                <Button variant="outline" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
+                            </div>
+                        </form>
+                    </Form>
+                </CardContent>
+            )}
+
             <CardContent>
               {selectedProductIds.length > 0 && (
-                <div className="flex items-center gap-4 p-4 mb-4 border rounded-lg bg-muted/50">
-                  <p className="text-sm font-medium">{selectedProductIds.length} selected</p>
-                  <Select value={bulkUpdateCategory} onValueChange={setBulkUpdateCategory}>
-                      <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Move to category..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                      </SelectContent>
-                  </Select>
-                  <Button onClick={handleBulkUpdate}>Apply</Button>
+                <div className="flex flex-wrap items-center gap-4 p-4 mb-4 border rounded-lg bg-muted/50">
+                    <p className="text-sm font-medium">{selectedProductIds.length} selected</p>
+                    <div className="flex items-center gap-2">
+                        <Select value={bulkUpdateCategory} onValueChange={setBulkUpdateCategory}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Move to category..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Button onClick={handleBulkUpdate} size="sm">Apply</Button>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">Delete Selected</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete {selectedProductIds.length} selected products.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">Delete Products</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
               )}
               <Table>
@@ -311,22 +417,15 @@ export default function ManageProductsPage() {
                     <TableRow key={product.id} data-state={selectedProductIds.includes(product.id) ? "selected" : ""}>
                       <TableCell className="p-2"><Checkbox checked={selectedProductIds.includes(product.id)} onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}/></TableCell>
                       <TableCell>
-                        <div className="relative group w-16 h-16">
                           <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover w-16 h-16"/>
-                          <Label htmlFor={`image-upload-${product.id}`} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md">
-                            <Upload className="h-5 w-5"/>
-                          </Label>
-                          <Input id={`image-upload-${product.id}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageChange(product.id, e)} ref={(el) => fileInputRefs.current[product.id] = el}/>
-                        </div>
                       </TableCell>
                       <TableCell className="font-medium">{product.name}<br/><span className="text-xs text-muted-foreground">{product.itemCode}</span></TableCell>
                       <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
-                      <TableCell><Input type="number" value={product.retailPrice} onChange={(e) => handleFieldChange(product.id, 'retailPrice', e.target.valueAsNumber || 0)} className="w-24" step="0.01"/></TableCell>
-                      <TableCell><Input type="number" value={product.wholesalePrice} onChange={(e) => handleFieldChange(product.id, 'wholesalePrice', e.target.valueAsNumber || 0)} className="w-24" step="0.01"/></TableCell>
-                      <TableCell>{product.stock}</TableCell>
+                      <TableCell>₹{product.retailPrice.toFixed(2)}</TableCell>
+                      <TableCell>₹{product.wholesalePrice.toFixed(2)}</TableCell>
+                      <TableCell>{product.stock} {product.unit}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleSaveProduct(product.id)}><Save className="h-4 w-4" /><span className="sr-only">Save</span></Button>
                             <Button asChild variant="ghost" size="icon"><Link href={`/developer/products/edit/${product.id}`}><Edit className="h-4 w-4" /><span className="sr-only">Edit Full Details</span></Link></Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -356,3 +455,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    

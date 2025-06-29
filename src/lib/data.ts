@@ -1,3 +1,4 @@
+
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit } from 'firebase/firestore';
 import type { Product, User, Order, OrderItem, Coupon } from "@/types";
@@ -92,6 +93,16 @@ export const updateProductsCategory = async (productIds: string[], newCategory: 
 export const deleteProduct = async (productId: string): Promise<void> => {
     const productRef = doc(db, 'products', productId);
     await deleteDoc(productRef);
+};
+
+export const deleteMultipleProducts = async (productIds: string[]): Promise<void> => {
+    if (productIds.length === 0) return;
+    const batch = writeBatch(db);
+    productIds.forEach(id => {
+        const productRef = doc(db, 'products', id);
+        batch.delete(productRef);
+    });
+    await batch.commit();
 };
 
 
@@ -194,3 +205,5 @@ export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> =
         return sortedProductIds.indexOf(a.id) - sortedProductIds.indexOf(b.id);
     });
 }
+
+    
