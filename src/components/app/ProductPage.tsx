@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -67,19 +68,34 @@ export default function ProductPage() {
 
   const { filteredProducts, categories, maxPrice } = useMemo(() => {
     const categories = [...new Set(allProducts.map(p => p.category))].sort();
-    const maxPrice = allProducts.length > 0 ? Math.ceil(Math.max(...allProducts.map(p => p.retailPrice), 0)) : 100;
+    const maxPriceVal = allProducts.length > 0 ? Math.ceil(Math.max(...allProducts.map(p => p.retailPrice), 0)) : 100;
+
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    const lowercasedSearch = filters.search.toLowerCase();
+    const consonantSearch = getConsonants(filters.search);
 
     const filtered = allProducts.filter(product => {
-      const price = user?.role === 'wholesaler' ? product.wholesalePrice : product.retailPrice;
+      const price = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
 
-      const matchesSearch = filters.search === '' || product.name.toLowerCase().includes(filters.search.toLowerCase());
+      let matchesSearch = filters.search.trim() === '';
+      if (!matchesSearch) {
+        const nameLower = product.name.toLowerCase();
+        if (nameLower.includes(lowercasedSearch)) {
+          matchesSearch = true;
+        } else if (consonantSearch.length > 2) { // Fallback to consonant search
+          if (getConsonants(product.name).includes(consonantSearch)) {
+            matchesSearch = true;
+          }
+        }
+      }
+
       const matchesCategory = filters.category === 'All' || product.category === filters.category;
       const matchesPrice = price >= filters.priceRange[0] && price <= filters.priceRange[1];
       
       return matchesSearch && matchesCategory && matchesPrice;
     });
 
-    return { filteredProducts: filtered, categories, maxPrice };
+    return { filteredProducts: filtered, categories, maxPrice: maxPriceVal };
   }, [filters, user, allProducts]);
 
   const handleFilterChange = (newFilters: { category: string, priceRange: [number, number] }) => {
@@ -133,7 +149,7 @@ export default function ProductPage() {
         ) : (
           <div className="text-center py-16">
             <h2 className="text-xl font-semibold">No products found</h2>
-            <p className="text-muted-foreground mt-2">Try adjusting your filters.</p>
+            <p className="text-muted-foreground mt-2">Try adjusting your filters or searching with just consonants (e.g., 'bnn' for 'banana').</p>
           </div>
         )}
       </div>

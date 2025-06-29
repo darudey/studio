@@ -76,13 +76,42 @@ export default function ManageProductsPage() {
   }, [user, router, toast]);
 
   const filteredProducts = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return products;
+    }
+    
     const lowercasedFilter = searchTerm.toLowerCase();
-    return products.filter(product =>
-      product.name.toLowerCase().includes(lowercasedFilter) ||
-      product.itemCode.toLowerCase().includes(lowercasedFilter) ||
-      product.category.toLowerCase().includes(lowercasedFilter)
-    );
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    const consonantFilter = getConsonants(searchTerm);
+
+    return products.filter(product => {
+      const nameMatch = product.name.toLowerCase().includes(lowercasedFilter);
+      const itemCodeMatch = product.itemCode.toLowerCase().includes(lowercasedFilter);
+      const categoryMatch = product.category.toLowerCase().includes(lowercasedFilter);
+
+      if (nameMatch || itemCodeMatch || categoryMatch) {
+        return true;
+      }
+
+      // Fallback to consonant search
+      if (consonantFilter.length > 2) {
+        const nameConsonants = getConsonants(product.name);
+        const itemCodeConsonants = getConsonants(product.itemCode);
+        const categoryConsonants = getConsonants(product.category);
+
+        if (
+          nameConsonants.includes(consonantFilter) ||
+          itemCodeConsonants.includes(consonantFilter) ||
+          categoryConsonants.includes(consonantFilter)
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    });
   }, [products, searchTerm]);
+
 
   const handleSelectOne = (productId: string, isSelected: boolean) => {
     if (isSelected) {
