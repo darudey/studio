@@ -152,11 +152,22 @@ export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon>
 };
 
 export const findCouponByCode = async (code: string): Promise<Coupon | null> => {
-    const q = query(couponsCollection, where("code", "==", code), where("isUsed", "==", false));
+    const q = query(couponsCollection, where("code", "==", code));
     const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as Coupon;
+
+    if (snapshot.empty) {
+        return null;
+    }
+
+    const couponDoc = snapshot.docs[0];
+    const coupon = { id: couponDoc.id, ...couponDoc.data() } as Coupon;
+
+    // Check for usage on the client-side to avoid needing a composite index
+    if (coupon.isUsed) {
+        return null;
+    }
+
+    return coupon;
 };
 
 export const markCouponAsUsed = async (couponId: string, userId: string): Promise<void> => {
