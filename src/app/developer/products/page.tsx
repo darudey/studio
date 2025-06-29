@@ -521,7 +521,17 @@ export default function ManageProductsPage() {
                             />
                         </div>
                     </TableCell>
-                    <TableCell>{product.stock} {product.unit}</TableCell>
+                    <TableCell>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                type="number"
+                                defaultValue={product.stock}
+                                onBlur={(e) => handleFieldUpdate(product.id, { stock: parseInt(e.target.value, 10) || 0 })}
+                                className="h-9 w-20"
+                            />
+                            <span className="text-muted-foreground text-sm">{product.unit}</span>
+                        </div>
+                    </TableCell>
                     <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                         <Button asChild variant="ghost" size="icon"><Link href={`/developer/products/edit/${product.id}`}><Edit className="h-4 w-4" /><span className="sr-only">Edit Full Details</span></Link></Button>
