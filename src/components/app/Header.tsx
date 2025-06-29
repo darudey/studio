@@ -31,18 +31,21 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+      // Syncs the search input with the URL's search param
       setSearchTerm(searchParams.get("search") || "");
   }, [searchParams]);
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
     setShowSuggestions(false);
+    // Update the URL, which will trigger the page to re-filter
     router.push(`/?search=${searchTerm}`);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setSearchTerm(suggestion);
     setShowSuggestions(false);
+    // Update the URL. The useEffect above will update the input field's text.
+    // This makes the URL the single source of truth for the search.
     router.push(`/?search=${suggestion}`);
   }
 
