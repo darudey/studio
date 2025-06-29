@@ -1,63 +1,42 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAuth() {
-      return request.auth != null;
-    }
-    function isUser(userId) {
-      return isAuth() && request.auth.uid == userId;
-    }
-    function getUserRole() {
-      // The path to the user document for the person making the request
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-    function isAdmin() {
-      return isAuth() && getUserRole() in ['developer', 'shop-owner'];
-    }
-
     match /users/{userId} {
-      // A user can read and update their own profile information.
-      allow read, update: if isUser(userId);
-      // Admins (developers/shop-owners) can view all user profiles.
-      allow list: if isAdmin();
+      allow read: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow write: if request.auth.uid == userId;
     }
 
     match /products/{productId} {
-      // Any authenticated user can see products.
-      allow read: if isAuth();
-      // Only admins can create, change, or delete products.
-      allow write: if isAdmin();
-    }
-
-    match /orders/{orderId} {
-      // Users can see their own orders. Admins can see any order.
-      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
-      // A user can create an order for themselves.
-      allow create: if isUser(request.resource.data.userId);
-      // Only admins can update an order (e.g., to 'Shipped').
-      allow update: if isAdmin();
+      allow read;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
 
     match /coupons/{couponId} {
-      // Any authenticated user can query for a coupon code.
-      allow list: if isAuth();
+      // Any authenticated user can query for coupons and read their data.
+      // This is needed to find the coupon by its code. The codes are non-guessable.
+      allow list, read: if request.auth != null;
       
-      // Allow a user to redeem a coupon.
-      // This is the critical fix. It verifies the most important conditions
-      // for a secure redemption without the overly complex checks that were failing.
-      allow update: if isAuth()
-                    // Condition 1: The coupon must not have been used before.
+      // Rule to redeem (update) a coupon.
+      allow update: if request.auth != null
+                    // The coupon must not have been used before.
                     && resource.data.isUsed == false
-                    // Condition 2: The update must be setting the coupon to 'used'.
+                    // The update must mark the coupon as used.
                     && request.resource.data.isUsed == true
-                    // Condition 3: The user redeeming the coupon must be the one recorded.
-                    && request.resource.data.usedBy == request.auth.uid;
+                    // The 'usedBy' field must be set to the current user's ID.
+                    && request.resource.data.usedBy == request.auth.uid
+                    // Ensure other critical fields are not being modified.
+                    && request.resource.data.code == resource.data.code
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && request.resource.data.createdBy == resource.data.createdBy;
+                    
+      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+    }
 
-      // Only developers can create new coupons.
-      allow create: if isAuth() && getUserRole() == 'developer';
+    match /orders/{orderId} {
+      allow read, create: if request.auth.uid == request.resource.data.userId;
+      allow list, update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
   }
 }

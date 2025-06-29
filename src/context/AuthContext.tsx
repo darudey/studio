@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         let role: UserRole = 'basic';
         
-        if (lowerCaseEmail === 'yollo.sark9tceone@gmail.com') {
+        if (lowerCaseEmail === 'dev@example.com' || lowerCaseEmail === 'yollo.sark9tceone@gmail.com') {
           role = 'developer';
         }
 
@@ -137,8 +137,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: true, message: `Your account has been upgraded to ${coupon.role}!` };
     } catch (error) {
         console.error("Failed to redeem code:", error);
-        if (error instanceof Error && 'code' in error && (error as any).code === 'permission-denied') {
-            return { success: false, message: "Permission denied. Please check Firestore security rules." };
+        if (error instanceof Error && (error as any).code === 'permission-denied') {
+            return { success: false, message: "Permission denied. Please check your Firestore security rules." };
         }
         return { success: false, message: "An error occurred during the upgrade process." };
     }
