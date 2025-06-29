@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -7,67 +8,41 @@ service cloud.firestore {
     function isAuth() {
       return request.auth != null;
     }
-    function isUserId(userId) {
-      return isAuth() && request.auth.uid == userId;
+
+    function isRole(role) {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
-    function getUserRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
-    }
-    function isDeveloper(userId) {
-        return getUserRole(userId) == 'developer';
-    }
-    function isShopOwner(userId) {
-        return getUserRole(userId) == 'shop-owner';
-    }
-    function isAdmin(userId) {
-        return isDeveloper(userId) || isShopOwner(userId);
+    
+    function isAnyRole(roles) {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
     }
 
-    // Users
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
     match /users/{userId} {
-      // Any authenticated user can create their own profile
+      allow read: if isAnyRole(['developer', 'shop-owner']) || isOwner(userId);
+      allow write: if isOwner(userId);
       allow create: if isAuth();
-      // A user can read their own profile. Admins can read any user profile.
-      allow get: if isAuth() && (isUserId(userId) || isAdmin(request.auth.uid));
-      // A user can only update their own profile
-      allow update: if isUserId(userId);
-      // Only developers can list/delete users
-      allow list, delete: if isAuth() && isDeveloper(request.auth.uid);
     }
-    
-    // Products
+
     match /products/{productId} {
-      // Anyone can read products
-      allow get, list: if true;
-      // Only admins can create, update, or delete products
-      allow create, update, delete: if isAuth() && isAdmin(request.auth.uid);
+      allow read: if true;
+      allow create, update, delete: if isAnyRole(['developer', 'shop-owner']);
     }
-    
-    // Orders
+
     match /orders/{orderId} {
-        // A user can create their own order
-        allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-        // A user can read their own orders. Admins can read any order.
-        allow get: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin(request.auth.uid));
-        // Admins can update any order.
-        allow update: if isAuth() && isAdmin(request.auth.uid);
-        // Let any authenticated user list orders (needed for trending products)
-        allow list: if isAuth();
+      allow get: if isOwner(resource.data.userId) || isAnyRole(['developer', 'shop-owner']);
+      allow list: if isAnyRole(['developer', 'shop-owner']);
+      allow create: if isAuth();
+      allow update: if isAnyRole(['developer', 'shop-owner']);
     }
-    
-    // Coupons
+
     match /coupons/{couponId} {
-      // Developers can create and get any coupon
-      allow create, get: if isAuth() && isDeveloper(request.auth.uid);
-      
-      // Developers can list all coupons. Other authenticated users can query for coupons (which requires 'list').
-      allow list: if isAuth();
-      
-      // A user can update a coupon to redeem it IF it's not already used.
-      allow update: if isAuth()
-                    && resource.data.isUsed == false
-                    && request.resource.data.isUsed == true
-                    && request.resource.data.usedBy == request.auth.uid;
+      allow list, read: if isAuth();
+      allow update: if isAuth() && resource.data.isUsed == false;
+      allow create: if isRole('developer');
     }
   }
 }
