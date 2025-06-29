@@ -43,7 +43,6 @@ export default function AddItemPage() {
   const { toast } = useToast();
   
   const [categories, setCategories] = useState<string[]>([]);
-  const [newCategory, setNewCategory] = useState("");
   
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -134,21 +133,11 @@ export default function AddItemPage() {
     form.reset();
     setImageSrc(null);
     if(fileInputRef.current) fileInputRef.current.value = "";
-  };
-  
-  const handleAddCategory = () => {
-    const trimmedCategory = newCategory.trim();
-    if (trimmedCategory && !categories.includes(trimmedCategory)) {
-      setCategories([...categories, trimmedCategory].sort());
-      setNewCategory("");
-    }
-  };
-
-  const handleDeleteCategory = (categoryToDelete: string) => {
-    setCategories(categories.filter(c => c !== categoryToDelete));
-    if (form.getValues("category") === categoryToDelete) {
-      form.setValue("category", "");
-    }
+    // Re-fetch categories in case a new one was added
+    getProducts().then(products => {
+        const fetchedCategories = [...new Set(products.map(p => p.category))].sort();
+        setCategories(fetchedCategories);
+    });
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,7 +272,7 @@ export default function AddItemPage() {
   return (
     <div className="container py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <div className="lg:col-span-1 space-y-8">
+            <div className="lg:col-span-1">
                 <Card>
                     <CardHeader>
                         <CardTitle>Bulk Import Products</CardTitle>
@@ -306,32 +295,6 @@ export default function AddItemPage() {
                             Required: Name. All other fields like prices and stock are optional.
                         </p>
                     </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Manage Categories</CardTitle>
-                        <CardDescription>Add or remove product categories.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            {categories.map(cat => (
-                                <div key={cat} className="flex items-center justify-between rounded-md border p-2">
-                                    <span className="text-sm">{cat}</span>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteCategory(cat)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                    <CardFooter className="flex-col items-start gap-2">
-                        <Label htmlFor="new-category">Add New Category</Label>
-                        <div className="flex w-full space-x-2">
-                            <Input id="new-category" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="e.g., Vegetables"/>
-                            <Button onClick={handleAddCategory}>Add</Button>
-                        </div>
-                    </CardFooter>
                 </Card>
             </div>
             <div className="lg:col-span-2">
@@ -394,12 +357,12 @@ export default function AddItemPage() {
                                 )}/>
                                 <FormField control={form.control} name="category" render={({ field }) => (
                                     <FormItem><FormLabel>Category</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} >
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
+                                        <FormControl>
+                                            <Input placeholder="e.g., Fruits or Vegetables" {...field} list="categories-list" />
+                                        </FormControl>
+                                        <datalist id="categories-list">
+                                            {categories.map(cat => <option key={cat} value={cat} />)}
+                                        </datalist>
                                     <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -442,5 +405,3 @@ export default function AddItemPage() {
     </div>
   );
 }
-
-    
