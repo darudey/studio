@@ -25,16 +25,20 @@ export default function ProductCard({ product }: ProductCardProps) {
   const quantityInCart = cartItem?.quantity || 0;
   
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // Prevent link navigation when clicking the button on the image
+    e.preventDefault();
+    e.stopPropagation();
     addToCart(product.id, 1, product.stock);
   };
 
-  const handleIncrease = () => {
-    // addToCart in CartContext handles incrementing quantity if it exists
+  const handleIncrease = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     addToCart(product.id, 1, product.stock);
   };
 
-  const handleDecrease = () => {
+  const handleDecrease = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     updateQuantity(product.id, quantityInCart - 1, product.stock);
   };
 
@@ -52,17 +56,29 @@ export default function ProductCard({ product }: ProductCardProps) {
               data-ai-hint={product.dataAiHint}
             />
           </Link>
-          {quantityInCart === 0 && (
-            <Button
-              size="icon"
-              variant="secondary"
-              className="absolute bottom-2 right-2 h-8 w-8 rounded-full shadow-md"
-              onClick={handleAddToCart}
-              aria-label="Add to Cart"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="absolute bottom-2 right-2">
+            {quantityInCart === 0 ? (
+                <Button
+                    size="icon"
+                    variant="secondary"
+                    className="h-8 w-8 rounded-full shadow-md"
+                    onClick={handleAddToCart}
+                    aria-label="Add to Cart"
+                >
+                    <Plus className="h-4 w-4" />
+                </Button>
+            ) : (
+                <div className="flex items-center gap-1 rounded-full border bg-background p-0.5 shadow-md">
+                    <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={handleDecrease}>
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-8 text-center font-bold text-md tabular-nums">{quantityInCart}</span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={handleIncrease}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-4 pb-2">
@@ -79,17 +95,6 @@ export default function ProductCard({ product }: ProductCardProps) {
             </p>
             <p className="text-xs text-muted-foreground -mt-1">/{product.unit}</p>
           </div>
-          {quantityInCart > 0 && (
-            <div className="flex items-center gap-1 rounded-md border p-0.5">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleDecrease}>
-                    <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-8 text-center font-bold text-md tabular-nums">{quantityInCart}</span>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleIncrease}>
-                    <Plus className="h-4 w-4" />
-                </Button>
-            </div>
-          )}
         </div>
       </CardFooter>
     </Card>
