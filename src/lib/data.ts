@@ -162,11 +162,6 @@ export const findCouponByCode = async (code: string): Promise<Coupon | null> => 
     const couponDoc = snapshot.docs[0];
     const coupon = { id: couponDoc.id, ...couponDoc.data() } as Coupon;
 
-    // Check for usage on the client-side to avoid needing a composite index
-    if (coupon.isUsed) {
-        return null;
-    }
-
     return coupon;
 };
 
@@ -192,29 +187,32 @@ export const getNewestProducts = async (limitCount = 10): Promise<Product[]> => 
 }
 
 export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> => {
-    const orders = await getAllOrders();
-    if (orders.length === 0) return [];
+    try {
+        const orders = await getAllOrders();
+        if (orders.length === 0) return [];
 
-    const productCounts = new Map<string, number>();
-    orders.forEach(order => {
-        order.items.forEach(item => {
-            productCounts.set(item.productId, (productCounts.get(item.productId) || 0) + item.quantity);
+        const productCounts = new Map<string, number>();
+        orders.forEach(order => {
+            order.items.forEach(item => {
+                productCounts.set(item.productId, (productCounts.get(item.productId) || 0) + item.quantity);
+            });
         });
-    });
 
-    const sortedProductIds = Array.from(productCounts.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, limitCount)
-        .map(entry => entry[0]);
-    
-    if (sortedProductIds.length === 0) return [];
+        const sortedProductIds = Array.from(productCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, limitCount)
+            .map(entry => entry[0]);
+        
+        if (sortedProductIds.length === 0) return [];
 
-    const trendingProducts = await getProductsByIds(sortedProductIds);
+        const trendingProducts = await getProductsByIds(sortedProductIds);
 
-    // Re-sort based on trending order
-    return trendingProducts.sort((a, b) => {
-        return sortedProductIds.indexOf(a.id) - sortedProductIds.indexOf(b.id);
-    });
+        // Re-sort based on trending order
+        return trendingProducts.sort((a, b) => {
+            return sortedProductIds.indexOf(a.id) - sortedProductIds.indexOf(b.id);
+        });
+    } catch(err) {
+        console.warn("Could not calculate trending products, likely due to permissions.", err);
+        return [];
+    }
 }
-
-    

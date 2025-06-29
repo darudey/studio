@@ -122,13 +122,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return { success: false, message: "You must be logged in." };
     if (user.role !== 'basic') return { success: false, message: "Your account is already upgraded." };
 
-    const coupon = await findCouponByCode(code);
-
-    if (!coupon) {
-      return { success: false, message: "Invalid or already used code." };
-    }
-
     try {
+      const coupon = await findCouponByCode(code);
+
+      if (!coupon || coupon.isUsed) {
+        return { success: false, message: "Invalid or already used code." };
+      }
+      
       const updatedUser: User = { ...user, role: coupon.role };
       await updateUser(updatedUser);
       await markCouponAsUsed(coupon.id, user.id);
