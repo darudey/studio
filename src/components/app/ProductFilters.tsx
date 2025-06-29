@@ -1,14 +1,11 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Search } from "lucide-react";
 import React from 'react';
 
 interface ProductFiltersProps {
   filters: {
-    search: string;
     category: string;
     priceRange: [number, number];
   };
@@ -19,10 +16,6 @@ interface ProductFiltersProps {
 
 export default function ProductFilters({ filters, onFilterChange, categories, maxPrice }: ProductFiltersProps) {
   
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFilterChange({ ...filters, search: e.target.value });
-  };
-
   const handleCategoryChange = (value: string) => {
     onFilterChange({ ...filters, category: value });
   };
@@ -33,17 +26,7 @@ export default function ProductFilters({ filters, onFilterChange, categories, ma
 
   return (
     <div className="mb-8 rounded-lg border bg-card p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search products..."
-                    value={filters.search}
-                    onChange={handleSearchChange}
-                    className="pl-10"
-                />
-            </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Select value={filters.category} onValueChange={handleCategoryChange}>
                 <SelectTrigger>
                     <SelectValue placeholder="Filter by category" />

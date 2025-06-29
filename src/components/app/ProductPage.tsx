@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '../ui/skeleton';
 import ProductCarousel from './ProductCarousel';
 import { Separator } from '../ui/separator';
+import { useSearchParams } from 'next/navigation';
 
 export default function ProductPage() {
   const { user } = useAuth();
@@ -17,9 +18,11 @@ export default function ProductPage() {
   const [newestProducts, setNewestProducts] = useState<Product[]>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const searchParams = useSearchParams();
 
   const [filters, setFilters] = useState({
-    search: '',
+    search: searchParams.get('search') || '',
     category: 'All',
     priceRange: [0, 100],
   });
@@ -56,6 +59,11 @@ export default function ProductPage() {
     }
     fetchHomepageData();
   }, []);
+  
+  useEffect(() => {
+    setFilters(prev => ({...prev, search: searchParams.get('search') || ''}));
+  }, [searchParams]);
+
 
   const { filteredProducts, categories, maxPrice } = useMemo(() => {
     const categories = [...new Set(allProducts.map(p => p.category))].sort();
@@ -64,7 +72,7 @@ export default function ProductPage() {
     const filtered = allProducts.filter(product => {
       const price = user?.role === 'wholesaler' ? product.wholesalePrice : product.retailPrice;
 
-      const matchesSearch = product.name.toLowerCase().includes(filters.search.toLowerCase());
+      const matchesSearch = filters.search === '' || product.name.toLowerCase().includes(filters.search.toLowerCase());
       const matchesCategory = filters.category === 'All' || product.category === filters.category;
       const matchesPrice = price >= filters.priceRange[0] && price <= filters.priceRange[1];
       
@@ -73,6 +81,13 @@ export default function ProductPage() {
 
     return { filteredProducts: filtered, categories, maxPrice };
   }, [filters, user, allProducts]);
+
+  const handleFilterChange = (newFilters: { category: string, priceRange: [number, number] }) => {
+    setFilters(prev => ({
+        ...prev,
+        ...newFilters
+    }));
+  };
 
   const sections = [
     { title: "Trending Now", products: trendingProducts },
@@ -104,7 +119,11 @@ export default function ProductPage() {
 
       <div className="py-8">
         <h1 className="text-3xl font-bold tracking-tight mb-6">All Products</h1>
-        <ProductFilters filters={filters} onFilterChange={setFilters} categories={categories} maxPrice={maxPrice} />
+        <ProductFilters 
+          filters={{category: filters.category, priceRange: filters.priceRange}}
+          onFilterChange={handleFilterChange} 
+          categories={categories} 
+          maxPrice={maxPrice} />
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map(product => (
