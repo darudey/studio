@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { addProduct, getProducts, addMultipleProducts } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Product } from "@/types";
 import { Camera, FileImage, Upload, X } from "lucide-react";
 import Image from "next/image";
@@ -363,7 +363,10 @@ export default function AddItemPage() {
                                         <datalist id="categories-list">
                                             {categories.map(cat => <option key={cat} value={cat} />)}
                                         </datalist>
-                                    <FormMessage />
+                                        <FormDescription>
+                                            Select an existing category or type to create a new one.
+                                        </FormDescription>
+                                        <FormMessage />
                                     </FormItem>
                                 )}/>
                                 <div className="grid grid-cols-2 gap-4">
