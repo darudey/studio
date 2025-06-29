@@ -30,7 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const handleIncrease = () => {
-    // addToCart in CartContext handles incrementing quantity if item exists
+    // addToCart in CartContext handles incrementing quantity if it exists
     addToCart(product.id, 1, product.stock);
   };
 
