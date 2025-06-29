@@ -60,6 +60,11 @@ export default function ProductPage() {
     }
     fetchHomepageData();
   }, []);
+
+  const selectedProduct = useMemo(() => {
+    if (!searchTerm) return null;
+    return allProducts.find(p => p.name.toLowerCase() === searchTerm.toLowerCase()) || null;
+  }, [searchTerm, allProducts]);
   
   const { filteredProducts, categories, maxPrice } = useMemo(() => {
     const categories = [...new Set(allProducts.map(p => p.category))].sort();
@@ -128,8 +133,20 @@ export default function ProductPage() {
       
       {sections.length > 0 && <Separator className="my-8" />}
 
+      {selectedProduct && (
+        <div className="py-8">
+            <h2 className="text-3xl font-bold tracking-tight mb-6">Your Item</h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <ProductCard product={selectedProduct} />
+            </div>
+            <Separator className="my-8" />
+        </div>
+      )}
+
       <div className="py-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-6">All Products</h1>
+        <h1 className="text-3xl font-bold tracking-tight mb-6">
+          {searchTerm ? "Search Results" : "All Products"}
+        </h1>
         <ProductFilters 
           filters={{category: filters.category, priceRange: filters.priceRange}}
           onFilterChange={handleFilterChange} 
