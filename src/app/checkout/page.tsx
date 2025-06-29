@@ -130,8 +130,8 @@ export default function CheckoutPage() {
                                     </TableCell>
                                     <TableCell className="font-medium">{product.name}</TableCell>
                                     <TableCell>{quantity}</TableCell>
-                                    <TableCell>${getPrice(product).toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">${(getPrice(product) * quantity).toFixed(2)}</TableCell>
+                                    <TableCell>₹{getPrice(product).toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">₹{(getPrice(product) * quantity).toFixed(2)}</TableCell>
                                 </TableRow>
                                 ) : null
                             )}
@@ -148,7 +148,7 @@ export default function CheckoutPage() {
                 <CardContent className="space-y-4">
                     <div className="flex justify-between text-lg font-semibold">
                         <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>₹{total.toFixed(2)}</span>
                     </div>
                      <p className="text-sm text-muted-foreground">Shipping and taxes will be calculated at the next step.</p>
                 </CardContent>

@@ -71,7 +71,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                       <div className="flex-1 space-y-1">
                         <h3 className="font-medium">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          ${getPrice(product).toFixed(2)}
+                          ₹{getPrice(product).toFixed(2)}
                         </p>
                         <div className="flex items-center space-x-2">
                            <Input
@@ -87,7 +87,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                             </Button>
                         </div>
                       </div>
-                      <p className="font-medium">${(getPrice(product) * quantity).toFixed(2)}</p>
+                      <p className="font-medium">₹{(getPrice(product) * quantity).toFixed(2)}</p>
                     </div>
                   ) : null
                 )}
@@ -102,7 +102,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
               <div className="w-full space-y-4">
                  <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                  </div>
                  <SheetClose asChild>
                     <Button asChild className="w-full bg-accent hover:bg-accent/90">

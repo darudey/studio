@@ -71,7 +71,7 @@ export default function OrdersPage() {
                             <span>Order #{order.id.substring(0,6)}...</span>
                             <span>{new Date(order.date).toLocaleDateString()}</span>
                             <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
-                            <span>${order.total.toFixed(2)}</span>
+                            <span>₹{order.total.toFixed(2)}</span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent>
@@ -89,8 +89,8 @@ export default function OrdersPage() {
                                     <TableRow key={index}>
                                         <TableCell>{item.name}</TableCell>
                                         <TableCell>{item.quantity}</TableCell>
-                                        <TableCell>${item.price.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">${(item.quantity * item.price).toFixed(2)}</TableCell>
+                                        <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">₹{(item.quantity * item.price).toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

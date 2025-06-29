@@ -82,7 +82,7 @@ export function RelatedProducts() {
             </Link>
             <div className="flex-1">
               <Link href={`/products/${product.id}`} className='text-sm font-medium hover:underline'>{product.name}</Link>
-              <p className="text-xs text-muted-foreground">${product.retailPrice.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">₹{product.retailPrice.toFixed(2)}</p>
             </div>
             <Button size="sm" variant="outline" onClick={() => addToCart(product.id, 1, product.stock)}>
                 <Plus className="h-4 w-4" />

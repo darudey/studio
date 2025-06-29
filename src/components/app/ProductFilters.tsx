@@ -57,7 +57,7 @@ export default function ProductFilters({ filters, onFilterChange, categories, ma
                 </SelectContent>
             </Select>
             <div className="space-y-2">
-                <label className="text-sm font-medium">Price Range: ${filters.priceRange[0]} - ${filters.priceRange[1]}</label>
+                <label className="text-sm font-medium">Price Range: ₹{filters.priceRange[0]} - ₹{filters.priceRange[1]}</label>
                 <Slider
                     min={0}
                     max={Math.ceil(maxPrice)}

@@ -165,7 +165,7 @@ export default function UserOrdersPage() {
                                       <span className="font-medium text-left">Order #{order.id.substring(0,6)}...</span>
                                       <span className="text-left md:text-center">{new Date(order.date).toLocaleDateString()}</span>
                                       <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="w-fit md:justify-self-center">{order.status}</Badge>
-                                      <span className="font-semibold text-left md:text-right">${order.total.toFixed(2)}</span>
+                                      <span className="font-semibold text-left md:text-right">₹{order.total.toFixed(2)}</span>
                                   </div>
                               </AccordionTrigger>
                               <AccordionContent>
@@ -187,8 +187,8 @@ export default function UserOrdersPage() {
                                                     <TableRow key={index}>
                                                         <TableCell className={cn("font-medium", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>{item.name}</TableCell>
                                                         <TableCell>{item.quantity}</TableCell>
-                                                        <TableCell>${item.price.toFixed(2)}</TableCell>
-                                                        <TableCell className={cn(item.status === 'Cancelled' && 'line-through text-muted-foreground')}>${(item.quantity * item.price).toFixed(2)}</TableCell>
+                                                        <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                                                        <TableCell className={cn(item.status === 'Cancelled' && 'line-through text-muted-foreground')}>₹{(item.quantity * item.price).toFixed(2)}</TableCell>
                                                         <TableCell className="text-right">
                                                             <RadioGroup
                                                                 value={item.status}

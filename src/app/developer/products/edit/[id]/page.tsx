@@ -328,10 +328,10 @@ export default function EditItemPage() {
                         )}/>
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="retailPrice" render={({ field }) => (
-                                <FormItem><FormLabel>Retail Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Retail Price (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="wholesalePrice" render={({ field }) => (
-                                <FormItem><FormLabel>Wholesale Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Wholesale Price (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
                         <div className="grid grid-cols-2 gap-4">

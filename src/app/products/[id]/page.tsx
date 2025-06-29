@@ -159,7 +159,7 @@ export default function ProductDetailPage() {
           
           <div className="space-y-2">
             <p className="text-3xl font-bold">
-              ${price.toFixed(2)} 
+              ₹{price.toFixed(2)} 
               <span className="text-lg font-normal text-muted-foreground"> / {product.unit}</span>
             </p>
             {user?.role === 'basic' && <p className="text-sm text-muted-foreground">Login as a wholesaler for special pricing.</p>}
