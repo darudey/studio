@@ -1,3 +1,4 @@
+
 "use client"
 import Image from "next/image";
 import Link from "next/link";
@@ -23,7 +24,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const cartItem = cartItems.find(item => item.productId === product.id);
   const quantityInCart = cartItem?.quantity || 0;
   
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Prevent link navigation when clicking the button on the image
     addToCart(product.id, 1, product.stock);
   };
 
@@ -39,8 +41,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Card className="flex h-full flex-col overflow-hidden rounded-lg shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="border-b p-0">
-        <Link href={`/products/${product.id}`} className="block">
-          <div className="aspect-square relative">
+        <div className="aspect-square relative group">
+          <Link href={`/products/${product.id}`} className="block h-full w-full">
             <Image
               src={product.images[0]}
               alt={product.name}
@@ -49,8 +51,20 @@ export default function ProductCard({ product }: ProductCardProps) {
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
               data-ai-hint={product.dataAiHint}
             />
-          </div>
-        </Link>
+          </Link>
+          {quantityInCart === 0 && (
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
+              <Button 
+                variant="secondary"
+                className="w-full"
+                onClick={handleAddToCart}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add to Cart
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="flex-1 p-4 pb-2">
         <CardTitle className="text-base font-semibold leading-tight mb-2 h-10 overflow-hidden">
@@ -66,15 +80,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </p>
             <p className="text-xs text-muted-foreground -mt-1">/{product.unit}</p>
           </div>
-          {quantityInCart === 0 ? (
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={handleAddToCart}
-            >
-              Add
-            </Button>
-          ) : (
+          {quantityInCart > 0 && (
             <div className="flex items-center gap-1 rounded-md border p-0.5">
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleDecrease}>
                     <Minus className="h-4 w-4" />
