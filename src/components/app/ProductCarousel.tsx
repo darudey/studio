@@ -20,14 +20,14 @@ export default function ProductCarousel({ title, products }: ProductCarouselProp
             <Carousel
                 opts={{
                     align: "start",
-                    loop: products.length > 5,
+                    loop: products.length > 6,
                 }}
                 className="w-full"
             >
-                <CarouselContent className="-ml-2">
+                <CarouselContent className="-ml-4">
                     {products.map((product) => (
-                        <CarouselItem key={product.id} className="basis-1/2 md:basis-1/3 lg:basis-1/5 pl-2">
-                            <div className="p-1 h-full">
+                        <CarouselItem key={product.id} className="basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 pl-4">
+                            <div className="h-full">
                                 <ProductCard product={product} />
                             </div>
                         </CarouselItem>
