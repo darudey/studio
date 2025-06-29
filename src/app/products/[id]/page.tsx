@@ -1,7 +1,7 @@
 "use client";
 
 import { getProductById, updateProduct } from "@/lib/data";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,8 @@ import type { Product } from "@/types";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage() {
+  const params = useParams();
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -28,9 +29,12 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
+    const productId = params.id as string;
+    if (!productId) return;
+
     const fetchProduct = async () => {
       setLoading(true);
-      const foundProduct = await getProductById(params.id);
+      const foundProduct = await getProductById(productId);
       if (foundProduct) {
         setProduct(foundProduct);
       } else {
