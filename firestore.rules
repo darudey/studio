@@ -1,58 +1,54 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny all access to ensure security.
-    match /{document=**} {
-      allow read, write: if false;
+
+    function isUser(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    function isDeveloper() {
+      return isUser(request.auth.uid) && getUserRole(request.auth.uid) == 'developer';
+    }
+    function isShopOwner() {
+      return isUser(request.auth.uid) && getUserRole(request.auth.uid) == 'shop-owner';
     }
 
-    // USER rules:
     match /users/{userId} {
-      // Any logged-in user can view any user's profile. This is necessary for
-      // other rules to check a user's role.
-      allow get: if request.auth != null;
-      // Only developers can get a list of all users.
-      allow list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
-      // A user can create and update their OWN profile.
-      allow create, update: if request.auth.uid == userId;
+      allow read, update: if isOwner(userId);
+      allow get, list: if isDeveloper() || isShopOwner();
     }
-
-    // PRODUCT rules:
+    
     match /products/{productId} {
-      // Anyone can view products.
-      allow read: if true;
-      // Only admins can create, update, or delete products.
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow read;
+      allow write: if isDeveloper() || isShopOwner();
     }
 
-    // ORDER rules:
     match /orders/{orderId} {
-      // A user can create their own order.
-      allow create: if request.auth.uid == request.resource.data.userId;
-      // A user can read their own orders, and admins can read any order.
-      allow read: if request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
-      // Any logged-in user can perform queries on the orders collection.
-      // The application code is responsible for securing these queries (e.g., only fetching the user's own orders).
-      allow list: if request.auth != null;
-      // Only admins can update orders (e.g., change status).
-      allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, update: if isOwner(resource.data.userId) || isDeveloper() || isShopOwner();
     }
 
-    // COUPON rules:
     match /coupons/{couponId} {
-      // Any logged-in user can look up coupons.
-      allow read: if request.auth != null;
-      // Only developers can create new coupons.
-      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+      allow create: if isDeveloper();
+      allow list, read: if request.auth != null;
       
-      // A user can redeem a coupon (update it) IF:
-      // 1. The 'usedBy' field in the update is their own user ID.
-      // 2. The coupon 'isUsed' state is changing from false (current state) to true (new state).
-      allow update: if request.auth.uid == request.resource.data.usedBy
-                    && resource.data.isUsed == false
-                    && request.resource.data.isUsed == true;
+      // A user can UPDATE a coupon document IF:
+      // 1. The coupon is not already used.
+      // 2. The update is ONLY to set 'isUsed' to true and 'usedBy' to their own UID.
+      // 3. All other important fields must remain unchanged.
+      allow update: if resource.data.isUsed == false &&
+                       request.resource.data.isUsed == true &&
+                       request.resource.data.usedBy == request.auth.uid &&
+                       request.resource.data.code == resource.data.code &&
+                       request.resource.data.role == resource.data.role &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       request.resource.data.createdBy == resource.data.createdBy;
     }
   }
 }
