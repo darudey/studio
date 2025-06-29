@@ -94,11 +94,11 @@ export default function ProfilePage() {
             </div>
             <div>
                 <Label>Account Type</Label>
-                <p>
+                <div>
                     <Badge variant={user.role === 'wholesaler' ? "default" : "secondary" } className="text-lg capitalize">
                         {user.role}
                     </Badge>
-                </p>
+                </div>
             </div>
           </CardContent>
         </Card>
