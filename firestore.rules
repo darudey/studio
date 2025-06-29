@@ -1,48 +1,44 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    function isRole(role) {
-      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
-    }
-    
-    function isAnyRole(roles) {
-      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
+    // A user can read/write their own document.
+    // Admins can get any user document.
     match /users/{userId} {
-      allow read: if isAnyRole(['developer', 'shop-owner']) || isOwner(userId);
-      allow write: if isOwner(userId);
-      allow create: if isAuth();
+      allow read, write: if request.auth.uid == userId;
+      allow get: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
 
+    // Anyone can read products.
+    // Admins can write products.
     match /products/{productId} {
       allow read: if true;
-      allow create, update, delete: if isAnyRole(['developer', 'shop-owner']);
+      allow write: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
 
+    // A user can create their own orders.
+    // A user or an admin can read an order.
+    // Admins can list and update any order.
     match /orders/{orderId} {
-      allow get: if isOwner(resource.data.userId) || isAnyRole(['developer', 'shop-owner']);
-      allow list: if isAnyRole(['developer', 'shop-owner']);
-      allow create: if isAuth();
-      allow update: if isAnyRole(['developer', 'shop-owner']);
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow read: if request.auth.uid == resource.data.userId || (request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner']);
+      allow list, update: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
     }
-
+    
+    // Any logged-in user can query for coupons.
+    // Developers can create coupons.
+    // Any logged-in user can 'use' a coupon once.
     match /coupons/{couponId} {
-      allow list, read: if isAuth();
-      allow update: if isAuth() && resource.data.isUsed == false;
-      allow create: if isRole('developer');
+      allow list, read: if request.auth.uid != null;
+      allow create: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+      
+      // Allow a user to update a coupon only to mark it as used.
+      allow update: if request.auth.uid != null
+                    && resource.data.isUsed == false
+                    && request.resource.data.isUsed == true
+                    && request.resource.data.usedBy == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isUsed', 'usedBy']);
     }
   }
 }

@@ -162,6 +162,11 @@ export const findCouponByCode = async (code: string): Promise<Coupon | null> => 
     const couponDoc = snapshot.docs[0];
     const coupon = { id: couponDoc.id, ...couponDoc.data() } as Coupon;
 
+    // Explicitly check if the coupon is already used
+    if (coupon.isUsed) {
+        return null;
+    }
+
     return coupon;
 };
 

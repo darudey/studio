@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const coupon = await findCouponByCode(code);
 
-      if (!coupon || coupon.isUsed) {
+      if (!coupon) {
         return { success: false, message: "Invalid or already used code." };
       }
       
@@ -135,8 +135,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setUser(updatedUser); // Update state locally
       return { success: true, message: `Your account has been upgraded to ${coupon.role}!` };
-    } catch(error) {
+    } catch (error) {
         console.error("Failed to redeem code:", error);
+        if (error instanceof Error && 'code' in error && (error as any).code === 'permission-denied') {
+            return { success: false, message: "Permission denied. Please check Firestore security rules." };
+        }
         return { success: false, message: "An error occurred during the upgrade process." };
     }
   };
