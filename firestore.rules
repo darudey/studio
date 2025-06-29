@@ -1,43 +1,66 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // A user can read/write their own document.
-    // Admins can get any user document.
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
-      allow get: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // Anyone can read products.
-    // Admins can write products.
+    function isAdmin() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+    }
+
+    function isDeveloper() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+    }
+
+    // User profiles
+    match /users/{userId} {
+      // Anyone can create a user profile (register) if they are authenticated.
+      // Their UID must match the document ID they are creating.
+      allow create: if isOwner(userId);
+
+      // Users can read their own profile. Admins can read anyone's profile.
+      allow get: if isOwner(userId) || isAdmin();
+
+      // Admins can see a list of all users.
+      allow list: if isAdmin();
+
+      // Users can update their own data.
+      allow update: if isOwner(userId);
+    }
+
+    // Products can be read by anyone, but only written by admins
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow write: if isAdmin();
     }
 
-    // A user can create their own orders.
-    // A user or an admin can read an order.
-    // Admins can list and update any order.
+    // Orders can be created by the owner, read by the owner or an admin, and updated only by an admin
     match /orders/{orderId} {
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow read: if request.auth.uid == resource.data.userId || (request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner']);
-      allow list, update: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      allow create: if isOwner(resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow update: if isAdmin();
     }
-    
-    // Any logged-in user can query for coupons.
-    // Developers can create coupons.
-    // Any logged-in user can 'use' a coupon once.
+
+    // Coupons can be created by developers, read by any authenticated user, and updated once by a basic user.
     match /coupons/{couponId} {
-      allow list, read: if request.auth.uid != null;
-      allow create: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
-      
-      // Allow a user to update a coupon only to mark it as used.
-      allow update: if request.auth.uid != null
+      allow create: if isDeveloper();
+
+      // Any authenticated user can read/query coupons to verify a code.
+      allow read: if request.auth != null;
+
+      // An authenticated user can update a coupon to redeem it, under strict conditions
+      allow update: if request.auth != null
+                    // The coupon must not have been used yet.
                     && resource.data.isUsed == false
+                    // The update must set isUsed to true.
                     && request.resource.data.isUsed == true
+                    // The update must set usedBy to the current user's ID.
                     && request.resource.data.usedBy == request.auth.uid
+                    // To be secure, ensure no other fields are being changed besides the ones we expect.
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isUsed', 'usedBy']);
     }
   }
