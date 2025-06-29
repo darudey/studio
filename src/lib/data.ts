@@ -80,6 +80,15 @@ export const updateProduct = async (product: Product): Promise<void> => {
     await updateDoc(productRef, productData);
 };
 
+export const updateProductsCategory = async (productIds: string[], newCategory: string): Promise<void> => {
+    const batch = writeBatch(db);
+    productIds.forEach(id => {
+        const productRef = doc(db, 'products', id);
+        batch.update(productRef, { category: newCategory });
+    });
+    await batch.commit();
+}
+
 export const deleteProduct = async (productId: string): Promise<void> => {
     const productRef = doc(db, 'products', productId);
     await deleteDoc(productRef);
