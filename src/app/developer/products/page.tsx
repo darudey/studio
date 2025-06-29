@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, ChangeEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getProducts, deleteProduct as removeProduct, updateProductsCategory, addProduct, deleteMultipleProducts } from "@/lib/data";
+import { getProducts, deleteProduct as removeProduct, updateProductsCategory, addProduct, deleteMultipleProducts, updateProduct } from "@/lib/data";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,6 +113,48 @@ export default function ManageProductsPage() {
       description: "",
     },
   });
+  
+  const handleFieldUpdate = async (productId: string, updates: Partial<Product>) => {
+    const productToUpdate = products.find(p => p.id === productId);
+    if (!productToUpdate) return;
+
+    const hasChanged = Object.keys(updates).some(key => {
+        const typedKey = key as keyof Product;
+        // Stringify to compare arrays correctly
+        return JSON.stringify(productToUpdate[typedKey]) !== JSON.stringify(updates[typedKey]);
+    });
+    if (!hasChanged) return;
+    
+    const updatedProductData = { 
+        ...productToUpdate, 
+        ...updates,
+        ...(updates.images && { imageUpdatedAt: new Date().toISOString() })
+    };
+
+    await updateProduct(updatedProductData);
+    
+    setProducts(currentProducts => 
+        currentProducts.map(p => p.id === productId ? updatedProductData : p)
+    );
+
+    const updatedFields = Object.keys(updates).join(', ');
+    toast({ title: "Product Updated", description: `${productToUpdate.name}'s ${updatedFields} has been updated.` });
+};
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>, product: Product) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          const newImageSrc = e.target?.result as string;
+          const updatedImages = [newImageSrc, ...product.images.slice(1)];
+          handleFieldUpdate(product.id, { images: updatedImages });
+      };
+      reader.readAsDataURL(file);
+      event.target.value = ""; 
+  };
+
 
   const onQuickAddSubmit = async (data: z.infer<typeof addProductSchema>) => {
     const now = new Date().toISOString();
@@ -417,14 +459,14 @@ export default function ManageProductsPage() {
             <Table>
             <TableHeader>
                 <TableRow>
-                <TableHead className="w-[20px] p-2"><Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
-                <TableHead className="w-[80px]">Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Retail</TableHead>
-                <TableHead>Wholesale</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[20px] p-2"><Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
+                    <TableHead className="w-[80px]">Image</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Retail (₹)</TableHead>
+                    <TableHead>Wholesale (₹)</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -432,12 +474,53 @@ export default function ManageProductsPage() {
                 <TableRow key={product.id} data-state={selectedProductIds.includes(product.id) ? "selected" : ""}>
                     <TableCell className="p-2"><Checkbox checked={selectedProductIds.includes(product.id)} onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}/></TableCell>
                     <TableCell>
-                        <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover w-16 h-16"/>
+                        <label htmlFor={`image-upload-${product.id}`} className="cursor-pointer relative group block w-16 h-16">
+                            <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover w-16 h-16"/>
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                                <Upload className="h-6 w-6 text-white" />
+                            </div>
+                        </label>
+                        <input 
+                            id={`image-upload-${product.id}`} 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={(e) => handleImageChange(e, product)} 
+                        />
                     </TableCell>
                     <TableCell className="font-medium">{product.name}<br/><span className="text-xs text-muted-foreground">{product.itemCode}</span></TableCell>
-                    <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
-                    <TableCell>₹{product.retailPrice.toFixed(2)}</TableCell>
-                    <TableCell>₹{product.wholesalePrice.toFixed(2)}</TableCell>
+                    <TableCell>
+                        <Select value={product.category} onValueChange={(newCategory) => handleFieldUpdate(product.id, { category: newCategory })}>
+                            <SelectTrigger className="h-9 w-[150px]">
+                                <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </TableCell>
+                    <TableCell>
+                        <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
+                            <Input
+                                type="number"
+                                defaultValue={product.retailPrice}
+                                onBlur={(e) => handleFieldUpdate(product.id, { retailPrice: parseFloat(e.target.value) || 0 })}
+                                className="h-9 pl-5 w-[100px]"
+                            />
+                        </div>
+                    </TableCell>
+                    <TableCell>
+                        <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
+                            <Input
+                                type="number"
+                                defaultValue={product.wholesalePrice}
+                                onBlur={(e) => handleFieldUpdate(product.id, { wholesalePrice: parseFloat(e.target.value) || 0 })}
+                                className="h-9 pl-5 w-[100px]"
+                            />
+                        </div>
+                    </TableCell>
                     <TableCell>{product.stock} {product.unit}</TableCell>
                     <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
