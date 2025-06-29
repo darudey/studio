@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash, PlusCircle, Save, Upload, X } from "lucide-react";
+import { Edit, Trash, PlusCircle, Upload, X, ListTree } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -35,6 +35,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const addProductSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -231,229 +239,227 @@ export default function ManageProductsPage() {
   if (loading) {
       return (
           <div className="container py-12">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                  <div className="lg:col-span-1"><Skeleton className="h-64 w-full" /></div>
-                  <div className="lg:col-span-3">
-                      <Card>
-                          <CardHeader className="flex flex-row items-center justify-between">
-                              <div>
-                                  <Skeleton className="h-8 w-48" />
-                                  <Skeleton className="h-4 w-72 mt-2" />
-                              </div>
-                              <Skeleton className="h-10 w-32" />
-                          </CardHeader>
-                          <CardContent>
-                              <div className="space-y-2">
-                                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-                              </div>
-                          </CardContent>
-                      </Card>
-                  </div>
-              </div>
+              <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                          <Skeleton className="h-8 w-48" />
+                          <Skeleton className="h-4 w-72 mt-2" />
+                      </div>
+                      <Skeleton className="h-10 w-32" />
+                  </CardHeader>
+                  <CardContent>
+                      <div className="space-y-2">
+                        {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                      </div>
+                  </CardContent>
+              </Card>
           </div>
       )
   }
 
   return (
     <div className="container py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        <div className="lg:col-span-1 space-y-8 sticky top-20">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Manage Categories</CardTitle>
-                    <CardDescription>Add or remove product categories.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 max-h-60 overflow-y-auto">
-                    <div className="space-y-2">
-                        {allCategories.map(cat => (
-                            <div key={cat} className="flex items-center justify-between rounded-md border p-2">
-                                <span className="text-sm">{cat}</span>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteCategory(cat)}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-                <CardFooter className="flex-col items-start gap-2 border-t pt-6">
-                    <Label htmlFor="new-category">Add New Category</Label>
-                    <div className="flex w-full space-x-2">
-                        <Input id="new-category" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="e.g., Vegetables"/>
-                        <Button onClick={handleAddCategory}>Add</Button>
-                    </div>
-                </CardFooter>
-            </Card>
-        </div>
-        <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div>
-                      <CardTitle>Manage Products</CardTitle>
-                      <CardDescription>View, search, and manage products.</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      placeholder="Search products..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full sm:w-auto"
-                    />
-                    <Button onClick={() => setIsAdding(!isAdding)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {isAdding ? 'Cancel' : 'Add Product'}
-                    </Button>
-                  </div>
+        <Card>
+        <CardHeader>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <CardTitle>Manage Products</CardTitle>
+                    <CardDescription>View, search, and manage your products.</CardDescription>
                 </div>
-            </CardHeader>
-
-            {isAdding && (
-                <CardContent>
-                    <Form {...addForm}>
-                        <form onSubmit={addForm.handleSubmit(onQuickAddSubmit)} className="p-4 border rounded-lg bg-muted/50 space-y-4">
-                             <h3 className="text-lg font-semibold">Add a New Product</h3>
-                             <FormField control={addForm.control} name="name" render={({ field }) => (
-                                <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <FormField control={addForm.control} name="category" render={({ field }) => (
-                                    <FormItem><FormLabel>Category</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} >
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <FormField control={addForm.control} name="itemCode" render={({ field }) => (
-                                    <FormItem><FormLabel>Item Code (Optional)</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
+                <div className="flex w-full sm:w-auto items-center gap-2">
+                <Input 
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-auto"
+                />
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="hidden sm:flex">
+                            <ListTree className="mr-2 h-4 w-4" />
+                            Categories
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Manage Categories</DialogTitle>
+                            <DialogDescription>Add or remove product categories from your store.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                                {allCategories.map(cat => (
+                                    <div key={cat} className="flex items-center justify-between rounded-md border p-2">
+                                        <span className="text-sm">{cat}</span>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteCategory(cat)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {allCategories.length === 0 && (
+                                    <p className="text-sm text-muted-foreground text-center py-4">No categories created yet.</p>
+                                )}
                             </div>
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <FormField control={addForm.control} name="retailPrice" render={({ field }) => (
-                                    <FormItem><FormLabel>Retail (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={addForm.control} name="wholesalePrice" render={({ field }) => (
-                                    <FormItem><FormLabel>Wholesale (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={addForm.control} name="stock" render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={addForm.control} name="unit" render={({ field }) => (
-                                    <FormItem><FormLabel>Unit</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="piece">Piece</SelectItem><SelectItem value="kg">Kg</SelectItem><SelectItem value="g">Gram</SelectItem><SelectItem value="litre">Litre</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="dozen">Dozen</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}/>
-                             </div>
-                             <FormField control={addForm.control} name="description" render={({ field }) => (
-                                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Product description" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                            <div className="flex gap-2">
-                                <Button type="submit">Save Product</Button>
-                                <Button variant="outline" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
+                            <div className="pt-4 border-t">
+                                <Label htmlFor="new-category" className="mb-2 block font-medium">Add New Category</Label>
+                                <div className="flex w-full space-x-2">
+                                    <Input id="new-category" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="e.g., Vegetables"/>
+                                    <Button onClick={handleAddCategory}>Add</Button>
+                                </div>
                             </div>
-                        </form>
-                    </Form>
-                </CardContent>
-            )}
-
-            <CardContent>
-              {selectedProductIds.length > 0 && (
-                <div className="flex flex-wrap items-center gap-4 p-4 mb-4 border rounded-lg bg-muted/50">
-                    <p className="text-sm font-medium">{selectedProductIds.length} selected</p>
-                    <div className="flex items-center gap-2">
-                        <Select value={bulkUpdateCategory} onValueChange={setBulkUpdateCategory}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Move to category..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={handleBulkUpdate} size="sm">Apply</Button>
-                    </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">Delete Selected</Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete {selectedProductIds.length} selected products.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">Delete Products</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-              )}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[20px] p-2"><Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
-                    <TableHead className="w-[80px]">Image</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Retail</TableHead>
-                    <TableHead>Wholesale</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.map((product) => (
-                    <TableRow key={product.id} data-state={selectedProductIds.includes(product.id) ? "selected" : ""}>
-                      <TableCell className="p-2"><Checkbox checked={selectedProductIds.includes(product.id)} onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}/></TableCell>
-                      <TableCell>
-                          <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover w-16 h-16"/>
-                      </TableCell>
-                      <TableCell className="font-medium">{product.name}<br/><span className="text-xs text-muted-foreground">{product.itemCode}</span></TableCell>
-                      <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
-                      <TableCell>₹{product.retailPrice.toFixed(2)}</TableCell>
-                      <TableCell>₹{product.wholesalePrice.toFixed(2)}</TableCell>
-                      <TableCell>{product.stock} {product.unit}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                            <Button asChild variant="ghost" size="icon"><Link href={`/developer/products/edit/${product.id}`}><Edit className="h-4 w-4" /><span className="sr-only">Edit Full Details</span></Link></Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash className="h-4 w-4" /><span className="sr-only">Delete</span></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>This action cannot be undone. This will permanently delete the product &quot;{product.name}&quot;.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteProduct(product.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                    </DialogContent>
+                </Dialog>
+                <Button onClick={() => setIsAdding(!isAdding)}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    {isAdding ? 'Cancel' : 'Add'}
+                </Button>
+                </div>
+            </div>
+        </CardHeader>
+
+        {isAdding && (
+            <CardContent>
+                <Form {...addForm}>
+                    <form onSubmit={addForm.handleSubmit(onQuickAddSubmit)} className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                            <h3 className="text-lg font-semibold">Add a New Product</h3>
+                            <FormField control={addForm.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField control={addForm.control} name="category" render={({ field }) => (
+                                <FormItem><FormLabel>Category</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} >
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <FormField control={addForm.control} name="itemCode" render={({ field }) => (
+                                <FormItem><FormLabel>Item Code (Optional)</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <FormField control={addForm.control} name="retailPrice" render={({ field }) => (
+                                <FormItem><FormLabel>Retail (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={addForm.control} name="wholesalePrice" render={({ field }) => (
+                                <FormItem><FormLabel>Wholesale (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={addForm.control} name="stock" render={({ field }) => (
+                                <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={addForm.control} name="unit" render={({ field }) => (
+                                <FormItem><FormLabel>Unit</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="piece">Piece</SelectItem><SelectItem value="kg">Kg</SelectItem><SelectItem value="g">Gram</SelectItem><SelectItem value="litre">Litre</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="dozen">Dozen</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}/>
+                            </div>
+                            <FormField control={addForm.control} name="description" render={({ field }) => (
+                                <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Product description" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        <div className="flex gap-2">
+                            <Button type="submit">Save Product</Button>
+                            <Button variant="outline" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
+                        </div>
+                    </form>
+                </Form>
             </CardContent>
-          </Card>
-        </div>
-      </div>
+        )}
+
+        <CardContent>
+            {selectedProductIds.length > 0 && (
+            <div className="flex flex-wrap items-center gap-4 p-4 mb-4 border rounded-lg bg-muted/50">
+                <p className="text-sm font-medium">{selectedProductIds.length} selected</p>
+                <div className="flex items-center gap-2">
+                    <Select value={bulkUpdateCategory} onValueChange={setBulkUpdateCategory}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Move to category..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={handleBulkUpdate} size="sm">Apply</Button>
+                </div>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">Delete Selected</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete {selectedProductIds.length} selected products.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">Delete Products</AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+            )}
+            <Table>
+            <TableHeader>
+                <TableRow>
+                <TableHead className="w-[20px] p-2"><Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
+                <TableHead className="w-[80px]">Image</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Retail</TableHead>
+                <TableHead>Wholesale</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {filteredProducts.map((product) => (
+                <TableRow key={product.id} data-state={selectedProductIds.includes(product.id) ? "selected" : ""}>
+                    <TableCell className="p-2"><Checkbox checked={selectedProductIds.includes(product.id)} onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}/></TableCell>
+                    <TableCell>
+                        <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover w-16 h-16"/>
+                    </TableCell>
+                    <TableCell className="font-medium">{product.name}<br/><span className="text-xs text-muted-foreground">{product.itemCode}</span></TableCell>
+                    <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
+                    <TableCell>₹{product.retailPrice.toFixed(2)}</TableCell>
+                    <TableCell>₹{product.wholesalePrice.toFixed(2)}</TableCell>
+                    <TableCell>{product.stock} {product.unit}</TableCell>
+                    <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                        <Button asChild variant="ghost" size="icon"><Link href={`/developer/products/edit/${product.id}`}><Edit className="h-4 w-4" /><span className="sr-only">Edit Full Details</span></Link></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash className="h-4 w-4" /><span className="sr-only">Delete</span></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This action cannot be undone. This will permanently delete the product &quot;{product.name}&quot;.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteProduct(product.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                    </TableCell>
+                </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </CardContent>
+        </Card>
     </div>
   );
 }
-
-    
