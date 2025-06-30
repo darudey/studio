@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import * as admin from 'firebase-admin';
+const admin = require('firebase-admin');
 import { type Coupon, type User } from '@/types';
 
 // Using a named app instance helps to avoid conflicts with other
@@ -9,26 +9,22 @@ import { type Coupon, type User } from '@/types';
 const getAdminDb = () => {
   const APP_NAME = 'firebase-admin-redeem-coupon-app';
   
-  const existingApp = admin.apps.find(app => app?.name === APP_NAME);
+  const existingApp = admin.apps.find((app: any) => app && app.name === APP_NAME);
 
   if (existingApp) {
     return existingApp.firestore();
   }
 
-  try {
-    // Initialize a new app if one doesn't exist.
-    const newApp = admin.initializeApp({
-        // Using projectId should be sufficient if Application Default Credentials
-        // are configured correctly in the environment.
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    }, APP_NAME);
-    return newApp.firestore();
-  } catch (error) {
-    // Log the detailed error for server-side debugging.
-    console.error("Firebase Admin SDK initialization failed:", error);
-    // Throw a generic but informative error.
-    throw new Error("Server configuration error: Could not initialize Firebase Admin services.");
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (!projectId) {
+      throw new Error("Server configuration error: Firebase Project ID is not defined.");
   }
+  
+  // Initialize a new app if one doesn't exist.
+  const newApp = admin.initializeApp({
+      projectId: projectId,
+  }, APP_NAME);
+  return newApp.firestore();
 };
 
 
@@ -40,7 +36,6 @@ const RedeemCouponInputSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the isolated Firestore database instance.
     const adminDb = getAdminDb();
     
     const body = await request.json();
@@ -103,6 +98,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API /redeem-coupon error:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ success: false, message: `An unexpected server error occurred. Details: ${errorMessage}` }, { status: 500 });
+    return NextResponse.json({ success: false, message: `Server Error: ${errorMessage}` }, { status: 500 });
   }
 }

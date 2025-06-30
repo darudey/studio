@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.message || 'An unknown error occurred during the request.');
       }
       
@@ -149,8 +149,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error("Coupon redemption failed:", error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return { success: false, message: `An unexpected server error occurred. Details: ${errorMessage}` };
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      return { success: false, message: errorMessage };
     }
   };
 
