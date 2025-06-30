@@ -1,31 +1,22 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-const admin = require('firebase-admin');
+import admin from 'firebase-admin';
 import { type Coupon, type User } from '@/types';
 
-// Using a named app instance helps to avoid conflicts with other
-// Google Cloud services that might be auto-initialized (like Genkit).
-const getAdminDb = () => {
-  const APP_NAME = 'firebase-admin-redeem-coupon-app';
-  
-  const existingApp = admin.apps.find((app: any) => app && app.name === APP_NAME);
+// Standard singleton initialization pattern. 
+// This ensures the admin app is initialized only once.
+if (!admin.apps.length) {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (!projectId) {
+        throw new Error("Server configuration error: Firebase Project ID is not defined.");
+    }
+    admin.initializeApp({
+        projectId,
+    });
+}
 
-  if (existingApp) {
-    return existingApp.firestore();
-  }
-
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  if (!projectId) {
-      throw new Error("Server configuration error: Firebase Project ID is not defined.");
-  }
-  
-  // Initialize a new app if one doesn't exist.
-  const newApp = admin.initializeApp({
-      projectId: projectId,
-  }, APP_NAME);
-  return newApp.firestore();
-};
+const adminDb = admin.firestore();
 
 
 // Schema for the incoming request body
@@ -36,8 +27,6 @@ const RedeemCouponInputSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const adminDb = getAdminDb();
-    
     const body = await request.json();
     const validatedInput = RedeemCouponInputSchema.safeParse(body);
 
