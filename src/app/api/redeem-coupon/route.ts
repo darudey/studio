@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, App, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApps, App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
@@ -10,11 +10,8 @@ const ADMIN_APP_NAME = 'firebase-admin-app-for-coupon-redemption';
 
 /**
  * Gets the admin app instance, initializing it only if it doesn't already exist.
- * This memoization pattern is crucial for serverless environments to avoid re-initializing
- * on every function invocation, which can lead to errors and resource exhaustion.
- *
- * We explicitly use `applicationDefault()` to ensure the SDK uses the environment's
- * credentials, resolving any ambiguity that could cause authentication failures.
+ * This memoization pattern is crucial for serverless environments to avoid
+ * re-initializing on every function invocation.
  */
 function getAdminApp(): App {
     // Check if the named app already exists.
@@ -23,10 +20,10 @@ function getAdminApp(): App {
         return existingApp;
     }
 
-    // If the named app doesn't exist, initialize it with Application Default Credentials.
-    return initializeApp({
-        credential: applicationDefault(),
-    }, ADMIN_APP_NAME);
+    // If the named app doesn't exist, initialize it.
+    // When no credential option is provided, the Admin SDK automatically
+    // tries to use Application Default Credentials from the environment.
+    return initializeApp({}, ADMIN_APP_NAME);
 }
 
 export async function POST(request: Request) {
