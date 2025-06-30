@@ -6,7 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
@@ -18,11 +18,17 @@ function getAdminDb(): Firestore {
   if (adminDb) {
     return adminDb;
   }
-  if (getApps().length === 0) {
+  
+  try {
+    // Check if the default app already exists
+    getApp();
+  } catch (error) {
+    // If it doesn't exist, initialize it
     initializeApp({
         credential: applicationDefault()
     });
   }
+  
   adminDb = getFirestore();
   return adminDb;
 }
