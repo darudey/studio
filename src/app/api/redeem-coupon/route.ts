@@ -1,20 +1,25 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import admin from 'firebase-admin';
+import * as admin from 'firebase-admin';
+import { applicationDefault } from 'firebase-admin/app';
 import { type Coupon, type User } from '@/types';
 
 // Helper function to get a named, isolated Firebase Admin app instance.
 // This prevents conflicts with other Google Cloud libraries like Genkit
 // which may be trying to manage the default app instance.
 const getFirebaseAdminApp = () => {
-  const appName = 'coupon-redemption-app';
+  const appName = 'coupon-redemption-app-isolated';
   const existingApp = admin.apps.find(app => app?.name === appName);
   if (existingApp) {
     return existingApp;
   }
-  // Initialize without explicit config to use Application Default Credentials
-  return admin.initializeApp({ /* No credentials, use ADC */ }, appName);
+  // Initialize with an explicit Application Default Credential.
+  // This is the most robust way to authenticate on Google Cloud infrastructure
+  // and helps prevent conflicts with other libraries.
+  return admin.initializeApp({
+    credential: applicationDefault(),
+  }, appName);
 };
 
 // Schema for the incoming request body
