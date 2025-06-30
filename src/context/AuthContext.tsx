@@ -6,7 +6,6 @@ import { User, UserRole } from '@/types';
 import { getUserById, createUserProfile } from '@/lib/data';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, AuthError } from 'firebase/auth';
-import { redeemCoupon } from '@/app/actions/redeem-coupon';
 
 type AuthResult = {
   success: boolean;
@@ -125,10 +124,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const result = await redeemCoupon({ code, userId: user.id });
+      const response = await fetch('/api/redeem-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code, userId: user.id }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'An unknown error occurred during the request.');
+      }
       
       if (result.success && result.newRole) {
-        // Update state locally on success
         setUser(currentUser => {
           if (!currentUser) return null;
           return { ...currentUser, role: result.newRole as UserRole };
@@ -138,12 +148,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: result.success, message: result.message };
 
     } catch (error) {
-      console.error("Error calling redeem coupon server action:", error);
-      let message = "An unexpected error occurred while contacting the server.";
-      if (error instanceof Error) {
-          message = error.message;
-      }
-      return { success: false, message };
+      console.error("Coupon redemption failed:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, message: `An unexpected server error occurred. Details: ${errorMessage}` };
     }
   };
 
