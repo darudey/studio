@@ -6,7 +6,7 @@ import { User, UserRole } from '@/types';
 import { getUserById, createUserProfile } from '@/lib/data';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, AuthError } from 'firebase/auth';
-import { redeemCoupon } from '@/ai/flows/redeem-coupon';
+import { redeemCoupon } from '@/app/actions/redeem-coupon';
 
 type AuthResult = {
   success: boolean;
@@ -138,7 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: result.success, message: result.message };
 
     } catch (error) {
-      console.error("Error calling redeem coupon flow:", error);
+      console.error("Error calling redeem coupon server action:", error);
       let message = "An unexpected error occurred while contacting the server.";
       if (error instanceof Error) {
           message = error.message;
