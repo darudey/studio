@@ -5,16 +5,19 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
 // This function gets or initializes a uniquely named Firebase Admin app.
-// This is the robust way to avoid conflicts with the client-side Firebase SDK.
+// This is the robust way to avoid conflicts and ensure stability.
 function getAdminApp(): App {
     const ADMIN_APP_NAME = 'firebase-admin-coupon-redeem';
     const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
     if (existingApp) {
         return existingApp;
     }
-    // Initialize with an empty object to specify the admin app name.
-    // It will use Application Default Credentials from the environment.
-    return initializeApp({}, ADMIN_APP_NAME);
+    // Explicitly providing the projectId resolves authentication issues in some
+    // serverless environments where Application Default Credentials (ADC)
+    // might struggle to auto-detect the project.
+    return initializeApp({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    }, ADMIN_APP_NAME);
 }
 
 export async function POST(request: Request) {
