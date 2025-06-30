@@ -15,14 +15,19 @@ export async function POST(request: Request) {
 
     let app: App;
 
-    // Aggressively ensure a clean state for the Firebase Admin SDK
+    // Aggressively ensure a clean state for the Firebase Admin SDK.
+    // This creates and destroys the app on every request to prevent state corruption.
     const existingApp = getApps().find(a => a?.name === ADMIN_APP_NAME);
     if (existingApp) {
         await deleteApp(existingApp);
     }
     
-    // Initialize a fresh app for this specific request
-    app = initializeApp({}, ADMIN_APP_NAME);
+    // Initialize a fresh app for this specific request, explicitly providing the project ID
+    // to prevent any ambiguity in the server environment.
+    app = initializeApp({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    }, ADMIN_APP_NAME);
+    
     const db: Firestore = getFirestore(app);
 
     try {
