@@ -134,9 +134,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // If it's not, it's likely an HTML error page from a server crash.
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        const responseText = await response.text();
-        console.error("Server returned a non-JSON response:", responseText);
-        return { success: false, message: "The server returned an invalid response. The API route may have crashed." };
+        console.error("Server returned a non-JSON response. The API route may have crashed.");
+        return { success: false, message: "The server sent an invalid response. The API route may be missing or has crashed." };
       }
       
       const result = await response.json();

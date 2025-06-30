@@ -21,6 +21,7 @@ function getAdminApp(): App {
 }
 
 export async function POST(request: Request) {
+    console.log("✅ Coupon Redeem API hit");
     try {
         const adminApp = getAdminApp();
         const db = getFirestore(adminApp);
