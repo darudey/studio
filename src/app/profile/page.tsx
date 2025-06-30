@@ -12,39 +12,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export default function ProfilePage() {
-  const { user, redeemUpgradeCode, loading: authLoading } = useAuth();
-  const [upgradeCode, setUpgradeCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
     }
   }, [user, authLoading, router]);
-
-  const handleUpgrade = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const result = await redeemUpgradeCode(upgradeCode);
-    if (result.success) {
-      toast({
-        title: "Upgrade Successful!",
-        description: result.message,
-      });
-      setUpgradeCode("");
-    } else {
-      toast({
-        title: "Upgrade Failed",
-        description: result.message,
-        variant: "destructive",
-      });
-    }
-    setLoading(false);
-  };
 
   if (authLoading || !user) {
     return (
@@ -73,7 +51,7 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">My Profile</CardTitle>
-            <CardDescription>Manage your account information.</CardDescription>
+            <CardDescription>View your account information and status.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -95,42 +73,20 @@ export default function ProfilePage() {
             <div>
                 <Label>Account Type</Label>
                 <div>
-                    <Badge variant={user.role === 'wholesaler' ? "default" : "secondary" } className="text-lg capitalize">
+                    <Badge variant={user.role === 'wholesaler' ? "default" : user.role === 'developer' ? "destructive" : "secondary" } className="text-lg capitalize">
                         {user.role}
                     </Badge>
                 </div>
             </div>
           </CardContent>
+          {user.role === 'basic' && (
+            <CardFooter>
+                 <Button asChild>
+                    <Link href="/redeem">Have a coupon? Redeem it here</Link>
+                 </Button>
+            </CardFooter>
+          )}
         </Card>
-
-        {user.role === 'basic' && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Upgrade Account</CardTitle>
-              <CardDescription>Enter a code to upgrade your account role (e.g., to Wholesaler or Shop Owner).</CardDescription>
-            </CardHeader>
-            <form onSubmit={handleUpgrade}>
-                <CardContent>
-                    <div className="space-y-2">
-                        <Label htmlFor="upgrade-code">Upgrade Code</Label>
-                        <Input
-                            id="upgrade-code"
-                            value={upgradeCode}
-                            onChange={(e) => setUpgradeCode(e.target.value)}
-                            placeholder="Enter code"
-                            disabled={loading}
-                        />
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button type="submit" disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Redeem Code
-                    </Button>
-                </CardFooter>
-            </form>
-          </Card>
-        )}
       </div>
     </div>
   );

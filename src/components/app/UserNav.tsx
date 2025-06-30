@@ -64,6 +64,14 @@ export default function UserNav() {
               <span>Order History</span>
             </DropdownMenuItem>
           </Link>
+          {user.role === 'basic' && (
+            <Link href="/redeem">
+              <DropdownMenuItem>
+                <Ticket className="mr-2 h-4 w-4" />
+                <span>Redeem Coupon</span>
+              </DropdownMenuItem>
+            </Link>
+          )}
         </DropdownMenuGroup>
 
         {user.role === 'shop-owner' && (
