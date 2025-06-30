@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
+
+// Use a unique name for the admin app to avoid conflicts
+const ADMIN_APP_NAME = "firebase-admin-app-for-coupons";
 
 // Memoized database instance to avoid re-initialization
 let adminDb: Firestore;
@@ -11,11 +14,13 @@ function getAdminDb(): Firestore {
     return adminDb;
   }
   
-  if (getApps().length === 0) {
-    initializeApp();
-  }
+  // Check if the named app already exists
+  const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
   
-  adminDb = getFirestore();
+  // If it doesn't exist, initialize it. Let ADC handle credentials.
+  const app: App = existingApp || initializeApp({}, ADMIN_APP_NAME);
+  
+  adminDb = getFirestore(app);
   return adminDb;
 }
 
