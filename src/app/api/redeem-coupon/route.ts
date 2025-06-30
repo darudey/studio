@@ -1,25 +1,13 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, getApp, type App } from 'firebase-admin/app';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Use a unique name for the admin app to avoid conflicts with the client SDK
-const ADMIN_APP_NAME = 'firebase-admin-app-for-api';
-
-/**
- * Gets or initializes the named Firebase Admin app.
- * Using a named app ensures it doesn't conflict with the default app
- * that might be initialized by the client-side SDK in the same environment.
- */
-function getAdminApp(): App {
-    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
-    if (existingApp) {
-        return existingApp;
-    }
-    return initializeApp({
-        // The SDK will automatically pick up credentials from the environment.
-    }, ADMIN_APP_NAME);
+// Initialize Firebase Admin SDK, but only if it's not already initialized.
+// This uses the standard [DEFAULT] app instance and is the simplest, most robust approach.
+if (getApps().length === 0) {
+  initializeApp();
 }
 
 export async function POST(request: Request) {
@@ -30,8 +18,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const app = getAdminApp();
-        const db = getFirestore(app);
+        const db = getFirestore(); // Get firestore from the default app instance
 
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
