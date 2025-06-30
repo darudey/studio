@@ -4,13 +4,15 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// This pattern initializes the Firebase Admin SDK once per module load.
-// It's a standard and robust way to handle connections in serverless environments.
-if (getApps().filter(app => app.name === 'firebase-admin-app-for-coupon-redemption').length === 0) {
-    initializeApp({}, 'firebase-admin-app-for-coupon-redemption');
-}
+// This API route uses the Firebase Admin SDK to securely update a user's role.
 
 export async function POST(request: Request) {
+    // This pattern of initializing inside the handler is robust for serverless environments.
+    // It ensures the app is initialized on every request if it's not already.
+    if (getApps().length === 0) {
+        initializeApp();
+    }
+
     const { code, userId } = await request.json();
 
     if (!code || !userId) {
@@ -18,9 +20,8 @@ export async function POST(request: Request) {
     }
 
     try {
-        // Get the default Firestore instance.
-        // It's guaranteed to be initialized by the check above.
-        const db = getFirestore('firebase-admin-app-for-coupon-redemption');
+        // Get the default Firestore instance, now guaranteed to be initialized.
+        const db = getFirestore();
 
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, message: 'This coupon has already been used.' }, { status: 400 });
         }
 
-        // Use a batch to perform both updates atomically.
+        // Use a batch to perform both updates atomically for data consistency.
         const batch = db.batch();
         
         // 1. Update the user's role
