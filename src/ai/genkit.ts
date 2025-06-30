@@ -14,5 +14,5 @@ export const ai = genkit({
     googleAI({apiKey: process.env.GOOGLE_API_KEY}),
   ],
   // logSinks: ['firebase'], // Temporarily disabled to resolve auth conflict.
-  enableTracing: true,
+  enableTracing: false,
 });
