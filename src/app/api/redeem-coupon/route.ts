@@ -1,8 +1,22 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { adminDb } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
 import { type Coupon, type User } from '@/types';
+
+// Initialize Firebase Admin SDK directly in the route
+// This avoids potential module loading issues in some server environments.
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
+  } catch (error) {
+    console.error('Firebase admin initialization error', error);
+  }
+}
+
+const adminDb = admin.firestore();
 
 // Schema for the incoming request body
 const RedeemCouponInputSchema = z.object({
