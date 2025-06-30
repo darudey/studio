@@ -13,13 +13,12 @@ export async function POST(request: Request) {
     const app = getApps().length === 0 ? initializeApp() : getApp();
     const db = getFirestore(app);
 
-    const { code, userId } = await request.json();
-
-    if (!code || !userId) {
-        return NextResponse.json({ success: false, message: 'Coupon code and user ID are required.' }, { status: 400 });
-    }
-
     try {
+        const { code, userId } = await request.json();
+
+        if (!code || !userId) {
+            return NextResponse.json({ success: false, message: 'Coupon code and user ID are required.' }, { status: 400 });
+        }
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
 
