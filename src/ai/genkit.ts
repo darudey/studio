@@ -4,8 +4,7 @@
  */
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {firebase} from '@genkit-ai/firebase';
-import {defineFlow, startFlow} from '@genkit-ai/flow';
+import firebase from '@genkit-ai/firebase';
 
 // Initialize Genkit with the Google AI plugin, explicitly providing the API key
 // to prevent conflicts with the Firebase Admin SDK's default credentials.
