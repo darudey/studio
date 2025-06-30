@@ -6,18 +6,26 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { initializeApp, getApps, applicationDefault, type App } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Use the default Firebase app instance, initializing it only if it doesn't exist.
-// This is the most robust pattern for server environments like Next.js.
-if (getApps().length === 0) {
+// Memoized database instance.
+// This prevents re-initializing the app on every call in a serverless environment.
+let adminDb: Firestore;
+
+function getAdminDb(): Firestore {
+  if (adminDb) {
+    return adminDb;
+  }
+  if (getApps().length === 0) {
     initializeApp({
         credential: applicationDefault()
     });
+  }
+  adminDb = getFirestore();
+  return adminDb;
 }
-const adminDb = getFirestore();
 
 
 const RedeemCouponInputSchema = z.object({
@@ -47,10 +55,11 @@ const redeemCouponFlow = ai.defineFlow(
   },
   async (input) => {
     try {
+        const db = getAdminDb();
         const { code, userId } = input;
         
         // 1. Find the user
-        const userRef = adminDb.collection('users').doc(userId);
+        const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
         if (!userSnap.exists()) {
             return { success: false, message: 'User not found.' };
@@ -62,7 +71,7 @@ const redeemCouponFlow = ai.defineFlow(
         }
 
         // 2. Find the coupon
-        const couponsCollection = adminDb.collection('coupons');
+        const couponsCollection = db.collection('coupons');
         const q = couponsCollection.where('code', '==', code.trim()).limit(1);
         const couponSnapshot = await q.get();
 
@@ -78,13 +87,13 @@ const redeemCouponFlow = ai.defineFlow(
         }
 
         // 3. Perform atomic update using a batch
-        const batch = adminDb.batch();
+        const batch = db.batch();
 
         // Update user role
         batch.update(userRef, { role: coupon.role });
 
         // Mark coupon as used
-        const couponRef = adminDb.collection('coupons').doc(coupon.id);
+        const couponRef = db.collection('coupons').doc(coupon.id);
         batch.update(couponRef, { isUsed: true, usedBy: userId });
 
         await batch.commit();
