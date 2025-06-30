@@ -129,11 +129,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, userId: user.id }),
       });
+
+      // Check if the response is JSON before trying to parse it.
+      // If it's not, it's likely an HTML error page from a server crash.
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const responseText = await response.text();
+        console.error("Server returned a non-JSON response:", responseText);
+        return { success: false, message: "The server returned an invalid response. The API route may have crashed." };
+      }
       
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'An unknown error occurred during the request.');
+        // We received a proper JSON error response from the server.
+        return { success: false, message: result.message || "An unknown error occurred during the request." };
       }
       
       if (result.success && result.newRole) {
@@ -146,8 +156,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: result.success, message: result.message };
 
     } catch (error) {
-      console.error("Coupon redemption failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      console.error("Coupon redemption fetch failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
       return { success: false, message: errorMessage };
     }
   };

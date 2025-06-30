@@ -5,9 +5,9 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
 // This function gets or initializes a uniquely named Firebase Admin app.
-// This is the robust way to avoid conflicts and ensure stability.
+// This is the robust way to avoid conflicts and ensure stability in serverless environments.
 function getAdminApp(): App {
-    const ADMIN_APP_NAME = 'firebase-admin-coupon-redeem';
+    const ADMIN_APP_NAME = 'firebase-admin-coupon-redeem-stable';
     const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
     if (existingApp) {
         return existingApp;
