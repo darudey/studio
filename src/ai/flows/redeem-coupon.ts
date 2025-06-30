@@ -86,8 +86,9 @@ const redeemCouponFlow = ai.defineFlow(
 
     } catch (error) {
       console.error('Coupon redemption flow failed with admin SDK:', error);
-      // It's better not to expose detailed internal errors to the client.
-      return { success: false, message: 'An unexpected server error occurred. Please try again later.' };
+      // For debugging, expose the actual error message to the client.
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, message: `An unexpected server error occurred. Details: ${errorMessage}` };
     }
   }
 );
