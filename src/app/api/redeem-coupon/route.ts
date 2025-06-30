@@ -4,22 +4,27 @@ import { initializeApp, getApps, App, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Create a separate, named app for admin operations to avoid conflict with client-side SDK
-const ADMIN_APP_NAME = 'firebase-admin-app-redeem-coupon';
+// Using a named app instance is the standard way to avoid conflicts when the
+// Admin SDK is used in the same project as the Client SDK.
+const ADMIN_APP_NAME = 'firebase-admin-app-for-coupon-redemption';
 
 /**
- * Gets the admin app instance, initializing it if it doesn't exist.
- * Using a named app instance avoids conflicts with the client-side Firebase SDK.
+ * Gets the admin app instance, initializing it only if it doesn't already exist.
+ * This memoization pattern is crucial for serverless environments to avoid re-initializing
+ * on every function invocation, which can lead to errors and resource exhaustion.
  */
 function getAdminApp(): App {
-    if (getApps().some(app => app.name === ADMIN_APP_NAME)) {
-        return getApp(ADMIN_APP_NAME);
+    // Check if the named app already exists.
+    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
+    if (existingApp) {
+        return existingApp;
     }
-    // Initialize the app if it doesn't exist, providing the project ID
-    // to remove ambiguity for Application Default Credentials (ADC).
-    return initializeApp({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    }, ADMIN_APP_NAME);
+
+    // If the named app doesn't exist, initialize it.
+    // We do not provide a projectId, allowing the SDK to fully rely on the
+    // Application Default Credentials (ADC) provided by the server environment.
+    // This is the most robust way to handle authentication in Google Cloud environments.
+    return initializeApp({}, ADMIN_APP_NAME);
 }
 
 export async function POST(request: Request) {
