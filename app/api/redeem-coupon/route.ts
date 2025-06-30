@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, getApp, App } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, App, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
@@ -12,16 +12,25 @@ function getAdminApp(): App {
     if (existingApp) {
         return existingApp;
     }
-    // Explicitly providing the projectId resolves authentication issues in some
-    // serverless environments where Application Default Credentials (ADC)
-    // might struggle to auto-detect the project.
+
+    // Explicitly providing credentials resolves authentication issues in serverless
+    // environments where Application Default Credentials (ADC) might struggle.
+    const serviceAccount = {
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        // The private key must be correctly formatted. The replace function handles
+        // newlines stored in environment variables.
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    };
+
     return initializeApp({
+        credential: cert(serviceAccount),
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     }, ADMIN_APP_NAME);
 }
 
 export async function POST(request: Request) {
-    console.log("✅ Coupon Redeem API hit");
+    console.log("POST /api/redeem-coupon invoked");
     try {
         const adminApp = getAdminApp();
         const db = getFirestore(adminApp);
