@@ -49,9 +49,8 @@ export default function ManageCouponsPage() {
     if (!user) return;
     setIsGenerating(true);
 
-    const prefix = roleToGenerate === 'wholesaler' ? 'WHOLE' : 'SHOP';
-    const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const newCode = `${prefix}-${randomPart}`;
+    // Simplified coupon code generation
+    const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     try {
         const newCouponData: Omit<Coupon, 'id'> = {

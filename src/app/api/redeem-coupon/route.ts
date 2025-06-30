@@ -1,33 +1,14 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, type App, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Using a unique name to ensure no clashes with previous attempts.
-const ADMIN_APP_NAME = "firebase-admin-coupon-redeemer-v-final";
-
-/**
- * Initializes and returns a stable, named Firebase Admin app instance.
- * This avoids re-initialization on every request and uses a named app
- * to prevent conflicts with other libraries.
- */
-function getFirebaseAdminApp(): App {
-    // Find an existing named app instance
-    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
-    if (existingApp) {
-        return existingApp;
-    }
-
-    // If an instance doesn't exist, create a new one.
-    // We are NOT explicitly passing the projectId, allowing the Application
-    // Default Credentials (ADC) from the environment to provide it.
-    // This resolves potential conflicts where an explicitly passed projectId
-    // might differ from the one in the ADC environment.
-    return initializeApp({
-        credential: applicationDefault(),
-    }, ADMIN_APP_NAME);
-}
+// This is the simplest, most standard way to initialize the Firebase Admin SDK.
+// It gets the default app instance if it exists, or creates it if it doesn't.
+// This avoids all the complex initialization issues from previous attempts.
+const app: App = getApps().length ? getApp() : initializeApp();
+const db: Firestore = getFirestore(app);
 
 export async function POST(request: Request) {
     const { code, userId } = await request.json();
@@ -37,9 +18,6 @@ export async function POST(request: Request) {
     }
 
     try {
-        const app = getFirebaseAdminApp();
-        const db: Firestore = getFirestore(app);
-
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
 
@@ -67,10 +45,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, message: 'This coupon has already been used.' }, { status: 400 });
         }
 
+        // Use a batch to perform both updates atomically.
         const batch = db.batch();
+        
+        // 1. Update the user's role
         batch.update(userRef, { role: coupon.role });
+        
+        // 2. Mark the coupon as used
         const couponRef = db.collection('coupons').doc(coupon.id);
         batch.update(couponRef, { isUsed: true, usedBy: userId });
+        
         await batch.commit();
         
         return NextResponse.json({
