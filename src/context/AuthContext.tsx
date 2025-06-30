@@ -6,7 +6,6 @@ import { User, UserRole } from '@/types';
 import { getUserById, createUserProfile } from '@/lib/data';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, AuthError } from 'firebase/auth';
-import { redeemCoupon as redeemCouponFlow } from '@/ai/flows/redeem-coupon-flow';
 
 type AuthResult = {
   success: boolean;
@@ -125,9 +124,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const result = await redeemCouponFlow({ code, userId: user.id });
+      const response = await fetch('/api/redeem-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, userId: user.id }),
+      });
+      
+      const result = await response.json();
 
-      if (!result.success) {
+      if (!response.ok) {
         throw new Error(result.message || 'An unknown error occurred during the request.');
       }
       
