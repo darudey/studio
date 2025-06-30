@@ -23,10 +23,8 @@ function getAdminDb(): Firestore {
     // Check if the default app already exists
     getApp();
   } catch (error) {
-    // If it doesn't exist, initialize it
-    initializeApp({
-        credential: applicationDefault()
-    });
+    // If it doesn't exist, initialize it with default credentials.
+    initializeApp();
   }
   
   adminDb = getFirestore();
