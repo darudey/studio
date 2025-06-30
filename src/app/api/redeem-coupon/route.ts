@@ -4,13 +4,13 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Initialize Firebase Admin SDK, but only if it's not already initialized.
-// This uses the standard [DEFAULT] app instance and is the simplest, most robust approach.
-if (getApps().length === 0) {
-  initializeApp();
-}
-
 export async function POST(request: Request) {
+    // This is the simplest and most robust way to initialize in a serverless environment.
+    // It ensures the app is initialized on every request before it is used.
+    if (getApps().length === 0) {
+      initializeApp();
+    }
+
     const { code, userId } = await request.json();
 
     if (!code || !userId) {
