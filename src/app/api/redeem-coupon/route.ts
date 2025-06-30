@@ -1,28 +1,14 @@
+
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Use a unique name for the admin app to avoid conflicts
 const ADMIN_APP_NAME = "firebase-admin-app-for-coupons";
 
-// Memoized database instance to avoid re-initialization
-let adminDb: Firestore;
-
-function getAdminDb(): Firestore {
-  if (adminDb) {
-    return adminDb;
-  }
-  
-  // Check if the named app already exists
-  const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
-  
-  // If it doesn't exist, initialize it. Let ADC handle credentials.
-  const app: App = existingApp || initializeApp({}, ADMIN_APP_NAME);
-  
-  adminDb = getFirestore(app);
-  return adminDb;
-}
+// The memoized getAdminDb() function has been removed from the module scope
+// to prevent initialization conflicts with other libraries during server startup.
+// Firebase Admin will now be initialized safely within the request handler.
 
 export async function POST(request: Request) {
     const { code, userId } = await request.json();
@@ -32,7 +18,11 @@ export async function POST(request: Request) {
     }
 
     try {
-        const db = getAdminDb();
+        // Initialize Firebase Admin SDK within the handler to ensure it doesn't
+        // conflict with other libraries initialized at the start of the process.
+        const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
+        const app: App = existingApp || initializeApp({}, ADMIN_APP_NAME);
+        const db: Firestore = getFirestore(app);
         
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
