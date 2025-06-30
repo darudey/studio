@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, type App, deleteApp } from 'firebase-admin/app';
+import { initializeApp, getApps, type App, deleteApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
@@ -22,9 +22,10 @@ export async function POST(request: Request) {
         await deleteApp(existingApp);
     }
     
-    // Initialize a fresh app for this specific request, explicitly providing the project ID
-    // to prevent any ambiguity in the server environment.
+    // Initialize a fresh app for this specific request, explicitly telling it to use
+    // the Application Default Credentials from the environment.
     app = initializeApp({
+        credential: applicationDefault(),
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
     }, ADMIN_APP_NAME);
     
