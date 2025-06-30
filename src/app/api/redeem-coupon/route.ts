@@ -1,10 +1,26 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, type App, deleteApp, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApps, type App, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-const ADMIN_APP_NAME = "firebase-admin-coupon-redeemer";
+const ADMIN_APP_NAME = "firebase-admin-coupon-redeemer-stable";
+
+/**
+ * Initializes and returns a stable, named Firebase Admin app instance.
+ * This avoids re-initialization on every request, providing stability.
+ */
+function getFirebaseAdminApp(): App {
+    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
+    if (existingApp) {
+        return existingApp;
+    }
+
+    return initializeApp({
+        credential: applicationDefault(),
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    }, ADMIN_APP_NAME);
+}
 
 export async function POST(request: Request) {
     const { code, userId } = await request.json();
@@ -13,25 +29,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Coupon code and user ID are required.' }, { status: 400 });
     }
 
-    let app: App;
-
-    // Aggressively ensure a clean state for the Firebase Admin SDK.
-    // This creates and destroys the app on every request to prevent state corruption.
-    const existingApp = getApps().find(a => a?.name === ADMIN_APP_NAME);
-    if (existingApp) {
-        await deleteApp(existingApp);
-    }
-    
-    // Initialize a fresh app for this specific request, explicitly telling it to use
-    // the Application Default Credentials from the environment.
-    app = initializeApp({
-        credential: applicationDefault(),
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    }, ADMIN_APP_NAME);
-    
-    const db: Firestore = getFirestore(app);
-
     try {
+        const app = getFirebaseAdminApp();
+        const db: Firestore = getFirestore(app);
+
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
         if (!userSnap.exists()) {
@@ -74,8 +75,5 @@ export async function POST(request: Request) {
         console.error('API /redeem-coupon error:', error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
         return NextResponse.json({ success: false, message: `An unexpected server error occurred: ${errorMessage}` }, { status: 500 });
-      } finally {
-        // Clean up the app instance after the request is done to prevent state leakage
-        await deleteApp(app);
       }
 }
