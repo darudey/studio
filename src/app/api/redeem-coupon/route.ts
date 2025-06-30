@@ -1,21 +1,26 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// This function ensures Firebase Admin is initialized, but only once per server instance.
-function initializeAdminApp() {
-    if (getApps().length > 0) {
-        return getApp();
+// This function gets or initializes a uniquely named Firebase Admin app.
+// This is the robust way to avoid conflicts with the client-side Firebase SDK.
+function getAdminApp(): App {
+    const ADMIN_APP_NAME = 'firebase-admin-coupon-redeem';
+    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
+    if (existingApp) {
+        return existingApp;
     }
-    return initializeApp();
+    // Initialize with an empty object to specify the admin app name.
+    // It will use Application Default Credentials from the environment.
+    return initializeApp({}, ADMIN_APP_NAME);
 }
 
 export async function POST(request: Request) {
     try {
-        initializeAdminApp();
-        const db = getFirestore();
+        const adminApp = getAdminApp();
+        const db = getFirestore(adminApp);
 
         const { code, userId } = await request.json();
 
@@ -25,8 +30,7 @@ export async function POST(request: Request) {
 
         const couponsQuery = db.collection('coupons').where('code', '==', code.trim()).limit(1);
 
-        // Use a transaction to safely read and then write data.
-        // This ensures the entire operation succeeds or fails as a single unit.
+        // Use a transaction for safe, atomic read-and-write operations.
         const newRole = await db.runTransaction(async (transaction) => {
             const couponSnapshot = await transaction.get(couponsQuery);
 
@@ -53,7 +57,7 @@ export async function POST(request: Request) {
                 throw new Error("This account has already been upgraded.");
             }
 
-            // All checks passed. Perform the writes within the transaction.
+            // All checks passed. Perform writes within the transaction.
             transaction.update(userRef, { role: coupon.role });
             transaction.update(couponDoc.ref, { isUsed: true, usedBy: userId });
 
@@ -69,6 +73,6 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('API /redeem-coupon transaction failed:', error);
         const errorMessage = error instanceof Error ? error.message : "An unexpected server error occurred.";
-        return NextResponse.json({ success: false, message: errorMessage }, { status: 400 });
+        return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
     }
 }
