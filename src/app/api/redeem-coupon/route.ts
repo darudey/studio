@@ -7,15 +7,9 @@ import { type Coupon, type User } from '@/types';
 // Standard singleton initialization pattern. 
 // This ensures the admin app is initialized only once.
 if (!admin.apps.length) {
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    if (!projectId) {
-        // This is a server-side check that runs at build time or on first request,
-        // so throwing an error is appropriate to signal a fatal configuration problem.
-        throw new Error("Server configuration error: Firebase Project ID is not defined.");
-    }
-    admin.initializeApp({
-        projectId,
-    });
+    // Initialize without explicit config to use Application Default Credentials
+    // This resolves conflicts with other Google Cloud libraries like Genkit
+    admin.initializeApp();
 }
 
 
