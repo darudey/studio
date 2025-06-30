@@ -4,19 +4,33 @@ import { z } from 'zod';
 import * as admin from 'firebase-admin';
 import { type Coupon, type User } from '@/types';
 
-// Initialize Firebase Admin SDK directly in the route
-// This avoids potential module loading issues in some server environments.
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  } catch (error) {
-    console.error('Firebase admin initialization error', error);
-  }
-}
+// Using a named app instance helps to avoid conflicts with other
+// Google Cloud services that might be auto-initialized (like Genkit).
+const getAdminDb = () => {
+  const APP_NAME = 'firebase-admin-redeem-coupon-app';
+  
+  const existingApp = admin.apps.find(app => app?.name === APP_NAME);
 
-const adminDb = admin.firestore();
+  if (existingApp) {
+    return existingApp.firestore();
+  }
+
+  try {
+    // Initialize a new app if one doesn't exist.
+    const newApp = admin.initializeApp({
+        // Using projectId should be sufficient if Application Default Credentials
+        // are configured correctly in the environment.
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    }, APP_NAME);
+    return newApp.firestore();
+  } catch (error) {
+    // Log the detailed error for server-side debugging.
+    console.error("Firebase Admin SDK initialization failed:", error);
+    // Throw a generic but informative error.
+    throw new Error("Server configuration error: Could not initialize Firebase Admin services.");
+  }
+};
+
 
 // Schema for the incoming request body
 const RedeemCouponInputSchema = z.object({
@@ -26,6 +40,9 @@ const RedeemCouponInputSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the isolated Firestore database instance.
+    const adminDb = getAdminDb();
+    
     const body = await request.json();
     const validatedInput = RedeemCouponInputSchema.safeParse(body);
 
@@ -86,7 +103,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API /redeem-coupon error:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    // Return the real error message to help with debugging
-    return NextResponse.json({ success: false, message: `An unexpected server error occurred: ${errorMessage}` }, { status: 500 });
+    return NextResponse.json({ success: false, message: `An unexpected server error occurred. Details: ${errorMessage}` }, { status: 500 });
   }
 }
