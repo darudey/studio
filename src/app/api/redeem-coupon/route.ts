@@ -9,14 +9,14 @@ import { type Coupon, type User } from '@/types';
 if (!admin.apps.length) {
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     if (!projectId) {
+        // This is a server-side check that runs at build time or on first request,
+        // so throwing an error is appropriate to signal a fatal configuration problem.
         throw new Error("Server configuration error: Firebase Project ID is not defined.");
     }
     admin.initializeApp({
         projectId,
     });
 }
-
-const adminDb = admin.firestore();
 
 
 // Schema for the incoming request body
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     
     const { code, userId } = validatedInput.data;
     
-    // The admin SDK bypasses Firestore security rules, acting as a trusted server environment.
+    const adminDb = admin.firestore();
     
     // 1. Find the user
     const userRef = adminDb.collection('users').doc(userId);
