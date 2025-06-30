@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for redeeming an upgrade coupon.
@@ -9,21 +10,14 @@ import { initializeApp, getApps, applicationDefault, type App } from 'firebase-a
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Helper function to get a named, isolated Firebase Admin app instance.
-// Initialize it once at the module level, outside the flow execution.
-const getFirebaseAdminApp = (): App => {
-  const appName = 'coupon-redemption-app-isolated';
-  const existingApp = getApps().find(app => app.name === appName);
-  if (existingApp) {
-    return existingApp;
-  }
-  return initializeApp({
-    credential: applicationDefault(),
-  }, appName);
-};
-
-const adminApp = getFirebaseAdminApp();
-const adminDb = getFirestore(adminApp);
+// Use the default Firebase app instance, initializing it only if it doesn't exist.
+// This is the most robust pattern for server environments like Next.js.
+if (getApps().length === 0) {
+    initializeApp({
+        credential: applicationDefault()
+    });
+}
+const adminDb = getFirestore();
 
 
 const RedeemCouponInputSchema = z.object({
@@ -103,8 +97,8 @@ const redeemCouponFlow = ai.defineFlow(
 
       } catch (error) {
         console.error('Flow /redeemCoupon error:', error);
-        const errorMessage = error instanceof Error ? `${error.message}\n${error.stack}` : String(error);
-        return { success: false, message: `Server Error: ${errorMessage}` };
+        const errorMessage = error instanceof Error ? `${error.message}` : String(error);
+        return { success: false, message: `An unexpected server error occurred: ${errorMessage}` };
       }
   }
 );
