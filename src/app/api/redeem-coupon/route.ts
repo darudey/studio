@@ -1,17 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
 // This API route uses the Firebase Admin SDK to securely update a user's role.
 
 export async function POST(request: Request) {
-    // This pattern of initializing inside the handler is robust for serverless environments.
-    // It ensures the app is initialized on every request if it's not already.
-    if (getApps().length === 0) {
-        initializeApp();
-    }
+    // This robust pattern ensures Firebase is initialized on every request,
+    // which is crucial for serverless environments. It gets the existing app
+    // or initializes a new one, then explicitly passes it to the Firestore service.
+    const app = getApps().length === 0 ? initializeApp() : getApp();
+    const db = getFirestore(app);
 
     const { code, userId } = await request.json();
 
@@ -20,9 +20,6 @@ export async function POST(request: Request) {
     }
 
     try {
-        // Get the default Firestore instance, now guaranteed to be initialized.
-        const db = getFirestore();
-
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
 
