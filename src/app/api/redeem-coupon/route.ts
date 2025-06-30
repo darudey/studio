@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('API /redeem-coupon error:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? `${error.message}\n${error.stack}` : String(error);
     return NextResponse.json({ success: false, message: `Server Error: ${errorMessage}` }, { status: 500 });
   }
 }
