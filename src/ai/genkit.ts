@@ -3,16 +3,12 @@
  */
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-// The @genkit-ai/firebase import has been removed to prevent authentication conflicts
-// with the Firebase Admin SDK.
 
 // Initialize Genkit with the Google AI plugin.
-// We are removing the firebase log sink to prevent a deep-seated authentication
-// conflict between Genkit's plugins and the Firebase Admin SDK.
+// Using the simplest possible configuration to allow both Genkit and the Firebase Admin SDK
+// to use the default application credentials, which should resolve authentication conflicts.
 export const ai = genkit({
   plugins: [
-    googleAI({apiKey: process.env.GOOGLE_API_KEY}),
+    googleAI(),
   ],
-  // logSinks: ['firebase'], // Temporarily disabled to resolve auth conflict.
-  enableTracing: false,
 });
