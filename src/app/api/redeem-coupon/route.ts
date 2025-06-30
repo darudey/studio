@@ -1,19 +1,26 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, App } from 'firebase-admin/app';
+import { initializeApp, getApps, App, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-export async function POST(request: Request) {
-    let app: App;
-    // This is the simplest and most robust way to initialize in a serverless environment.
-    // It ensures the app is initialized on every request before it is used.
-    if (getApps().length === 0) {
-      app = initializeApp();
-    } else {
-      app = getApps()[0];
-    }
+// Create a separate, named app for admin operations to avoid conflict with client-side SDK
+const ADMIN_APP_NAME = 'firebase-admin-app-redeem-coupon';
 
+/**
+ * Gets the admin app instance, initializing it if it doesn't exist.
+ * Using a named app instance avoids conflicts with the client-side Firebase SDK.
+ */
+function getAdminApp(): App {
+    if (getApps().some(app => app.name === ADMIN_APP_NAME)) {
+        return getApp(ADMIN_APP_NAME);
+    }
+    // Initialize the app if it doesn't exist.
+    // Passing an empty object for credentials uses Application Default Credentials.
+    return initializeApp({}, ADMIN_APP_NAME);
+}
+
+export async function POST(request: Request) {
     const { code, userId } = await request.json();
 
     if (!code || !userId) {
@@ -21,7 +28,8 @@ export async function POST(request: Request) {
     }
 
     try {
-        const db = getFirestore(app); // Get firestore from the explicit app instance
+        const app = getAdminApp();
+        const db = getFirestore(app);
 
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
