@@ -4,11 +4,10 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 
-// Initialize Genkit with the Google AI plugin.
-// Using the simplest possible configuration to allow both Genkit and the Firebase Admin SDK
-// to use the default application credentials, which should resolve authentication conflicts.
+// Initialize Genkit with the Google AI plugin, explicitly providing an API key
+// to prevent authentication conflicts with the Firebase Admin SDK's default credentials.
 export const ai = genkit({
   plugins: [
-    googleAI(),
+    googleAI({ apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY }),
   ],
 });
