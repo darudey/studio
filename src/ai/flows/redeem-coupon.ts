@@ -10,7 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { adminDb } from '@/lib/firebase-admin';
-import type { Coupon, User, UserRole } from '@/types';
+import { UserRole, type Coupon, type User } from '@/types';
 
 // Define input and output Zod schemas for the flow
 // These are not exported to comply with 'use server' constraints.
