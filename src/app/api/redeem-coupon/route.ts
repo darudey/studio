@@ -4,21 +4,28 @@ import { initializeApp, getApps, type App, applicationDefault } from 'firebase-a
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-const ADMIN_APP_NAME = "firebase-admin-coupon-redeemer-stable";
+// Using a unique name to ensure no clashes with previous attempts.
+const ADMIN_APP_NAME = "firebase-admin-coupon-redeemer-v-final";
 
 /**
  * Initializes and returns a stable, named Firebase Admin app instance.
- * This avoids re-initialization on every request, providing stability.
+ * This avoids re-initialization on every request and uses a named app
+ * to prevent conflicts with other libraries.
  */
 function getFirebaseAdminApp(): App {
+    // Find an existing named app instance
     const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
     if (existingApp) {
         return existingApp;
     }
 
+    // If an instance doesn't exist, create a new one.
+    // We are NOT explicitly passing the projectId, allowing the Application
+    // Default Credentials (ADC) from the environment to provide it.
+    // This resolves potential conflicts where an explicitly passed projectId
+    // might differ from the one in the ADC environment.
     return initializeApp({
         credential: applicationDefault(),
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
     }, ADMIN_APP_NAME);
 }
 
@@ -35,6 +42,7 @@ export async function POST(request: Request) {
 
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
+
         if (!userSnap.exists()) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
