@@ -18,7 +18,6 @@ import { Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { RelatedProducts } from "./RelatedProducts";
 import type { Product } from "@/types";
 import { Skeleton } from "../ui/skeleton";
 
@@ -93,10 +92,6 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                 )}
               </div>
             </ScrollArea>
-            <Separator />
-            <div className="p-6">
-                <RelatedProducts />
-            </div>
             <Separator />
             <SheetFooter className="p-6">
               <div className="w-full space-y-4">
