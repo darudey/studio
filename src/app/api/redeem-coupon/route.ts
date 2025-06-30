@@ -4,11 +4,23 @@ import { initializeApp, getApps, getApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// This is the simplest, most standard way to initialize the Firebase Admin SDK.
-// It gets the default app instance if it exists, or creates it if it doesn't.
-// This avoids all the complex initialization issues from previous attempts.
-const app: App = getApps().length ? getApp() : initializeApp();
-const db: Firestore = getFirestore(app);
+// Use a unique name for the admin app to avoid conflicts with the client SDK
+const ADMIN_APP_NAME = 'firebase-admin-app-for-api';
+
+/**
+ * Gets or initializes the named Firebase Admin app.
+ * Using a named app ensures it doesn't conflict with the default app
+ * that might be initialized by the client-side SDK in the same environment.
+ */
+function getAdminApp(): App {
+    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
+    if (existingApp) {
+        return existingApp;
+    }
+    return initializeApp({
+        // The SDK will automatically pick up credentials from the environment.
+    }, ADMIN_APP_NAME);
+}
 
 export async function POST(request: Request) {
     const { code, userId } = await request.json();
@@ -18,6 +30,9 @@ export async function POST(request: Request) {
     }
 
     try {
+        const app = getAdminApp();
+        const db = getFirestore(app);
+
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
 
