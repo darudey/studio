@@ -1,19 +1,28 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, type App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// This API route uses the Firebase Admin SDK to securely update a user's role.
+// Use a unique name for the admin app to avoid conflicts
+const ADMIN_APP_NAME = 'firebase-admin-redeem-coupon';
+
+function getAdminApp(): App {
+    // Check if the named app already exists
+    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
+    if (existingApp) {
+        return existingApp;
+    }
+    // If it doesn't exist, initialize it with the unique name.
+    // The empty object for credentials tells it to use Application Default Credentials.
+    return initializeApp({}, ADMIN_APP_NAME);
+}
 
 export async function POST(request: Request) {
-    // This robust pattern ensures Firebase is initialized on every request,
-    // which is crucial for serverless environments. It gets the existing app
-    // or initializes a new one, then explicitly passes it to the Firestore service.
-    const app = getApps().length === 0 ? initializeApp() : getApp();
-    const db = getFirestore(app);
-
     try {
+        const app = getAdminApp();
+        const db = getFirestore(app);
+
         const { code, userId } = await request.json();
 
         if (!code || !userId) {
