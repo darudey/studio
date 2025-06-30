@@ -4,14 +4,18 @@ import { z } from 'zod';
 import admin from 'firebase-admin';
 import { type Coupon, type User } from '@/types';
 
-// Standard singleton initialization pattern. 
-// This ensures the admin app is initialized only once.
-if (!admin.apps.length) {
-    // Initialize without explicit config to use Application Default Credentials
-    // This resolves conflicts with other Google Cloud libraries like Genkit
-    admin.initializeApp();
-}
-
+// Helper function to get a named, isolated Firebase Admin app instance.
+// This prevents conflicts with other Google Cloud libraries like Genkit
+// which may be trying to manage the default app instance.
+const getFirebaseAdminApp = () => {
+  const appName = 'coupon-redemption-app';
+  const existingApp = admin.apps.find(app => app?.name === appName);
+  if (existingApp) {
+    return existingApp;
+  }
+  // Initialize without explicit config to use Application Default Credentials
+  return admin.initializeApp({ /* No credentials, use ADC */ }, appName);
+};
 
 // Schema for the incoming request body
 const RedeemCouponInputSchema = z.object({
@@ -30,7 +34,8 @@ export async function POST(request: NextRequest) {
     
     const { code, userId } = validatedInput.data;
     
-    const adminDb = admin.firestore();
+    const adminApp = getFirebaseAdminApp();
+    const adminDb = adminApp.firestore();
     
     // 1. Find the user
     const userRef = adminDb.collection('users').doc(userId);
