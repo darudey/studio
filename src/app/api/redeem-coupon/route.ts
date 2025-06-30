@@ -1,14 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
 export async function POST(request: Request) {
+    let app: App;
     // This is the simplest and most robust way to initialize in a serverless environment.
     // It ensures the app is initialized on every request before it is used.
     if (getApps().length === 0) {
-      initializeApp();
+      app = initializeApp();
+    } else {
+      app = getApps()[0];
     }
 
     const { code, userId } = await request.json();
@@ -18,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const db = getFirestore(); // Get firestore from the default app instance
+        const db = getFirestore(app); // Get firestore from the explicit app instance
 
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
