@@ -15,9 +15,11 @@ function getAdminApp(): App {
     if (getApps().some(app => app.name === ADMIN_APP_NAME)) {
         return getApp(ADMIN_APP_NAME);
     }
-    // Initialize the app if it doesn't exist.
-    // Passing an empty object for credentials uses Application Default Credentials.
-    return initializeApp({}, ADMIN_APP_NAME);
+    // Initialize the app if it doesn't exist, providing the project ID
+    // to remove ambiguity for Application Default Credentials (ADC).
+    return initializeApp({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    }, ADMIN_APP_NAME);
 }
 
 export async function POST(request: Request) {
