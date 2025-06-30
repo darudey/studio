@@ -10,6 +10,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
 // Helper function to get a named, isolated Firebase Admin app instance.
+// Initialize it once at the module level, outside the flow execution.
 const getFirebaseAdminApp = (): App => {
   const appName = 'coupon-redemption-app-isolated';
   const existingApp = getApps().find(app => app.name === appName);
@@ -20,6 +21,9 @@ const getFirebaseAdminApp = (): App => {
     credential: applicationDefault(),
   }, appName);
 };
+
+const adminApp = getFirebaseAdminApp();
+const adminDb = getFirestore(adminApp);
 
 
 const RedeemCouponInputSchema = z.object({
@@ -50,9 +54,6 @@ const redeemCouponFlow = ai.defineFlow(
   async (input) => {
     try {
         const { code, userId } = input;
-        
-        const adminApp = getFirebaseAdminApp();
-        const adminDb = getFirestore(adminApp);
         
         // 1. Find the user
         const userRef = adminDb.collection('users').doc(userId);
