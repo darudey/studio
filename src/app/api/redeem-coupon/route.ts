@@ -1,29 +1,13 @@
 
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, App } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { type Coupon, type User } from '@/types';
 
-// Using a named app instance is the standard way to avoid conflicts when the
-// Admin SDK is used in the same project as the Client SDK.
-const ADMIN_APP_NAME = 'firebase-admin-app-for-coupon-redemption';
-
-/**
- * Gets the admin app instance, initializing it only if it doesn't already exist.
- * This memoization pattern is crucial for serverless environments to avoid
- * re-initializing on every function invocation.
- */
-function getAdminApp(): App {
-    // Check if the named app already exists.
-    const existingApp = getApps().find(app => app.name === ADMIN_APP_NAME);
-    if (existingApp) {
-        return existingApp;
-    }
-
-    // If the named app doesn't exist, initialize it.
-    // When no credential option is provided, the Admin SDK automatically
-    // tries to use Application Default Credentials from the environment.
-    return initializeApp({}, ADMIN_APP_NAME);
+// This pattern initializes the Firebase Admin SDK once per module load.
+// It's a standard and robust way to handle connections in serverless environments.
+if (getApps().filter(app => app.name === 'firebase-admin-app-for-coupon-redemption').length === 0) {
+    initializeApp({}, 'firebase-admin-app-for-coupon-redemption');
 }
 
 export async function POST(request: Request) {
@@ -34,8 +18,9 @@ export async function POST(request: Request) {
     }
 
     try {
-        const app = getAdminApp();
-        const db = getFirestore(app);
+        // Get the default Firestore instance.
+        // It's guaranteed to be initialized by the check above.
+        const db = getFirestore('firebase-admin-app-for-coupon-redemption');
 
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
