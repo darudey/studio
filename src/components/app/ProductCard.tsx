@@ -82,15 +82,15 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-4 pb-2">
-        <CardTitle className="text-base font-semibold leading-tight mb-2 h-10 overflow-hidden">
+        <CardTitle className="text-sm font-semibold leading-tight mb-1 h-8 overflow-hidden">
             <Link href={`/products/${product.id}`} className="hover:underline">{product.name}</Link>
         </CardTitle>
-        <div className="text-sm text-muted-foreground">{product.category}</div>
+        <div className="text-xs text-muted-foreground">{product.category}</div>
       </CardContent>
       <CardFooter className="p-4 pt-0 mt-auto">
         <div className="flex w-full items-center justify-between">
           <div className="flex flex-col">
-            <p className="text-lg font-bold text-foreground">
+            <p className="text-base font-bold text-foreground">
               ₹{displayPrice.toFixed(2)}
             </p>
             <p className="text-xs text-muted-foreground -mt-1">/{product.unit}</p>
