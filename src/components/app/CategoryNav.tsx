@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -29,34 +28,34 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
   const allCategories = ["All", ...categories];
 
   return (
-    <div className="py-6">
-      <div className="flex w-full space-x-4 overflow-x-auto pb-4">
+    <div className="py-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {allCategories.map((category) => (
           <button
             key={category}
             onClick={() => onCategorySelect(category)}
             className={cn(
-              "flex flex-col items-center text-center w-24 flex-shrink-0 group transition-transform duration-200 ease-in-out hover:scale-105",
+              "flex flex-col items-center text-center group transition-transform duration-200 ease-in-out hover:scale-105",
               selectedCategory === category && "scale-105"
             )}
           >
             <div className={cn(
-              "w-20 h-20 bg-gradient-to-b from-cyan-100 to-blue-300 rounded-2xl flex items-center justify-center p-2.5 shadow-lg transition-all duration-200",
-              selectedCategory === category ? "ring-2 ring-primary ring-offset-2" : "group-hover:shadow-cyan-200/50 group-hover:shadow-xl"
+              "w-16 h-16 bg-gradient-to-b from-cyan-100 to-blue-300 rounded-xl flex items-center justify-center p-2 shadow-md transition-all duration-200",
+              selectedCategory === category ? "ring-2 ring-primary ring-offset-2" : "group-hover:shadow-cyan-200/50 group-hover:shadow-lg"
             )}>
               <div className="relative w-full h-full">
                 <Image
-                  src={`https://placehold.co/80x80.png`}
+                  src={`https://placehold.co/64x64.png`}
                   alt={category}
                   fill
                   className="object-contain"
-                  sizes="80px"
+                  sizes="64px"
                   data-ai-hint={getHintForCategory(category)}
                 />
               </div>
             </div>
             <span className={cn(
-                "mt-2 text-sm font-medium",
+                "mt-1.5 text-xs font-medium text-center break-words w-full",
                 selectedCategory === category ? "text-primary font-bold" : "text-muted-foreground group-hover:text-foreground"
                 )}>
                 {category}
