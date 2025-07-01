@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 
 const ShopIcon = () => (
-    <svg width="24" height="20" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+    <svg width="48" height="40" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
         {/* Shop Awning */}
         <path d="M2 12 C 2 6, 30 6, 30 12 L 30 16 L 2 16 L 2 12 Z" stroke="currentColor" strokeWidth="2" fill="none" />
         <path d="M6 16V12" stroke="currentColor" strokeWidth="2" />
@@ -49,7 +49,7 @@ const AnimatedLogo = () => {
             {showIcon ? (
                 <ShopIcon />
             ) : (
-                <div className="flex flex-col text-base font-bold text-primary leading-tight">
+                <div className="flex flex-col text-xs font-bold text-primary leading-tight">
                     <div className="whitespace-nowrap">
                         {line1.split('').map((char, index) => (
                             <span
