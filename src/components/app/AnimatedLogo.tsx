@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 
 const ShopIcon = () => (
-    <svg width="48" height="40" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+    <svg width="24" height="20" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
         {/* Shop Awning */}
         <path d="M2 12 C 2 6, 30 6, 30 12 L 30 16 L 2 16 L 2 12 Z" stroke="currentColor" strokeWidth="2" fill="none" />
         <path d="M6 16V12" stroke="currentColor" strokeWidth="2" />
@@ -26,16 +26,17 @@ const ShopIcon = () => (
 const AnimatedLogo = () => {
     const [showIcon, setShowIcon] = useState(false);
     const [key, setKey] = useState(0); // Add key to force re-render and restart animation on hover
-    const text = "Kundan Mart";
+    const line1 = "Kundan";
+    const line2 = "Mart";
 
     useEffect(() => {
-        const totalDuration = text.length * 100 + 1500; // Animation time + 1.5s pause
+        const totalDuration = (line1.length + line2.length) * 100 + 1500; // Animation time + 1.5s pause
         const timer = setTimeout(() => {
             setShowIcon(true);
         }, totalDuration);
 
         return () => clearTimeout(timer);
-    }, [key, text.length]);
+    }, [key, line1.length, line2.length]);
 
     const handleMouseEnter = () => {
         // Reset animation by changing key
@@ -48,20 +49,36 @@ const AnimatedLogo = () => {
             {showIcon ? (
                 <ShopIcon />
             ) : (
-                <h1 className="flex items-center text-lg font-bold text-primary whitespace-nowrap">
-                    {text.split('').map((char, index) => (
-                        <span
-                            key={`${key}-${index}`}
-                            className="animate-pop-in"
-                            style={{
-                                animationDelay: `${index * 100}ms`,
-                                opacity: 0,
-                            }}
-                        >
-                            {char === ' ' ? '\u00A0' : char}
-                        </span>
-                    ))}
-                </h1>
+                <div className="flex flex-col text-base font-bold text-primary leading-tight">
+                    <div className="whitespace-nowrap">
+                        {line1.split('').map((char, index) => (
+                            <span
+                                key={`${key}-1-${index}`}
+                                className="animate-pop-in"
+                                style={{
+                                    animationDelay: `${index * 100}ms`,
+                                    opacity: 0,
+                                }}
+                            >
+                                {char}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="whitespace-nowrap">
+                        {line2.split('').map((char, index) => (
+                            <span
+                                key={`${key}-2-${index}`}
+                                className="animate-pop-in"
+                                style={{
+                                    animationDelay: `${(line1.length + index) * 100}ms`,
+                                    opacity: 0,
+                                }}
+                            >
+                                {char}
+                            </span>
+                        ))}
+                    </div>
+                </div>
             )}
         </div>
     );
