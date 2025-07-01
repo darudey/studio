@@ -63,13 +63,30 @@ export default function ManageProductsPage() {
   
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // State for immediate input value
   const [searchTerm, setSearchTerm] = useState("");
+  // State for debounced value, which triggers filtering
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState("");
   const [bulkUpdateCategory, setBulkUpdateCategory] = useState("");
   
   const [isAdding, setIsAdding] = useState(false);
+
+  // Debounce effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // Wait for 300ms after the user stops typing
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchTerm]);
+
 
   const fetchProductsAndCategories = async () => {
     setLoading(true);
@@ -184,13 +201,14 @@ export default function ManageProductsPage() {
 
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) {
+    const term = debouncedSearchTerm.trim();
+    if (!term) {
       return products;
     }
     
-    const lowercasedFilter = searchTerm.toLowerCase();
+    const lowercasedFilter = term.toLowerCase();
     const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
-    const consonantFilter = getConsonants(searchTerm);
+    const consonantFilter = getConsonants(term);
 
     return products.filter(product => {
       const nameMatch = product.name.toLowerCase().includes(lowercasedFilter);
@@ -210,7 +228,7 @@ export default function ManageProductsPage() {
 
       return false;
     });
-  }, [products, searchTerm]);
+  }, [products, debouncedSearchTerm]);
 
 
   const handleSelectOne = (productId: string, isSelected: boolean) => {
@@ -573,5 +591,3 @@ export default function ManageProductsPage() {
     </div>
   );
 }
-
-    
