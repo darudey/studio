@@ -82,15 +82,16 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        shine: {
-          '0%, 100%': { textShadow: '0 0 4px hsl(var(--primary))' },
-          '50%': { textShadow: '0 0 10px hsl(var(--primary))' },
-        },
+        "pop-in": {
+            "0%": { transform: "scale(0.8)", opacity: "0" },
+            "40%": { transform: "scale(1.1)", opacity: "1" },
+            "100%": { transform: "scale(1)", opacity: "1" },
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        shine: "shine 2s ease-in-out infinite",
+        "pop-in": "pop-in 0.4s ease-out forwards",
       },
     },
   },
