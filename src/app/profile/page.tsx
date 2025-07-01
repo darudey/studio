@@ -73,7 +73,7 @@ export default function ProfilePage() {
             <div>
                 <Label>Account Type</Label>
                 <div>
-                    <Badge variant="default" className="text-lg capitalize">
+                    <Badge variant="default" className="text-base capitalize">
                         {user.role}
                     </Badge>
                 </div>

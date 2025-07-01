@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 @layer base {
@@ -69,24 +69,8 @@ body {
     --chart-5: 340 75% 55%;
   }
 
-  /* Theme for basic users and guests */
-  html[data-theme="basic"] {
-    --primary: 135 65% 45%; /* Green */
-    --primary-foreground: 210 40% 98%;
-    --accent: 135 60% 55%;
-    --accent-foreground: 210 40% 98%;
-    --ring: 135 65% 45%;
-  }
-
-  .dark[data-theme="basic"] {
-    --primary: 135 65% 55%; /* Green */
-    --primary-foreground: 210 40% 98%;
-    --accent: 135 60% 65%;
-    --accent-foreground: 210 40% 98%;
-    --ring: 135 65% 55%;
-  }
-  
-  /* Theme for admin roles */
+  /* Theme for admin roles (Default) */
+  :root,
   html[data-theme="admin"] {
     --primary: 217 91% 60%; /* Blue */
     --primary-foreground: 210 40% 98%;
@@ -95,6 +79,7 @@ body {
     --ring: 217 91% 60%;
   }
 
+  .dark,
   .dark[data-theme="admin"] {
     --primary: 217 91% 60%; /* Blue */
     --primary-foreground: 210 40% 98%;
@@ -103,21 +88,38 @@ body {
     --ring: 217 91% 60%;
   }
 
+  /* Theme for basic users and guests */
+  html[data-theme="basic"] {
+    --primary: 174 87% 18%; /* Green */
+    --primary-foreground: 210 40% 98%;
+    --accent: 174 70% 28%;
+    --accent-foreground: 210 40% 98%;
+    --ring: 174 87% 18%;
+  }
+
+  .dark[data-theme="basic"] {
+    --primary: 174 70% 28%; /* Green */
+    --primary-foreground: 210 40% 98%;
+    --accent: 174 87% 18%;
+    --accent-foreground: 210 40% 98%;
+    --ring: 174 70% 28%;
+  }
+  
   /* Theme for wholesalers */
   html[data-theme="wholesaler"] {
-    --primary: 43 85% 55%; /* Golden */
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --accent: 43 80% 65%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --ring: 43 85% 55%;
+    --primary: 45 100% 51%; /* Golden */
+    --primary-foreground: 45 84% 9.8%;
+    --accent: 45 90% 61%;
+    --accent-foreground: 45 84% 9.8%;
+    --ring: 45 100% 51%;
   }
   
   .dark[data-theme="wholesaler"] {
-    --primary: 43 85% 60%; /* Golden */
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --accent: 43 80% 70%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --ring: 43 85% 60%;
+    --primary: 45 100% 51%; /* Golden */
+    --primary-foreground: 45 84% 9.8%;
+    --accent: 45 90% 61%;
+    --accent-foreground: 45 84% 9.8%;
+    --ring: 45 100% 51%;
   }
 }
 

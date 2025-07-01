@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // This effect runs on the client and updates the theme based on the user's role.
     let theme: 'admin' | 'basic' | 'wholesaler' = 'basic'; // Default for logged out users.
+    
     if (user) {
       switch (user.role) {
         case 'wholesaler':
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           break;
       }
     }
+    
     document.documentElement.setAttribute('data-theme', theme);
   }, [user]);
 
