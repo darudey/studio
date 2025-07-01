@@ -30,7 +30,7 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
 
   return (
     <div className="py-2">
-      <div className="flex gap-4 overflow-x-auto pb-3 -mx-4 px-4">
+      <div className="flex gap-4 overflow-x-auto py-3 -mx-4 px-4">
         {allCategories.map((category) => (
           <button
             key={category}
