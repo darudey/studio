@@ -18,7 +18,7 @@ function getAdminApp(): App {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
     if (!projectId || !clientEmail || !privateKey) {
-        const errorMessage = "Server configuration error: The API route is missing required Firebase Admin credentials. Please ensure NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set correctly in your environment variables (.env.local for local development). Refer to the Firebase documentation on generating a service account key.";
+        const errorMessage = "Server Configuration Incomplete: Your app's .env file is missing required Firebase Admin credentials. Please go to your Firebase project settings, generate a new service account key, and add the project_id, client_email, and private_key to your .env file.";
         console.error(errorMessage);
         throw new Error(errorMessage);
     }
