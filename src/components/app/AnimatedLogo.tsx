@@ -1,10 +1,11 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
+// SVG icon size decreased to ~70%
 const ShopIcon = () => (
-    <svg width="48" height="40" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+    <svg width="34" height="28" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
         {/* Shop Awning */}
         <path d="M2 12 C 2 6, 30 6, 30 12 L 30 16 L 2 16 L 2 12 Z" stroke="currentColor" strokeWidth="2" fill="none" />
         <path d="M6 16V12" stroke="currentColor" strokeWidth="2" />
@@ -24,39 +25,36 @@ const ShopIcon = () => (
 );
 
 const AnimatedLogo = () => {
-    const [showIcon, setShowIcon] = useState(false);
-    const [key, setKey] = useState(0); // Add key to force re-render and restart animation on hover
+    const [isHovered, setIsHovered] = useState(false);
+    const [animationKey, setAnimationKey] = useState(0); // To re-trigger animation
     const line1 = "Kundan";
     const line2 = "Mart";
 
-    useEffect(() => {
-        const totalDuration = (line1.length + line2.length) * 100 + 1500; // Animation time + 1.5s pause
-        const timer = setTimeout(() => {
-            setShowIcon(true);
-        }, totalDuration);
-
-        return () => clearTimeout(timer);
-    }, [key, line1.length, line2.length]);
-
     const handleMouseEnter = () => {
-        // Reset animation by changing key
-        setShowIcon(false);
-        setKey(prevKey => prevKey + 1);
+        setAnimationKey(prevKey => prevKey + 1); // Ensures animation restarts on every hover
+        setIsHovered(true);
+    };
+
+    const handleMouseLeave = () => {
+        setIsHovered(false);
     };
 
     return (
-        <div onMouseEnter={handleMouseEnter} className="h-10 flex items-center cursor-pointer">
-            {showIcon ? (
-                <ShopIcon />
-            ) : (
-                <div className="flex flex-col text-xs font-bold text-primary leading-tight">
+        <div 
+            onMouseEnter={handleMouseEnter} 
+            onMouseLeave={handleMouseLeave} 
+            className="h-10 flex items-center justify-center cursor-pointer"
+            style={{ width: '50px' }} // Fixed width to prevent layout shift
+        >
+            {isHovered ? (
+                <div key={animationKey} className="flex flex-col text-[9px] font-bold text-primary leading-tight">
                     <div className="whitespace-nowrap">
                         {line1.split('').map((char, index) => (
                             <span
-                                key={`${key}-1-${index}`}
+                                key={`1-${index}`}
                                 className="animate-pop-in"
                                 style={{
-                                    animationDelay: `${index * 100}ms`,
+                                    animationDelay: `${index * 80}ms`,
                                     opacity: 0,
                                 }}
                             >
@@ -67,10 +65,10 @@ const AnimatedLogo = () => {
                     <div className="whitespace-nowrap">
                         {line2.split('').map((char, index) => (
                             <span
-                                key={`${key}-2-${index}`}
+                                key={`2-${index}`}
                                 className="animate-pop-in"
                                 style={{
-                                    animationDelay: `${(line1.length + index) * 100}ms`,
+                                    animationDelay: `${(line1.length + index) * 80}ms`,
                                     opacity: 0,
                                 }}
                             >
@@ -79,6 +77,8 @@ const AnimatedLogo = () => {
                         ))}
                     </div>
                 </div>
+            ) : (
+                <ShopIcon />
             )}
         </div>
     );
