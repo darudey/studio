@@ -75,32 +75,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cartItems, cartStorageKey]);
 
   const addToCart = (productId: string, quantity: number, stock: number) => {
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.productId === productId);
+    const existingItem = cartItems.find(item => item.productId === productId);
 
-      if (existingItem) {
-        const newQuantity = existingItem.quantity + quantity;
-        if (newQuantity > stock) {
-           toast({ title: "Stock limit reached", description: `You cannot add more than ${stock} items.`, variant: "destructive" });
-           return prevItems;
-        }
-        toast({ title: "Item updated in cart" });
-        return prevItems.map(item =>
-          item.productId === productId ? { ...item, quantity: newQuantity } : item
-        );
-      } else {
-        if (quantity > stock) {
-            toast({ title: "Stock limit reached", description: `You cannot add more than ${stock} items.`, variant: "destructive" });
-            return prevItems;
-        }
-        toast({ title: "Item added to cart" });
-        return [...prevItems, { productId, quantity }];
+    if (existingItem) {
+      const newQuantity = existingItem.quantity + quantity;
+      if (newQuantity > stock) {
+         toast({ title: "Stock limit reached", description: `You cannot add more than ${stock} items.`, variant: "destructive" });
+         return;
       }
-    });
+      const newCartItems = cartItems.map(item =>
+        item.productId === productId ? { ...item, quantity: newQuantity } : item
+      );
+      setCartItems(newCartItems);
+      toast({ title: "Item updated in cart" });
+    } else {
+      if (quantity > stock) {
+          toast({ title: "Stock limit reached", description: `You cannot add more than ${stock} items.`, variant: "destructive" });
+          return;
+      }
+      const newCartItems = [...cartItems, { productId, quantity }];
+      setCartItems(newCartItems);
+      toast({ title: "Item added to cart" });
+    }
   };
 
   const removeFromCart = (productId: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.productId !== productId));
+    const newCartItems = cartItems.filter(item => item.productId !== productId);
+    setCartItems(newCartItems);
     toast({ title: "Item removed from cart" });
   };
 
@@ -112,17 +113,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if(quantity > stock) {
         toast({ title: "Stock limit reached", description: `Only ${stock} items available.`, variant: "destructive" });
-        setCartItems(prevItems => prevItems.map(item =>
+        const newCartItems = cartItems.map(item =>
             item.productId === productId ? { ...item, quantity: stock } : item
-        ));
+        );
+        setCartItems(newCartItems);
         return;
     }
 
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.productId === productId ? { ...item, quantity } : item
-      )
+    const newCartItems = cartItems.map(item =>
+      item.productId === productId ? { ...item, quantity } : item
     );
+    setCartItems(newCartItems);
   };
 
   const clearCart = () => {
