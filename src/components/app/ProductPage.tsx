@@ -5,13 +5,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { getProducts, getNewestProducts, getRecommendedProducts, getTrendingProducts } from '@/lib/data';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
-import ProductFilters from './ProductFilters';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '../ui/skeleton';
-import ProductCarousel from './ProductCarousel';
-import { Separator } from '../ui/separator';
 import { useSearchParams } from 'next/navigation';
-import CategoryNav from './CategoryNav';
 
 export default function ProductPage() {
   const { user } = useAuth();
@@ -23,11 +19,7 @@ export default function ProductPage() {
   
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
-
-  const [filters, setFilters] = useState({
-    category: 'All',
-    priceRange: [0, 100],
-  });
+  const view = searchParams.get('view') || 'all';
 
   useEffect(() => {
     const fetchHomepageData = async () => {
@@ -48,11 +40,6 @@ export default function ProductPage() {
             setNewestProducts(newest);
             setRecommendedProducts(recommended);
 
-            if (products.length > 0) {
-                const maxPrice = Math.ceil(Math.max(...products.map(p => p.retailPrice), 0));
-                setFilters(prev => ({...prev, priceRange: [0, maxPrice || 100]}));
-            }
-
             // Now, try to fetch trending products, and fail gracefully
             try {
                 const trending = await getTrendingProducts();
@@ -71,87 +58,53 @@ export default function ProductPage() {
     fetchHomepageData();
   }, []);
 
-  const selectedProduct = useMemo(() => {
-    if (!searchTerm) return null;
-    return allProducts.find(p => p.name.toLowerCase() === searchTerm.toLowerCase()) || null;
-  }, [searchTerm, allProducts]);
-  
-  const { filteredProducts, categories, maxPrice } = useMemo(() => {
-    const categories = [...new Set(allProducts.map(p => p.category))].sort();
-    const maxPriceVal = allProducts.length > 0 ? Math.ceil(Math.max(...allProducts.map(p => p.retailPrice), 0)) : 100;
+  const productList = useMemo(() => {
+    let sourceList: Product[];
 
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    switch(view) {
+        case 'trending':
+            sourceList = trendingProducts;
+            break;
+        case 'recommended':
+            sourceList = recommendedProducts;
+            break;
+        case 'new':
+            sourceList = newestProducts;
+            break;
+        default:
+            sourceList = allProducts;
+    }
+
+    if (searchTerm.trim() === '') {
+        return sourceList;
+    }
+
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
     const lowercasedSearch = searchTerm.toLowerCase();
     const consonantSearch = getConsonants(searchTerm);
 
-    const filtered = allProducts.filter(product => {
-      const price = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
-
-      let matchesSearch = searchTerm.trim() === '';
-      if (!matchesSearch) {
-        const nameLower = product.name.toLowerCase();
-        if (nameLower.includes(lowercasedSearch)) {
-          matchesSearch = true;
-        } else if (consonantSearch.length > 1) { // Fallback to consonant search
-          if (getConsonants(product.name).includes(consonantSearch)) {
-            matchesSearch = true;
-          }
+    const filtered = sourceList.filter(product => {
+      const nameLower = product.name.toLowerCase();
+      if (nameLower.includes(lowercasedSearch)) {
+        return true;
+      }
+      if (consonantSearch.length > 1) { // Fallback to consonant search
+        if (getConsonants(product.name).includes(consonantSearch)) {
+          return true;
         }
       }
-
-      const matchesCategory = filters.category === 'All' || product.category === filters.category;
-      const matchesPrice = price >= filters.priceRange[0] && price <= filters.priceRange[1];
-      
-      return matchesSearch && matchesCategory && matchesPrice;
+      return false;
     });
 
-    return { filteredProducts: filtered, categories, maxPrice: maxPriceVal };
-  }, [searchTerm, filters, user, allProducts]);
+    return filtered;
+  }, [view, searchTerm, allProducts, trendingProducts, recommendedProducts, newestProducts]);
 
-  const handleFilterChange = (newFilters: { category: string, priceRange: [number, number] }) => {
-    setFilters(prev => ({
-        ...prev,
-        ...newFilters
-    }));
-  };
-
-  const handleCategoryClick = (category: string) => {
-    handleFilterChange({ ...filters, category });
-  };
-
-
-  const sections = [
-    { title: "Trending Now", products: trendingProducts },
-    { title: "Shop Owner Recommendations", products: recommendedProducts },
-    { title: "New Arrivals", products: newestProducts }
-  ].filter(section => section.products.length > 0);
 
   if (loading) {
-      const CategoryNavSkeleton = () => (
-        <div className="w-full py-6">
-          <div className="flex space-x-4 overflow-x-hidden pb-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center space-y-2 w-24 flex-shrink-0">
-                <Skeleton className="w-20 h-20 rounded-2xl" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))}
-          </div>
-        </div>
-      );
       return (
-          <div className="container py-2">
-              <CategoryNavSkeleton />
-              <div className="space-y-8">
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-40 w-full" />
-                <div className="space-y-4 pt-8">
-                    <Skeleton className="h-10 w-1/4" />
-                    <Skeleton className="h-24 w-full" />
-                </div>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-80 w-full" />)}
-                </div>
+          <div className="container py-8">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 mt-6">
+                {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
               </div>
           </div>
       )
@@ -159,51 +112,17 @@ export default function ProductPage() {
 
   return (
     <div className="container">
-      <CategoryNav
-        categories={categories}
-        selectedCategory={filters.category}
-        onCategorySelect={handleCategoryClick}
-      />
-
-      {!searchTerm && filters.category === 'All' && (
-        <>
-          {sections.map((section, index) => (
-            <ProductCarousel key={index} title={section.title} products={section.products} />
-          ))}
-          
-          {sections.length > 0 && <Separator className="my-8" />}
-        </>
-      )}
-      
-      {selectedProduct && (
-        <div className="py-8">
-            <h2 className="text-3xl font-bold tracking-tight mb-6">Your Item</h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                <ProductCard product={selectedProduct} />
-            </div>
-            <Separator className="my-8" />
-        </div>
-      )}
-
       <div className="py-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-6">
-          {searchTerm ? "Search Results" : filters.category === 'All' ? "All Products" : filters.category}
-        </h1>
-        <ProductFilters 
-          filters={{category: filters.category, priceRange: filters.priceRange}}
-          onFilterChange={handleFilterChange} 
-          categories={categories} 
-          maxPrice={maxPrice} />
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map(product => (
+        {productList.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {productList.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
           <div className="text-center py-16">
             <h2 className="text-xl font-semibold">No products found</h2>
-            <p className="text-muted-foreground mt-2">Try adjusting your filters or searching with just consonants (e.g., 'bnn' for 'banana').</p>
+            <p className="text-muted-foreground mt-2">Try adjusting your filters or searching again.</p>
           </div>
         )}
       </div>

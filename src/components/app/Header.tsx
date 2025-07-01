@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package2, Search, ShoppingCart } from "lucide-react";
+import { Menu, Search, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import UserNav from "./UserNav";
@@ -39,14 +39,22 @@ export default function Header() {
     e.preventDefault();
     setShowSuggestions(false);
     // Update the URL, which will trigger the page to re-filter
-    router.push(`/?search=${searchTerm}`);
+    const currentView = searchParams.get('view');
+    const viewQuery = currentView ? `view=${currentView}` : '';
+    const searchQuery = searchTerm ? `search=${searchTerm}` : '';
+    const queryString = [viewQuery, searchQuery].filter(Boolean).join('&');
+    router.push(`/?${queryString}`);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setShowSuggestions(false);
     // Update the URL. The useEffect above will update the input field's text.
     // This makes the URL the single source of truth for the search.
-    router.push(`/?search=${suggestion}`);
+    const currentView = searchParams.get('view');
+    const viewQuery = currentView ? `view=${currentView}` : '';
+    const searchQuery = suggestion ? `search=${suggestion}` : '';
+    const queryString = [viewQuery, searchQuery].filter(Boolean).join('&');
+    router.push(`/?${queryString}`);
   }
 
   const filteredSuggestions = useMemo(() => {
@@ -55,7 +63,7 @@ export default function Header() {
     }
 
     const lowercasedFilter = searchTerm.toLowerCase();
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
     const consonantFilter = getConsonants(searchTerm);
 
     return allProducts
@@ -79,16 +87,12 @@ export default function Header() {
 
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center gap-2">
-        <div className="mr-4 hidden md:flex">
-          <Link href="/" className="flex items-center space-x-2">
-            <Package2 className="h-6 w-6 text-primary" />
-            <span className="font-bold">
-              Wholesale Hub
-            </span>
-          </Link>
-        </div>
+        <Button variant="outline" size="icon" className="md:hidden">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+        </Button>
         
         <div className="relative w-full md:flex-1 md:w-auto">
            <form onSubmit={handleSearchSubmit} className="w-full">
