@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -20,7 +19,8 @@ const getHintForCategory = (category: string): string => {
     if (catLower.includes('beauty')) return 'beauty cosmetics';
     if (catLower.includes('toy') || catLower.includes('baby')) return 'toys baby';
     if (catLower.includes('sport')) return 'sports equipment';
-    const hint = catLower.split(' ')[0];
+    // A simple heuristic to get a keyword
+    const hint = catLower.split(' ')[0].replace(/[^a-z]/g, '');
     return hint.length > 2 ? hint : category;
 }
 
@@ -41,8 +41,8 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
             )}
           >
             <div className={cn(
-              "w-16 h-16 bg-gradient-to-b from-cyan-100 to-blue-300 rounded-xl flex items-center justify-center p-2 shadow-md transition-all duration-200",
-              selectedCategory === category ? "ring-2 ring-primary ring-offset-2" : "group-hover:shadow-cyan-200/50 group-hover:shadow-lg"
+              "w-16 h-16 bg-cyan-100/50 dark:bg-slate-800 rounded-xl flex items-center justify-center p-2 shadow-sm transition-all duration-200",
+              selectedCategory === category ? "ring-2 ring-primary ring-offset-2" : "group-hover:shadow-md"
             )}>
               <div className="relative w-full h-full">
                 <Image
