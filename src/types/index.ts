@@ -16,12 +16,11 @@ export type Product = {
   createdAt: string;
 };
 
-export enum UserRole {
-  basic = 'basic',
-  wholesaler = 'wholesaler',
-  developer = 'developer',
-  'shop-owner' = 'shop-owner'
-};
+export type UserRole = 
+  | 'basic'
+  | 'wholesaler'
+  | 'developer'
+  | 'shop-owner';
 
 export type User = {
   id: string;
