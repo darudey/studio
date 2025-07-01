@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // SVG icon size decreased to ~70%
 const ShopIcon = () => (
@@ -25,28 +24,47 @@ const ShopIcon = () => (
 );
 
 const AnimatedLogo = () => {
-    const [isHovered, setIsHovered] = useState(false);
-    const [animationKey, setAnimationKey] = useState(0); // To re-trigger animation
+    const [isTextVisible, setIsTextVisible] = useState(false);
+    const [animationKey, setAnimationKey] = useState(0);
     const line1 = "Kundan";
     const line2 = "Mart";
 
-    const handleMouseEnter = () => {
-        setAnimationKey(prevKey => prevKey + 1); // Ensures animation restarts on every hover
-        setIsHovered(true);
-    };
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
 
-    const handleMouseLeave = () => {
-        setIsHovered(false);
-    };
+        const scheduleToggle = () => {
+            // Random delay between 2 and 10 seconds (2000ms to 10000ms)
+            const randomDelay = Math.random() * (8000) + 2000;
+
+            timeoutId = setTimeout(() => {
+                setIsTextVisible(prev => {
+                    const nextIsTextVisible = !prev;
+                    // If we're about to show the text, update the animation key to restart the pop-in effect
+                    if (nextIsTextVisible) {
+                        setAnimationKey(k => k + 1);
+                    }
+                    return nextIsTextVisible;
+                });
+                // Schedule the next toggle
+                scheduleToggle();
+            }, randomDelay);
+        };
+
+        // Start the animation cycle
+        scheduleToggle();
+
+        // Cleanup on unmount
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, []); // Empty dependency array ensures this runs only once on mount
 
     return (
         <div 
-            onMouseEnter={handleMouseEnter} 
-            onMouseLeave={handleMouseLeave} 
             className="h-10 flex items-center justify-center cursor-pointer"
             style={{ width: '50px' }} // Fixed width to prevent layout shift
         >
-            {isHovered ? (
+            {isTextVisible ? (
                 <div key={animationKey} className="flex flex-col text-[9px] font-bold text-primary leading-tight">
                     <div className="whitespace-nowrap">
                         {line1.split('').map((char, index) => (
