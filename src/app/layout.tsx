@@ -7,8 +7,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import Header from "@/components/app/Header";
 import { cn } from "@/lib/utils";
-import AppSidebar from "@/components/app/AppSidebar";
-
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -27,14 +25,9 @@ export default function RootLayout({
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
         <AuthProvider>
           <CartProvider>
-            <div className="flex min-h-screen">
-              <aside className="hidden md:block w-64 flex-shrink-0 border-r bg-background">
-                <AppSidebar />
-              </aside>
-              <div className="flex flex-1 flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-              </div>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
             </div>
             <Toaster />
           </CartProvider>

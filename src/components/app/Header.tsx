@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Search, ShoppingCart } from "lucide-react";
+import { Package2, Search, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import UserNav from "./UserNav";
@@ -31,29 +31,19 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-      // Syncs the search input with the URL's search param
       setSearchTerm(searchParams.get("search") || "");
   }, [searchParams]);
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
     setShowSuggestions(false);
-    // Update the URL, which will trigger the page to re-filter
-    const currentView = searchParams.get('view');
-    const viewQuery = currentView ? `view=${currentView}` : '';
-    const searchQuery = searchTerm ? `search=${searchTerm}` : '';
-    const queryString = [viewQuery, searchQuery].filter(Boolean).join('&');
+    const queryString = searchTerm ? `search=${searchTerm}` : '';
     router.push(`/?${queryString}`);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setShowSuggestions(false);
-    // Update the URL. The useEffect above will update the input field's text.
-    // This makes the URL the single source of truth for the search.
-    const currentView = searchParams.get('view');
-    const viewQuery = currentView ? `view=${currentView}` : '';
-    const searchQuery = suggestion ? `search=${suggestion}` : '';
-    const queryString = [viewQuery, searchQuery].filter(Boolean).join('&');
+    const queryString = suggestion ? `search=${suggestion}` : '';
     router.push(`/?${queryString}`);
   }
 
@@ -88,14 +78,16 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center gap-2">
-        <Button variant="outline" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle Menu</span>
-        </Button>
-        
-        <div className="relative w-full md:flex-1 md:w-auto">
-           <form onSubmit={handleSearchSubmit} className="w-full">
+      <div className="container flex h-16 items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+            <Package2 className="h-6 w-6 text-primary" />
+            <span className="sr-only sm:not-sr-only">Wholesale Hub</span>
+          </Link>
+        </div>
+
+        <div className="relative flex-1 max-w-lg">
+           <form onSubmit={handleSearchSubmit}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
@@ -104,33 +96,31 @@ export default function Header() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)} // Delay to allow click on suggestions
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 autoComplete="off"
               />
               {showSuggestions && <SearchSuggestions suggestions={filteredSuggestions} onSuggestionClick={handleSuggestionClick} />}
             </form>
         </div>
 
-        <div className="flex flex-shrink-0 items-center justify-end space-x-2">
-          <nav className="flex items-center space-x-2">
-            <ShoppingCartSheet>
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                   <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
-                )}
-                <span className="sr-only">Shopping Cart</span>
-              </Button>
-            </ShoppingCartSheet>
+        <div className="flex items-center justify-end space-x-2">
+          <ShoppingCartSheet>
+            <Button variant="ghost" size="icon" className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                 <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
+              )}
+              <span className="sr-only">Shopping Cart</span>
+            </Button>
+          </ShoppingCartSheet>
 
-            {loading ? null : user ? (
-              <UserNav />
-            ) : (
-              <Button asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-            )}
-          </nav>
+          {loading ? null : user ? (
+            <UserNav />
+          ) : (
+            <Button asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
