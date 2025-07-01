@@ -44,6 +44,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Set default theme on initial load to prevent FOUC
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'basic');
+  }, []);
+
   useEffect(() => {
     // This effect runs on the client and updates the theme based on the user's role.
     let theme: 'admin' | 'basic' | 'wholesaler' = 'basic'; // Default for logged out users.
@@ -157,8 +162,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // If it's not, it's likely an HTML error page from a server crash.
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        console.error("Server returned a non-JSON response. The API route may have crashed.");
-        return { success: false, message: "The server sent an invalid response. The API route may be missing or has crashed." };
+        const textError = await response.text();
+        console.error("Server returned a non-JSON response:", textError);
+        return { success: false, message: "Server configuration error. Check server logs." };
       }
       
       const result = await response.json();
