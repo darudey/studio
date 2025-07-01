@@ -85,7 +85,7 @@ export default function Header() {
           </Link>
         </div>
 
-        <div className="relative flex-1 max-w-xl">
+        <div className="relative flex-1 max-w-2xl">
            <form onSubmit={handleSearchSubmit}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
@@ -102,7 +102,7 @@ export default function Header() {
             </form>
         </div>
 
-        <div className="flex items-center justify-end space-x-2">
+        <div className="flex shrink-0 items-center justify-end space-x-2">
           <ShoppingCartSheet>
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
