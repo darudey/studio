@@ -80,8 +80,8 @@ export default function Header() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
-             <div className="flex flex-col text-sm leading-tight font-bold">
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+             <div className="flex flex-col text-xs leading-tight font-bold text-primary animate-shine">
                 <span>Kundan</span>
                 <span>MART</span>
             </div>

@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 const { fontFamily } = require("tailwindcss/defaultTheme")
@@ -81,10 +82,15 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        shine: {
+          '0%, 100%': { textShadow: '0 0 4px hsl(var(--primary))' },
+          '50%': { textShadow: '0 0 10px hsl(var(--primary))' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        shine: "shine 2s ease-in-out infinite",
       },
     },
   },
