@@ -12,20 +12,29 @@ function getAdminApp(): App {
     if (existingApp) {
         return existingApp;
     }
+    
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+    if (!projectId || !clientEmail || !privateKey) {
+        console.error("Firebase Admin SDK initialization failed: One or more required environment variables (NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are not set.");
+        throw new Error("Server configuration error. The application's authentication credentials are not set up correctly.");
+    }
 
     // Explicitly providing credentials resolves authentication issues in serverless
     // environments where Application Default Credentials (ADC) might struggle.
     const serviceAccount = {
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        projectId: projectId,
+        clientEmail: clientEmail,
         // The private key must be correctly formatted. The replace function handles
         // newlines stored in environment variables.
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        privateKey: privateKey.replace(/\\n/g, '\n'),
     };
 
     return initializeApp({
         credential: cert(serviceAccount),
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        projectId: projectId,
     }, ADMIN_APP_NAME);
 }
 
