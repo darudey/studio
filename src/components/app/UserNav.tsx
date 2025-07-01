@@ -47,7 +47,7 @@ export default function UserNav() {
           <div className="flex flex-col space-y-1">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium leading-none">{user.name}</p>
-              <Badge variant="default" className="capitalize text-xs">
+              <Badge variant={user.role === 'developer' || user.role === 'shop-owner' || user.role === 'imager' ? 'destructive' : user.role === 'wholesaler' ? 'default' : 'secondary'} className="capitalize text-xs">
                 {user.role}
               </Badge>
             </div>
