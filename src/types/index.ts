@@ -20,7 +20,8 @@ export type UserRole =
   | 'basic'
   | 'wholesaler'
   | 'developer'
-  | 'shop-owner';
+  | 'shop-owner'
+  | 'imager';
 
 export type User = {
   id: string;
@@ -59,7 +60,7 @@ export type Order = {
 export type Coupon = {
     id: string;
     code: string;
-    role: 'shop-owner' | 'wholesaler';
+    role: 'shop-owner' | 'wholesaler' | 'imager';
     isUsed: boolean;
     usedBy?: string;
     createdAt: string;

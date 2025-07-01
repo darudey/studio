@@ -66,7 +66,7 @@ export default function EditItemPage() {
       router.push("/login");
       return;
     }
-    if (!['developer', 'shop-owner'].includes(user.role)) {
+    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
       return;

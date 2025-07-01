@@ -100,6 +100,27 @@ export default function UserNav() {
             </DropdownMenuGroup>
           </>
         )}
+
+        {user.role === 'imager' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Imager</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <Link href="/developer/products">
+                <DropdownMenuItem>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  <span>Manage Products</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/developer/add-item">
+                <DropdownMenuItem>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <span>Add Product</span>
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuGroup>
+          </>
+        )}
         
         {user.role === 'developer' && (
           <>

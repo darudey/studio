@@ -21,7 +21,7 @@ export default function ManageCouponsPage() {
   const { toast } = useToast();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
-  const [roleToGenerate, setRoleToGenerate] = useState<'shop-owner' | 'wholesaler'>('wholesaler');
+  const [roleToGenerate, setRoleToGenerate] = useState<'shop-owner' | 'wholesaler' | 'imager'>('wholesaler');
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
@@ -119,13 +119,14 @@ export default function ManageCouponsPage() {
                     <CardContent className="space-y-4">
                         <div>
                             <label className="text-sm font-medium">Role to Grant</label>
-                            <Select value={roleToGenerate} onValueChange={(value: 'shop-owner' | 'wholesaler') => setRoleToGenerate(value)}>
+                            <Select value={roleToGenerate} onValueChange={(value: 'shop-owner' | 'wholesaler' | 'imager') => setRoleToGenerate(value)}>
                                 <SelectTrigger className="mt-1">
                                     <SelectValue placeholder="Select a role" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="wholesaler">Wholesaler</SelectItem>
                                     <SelectItem value="shop-owner">Shop Owner</SelectItem>
+                                    <SelectItem value="imager">Imager</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -157,7 +158,7 @@ export default function ManageCouponsPage() {
                             <TableRow key={c.id}>
                             <TableCell className="font-mono">{c.code}</TableCell>
                             <TableCell>
-                                <Badge variant={c.role === 'shop-owner' ? 'destructive' : 'default'}>{c.role}</Badge>
+                                <Badge variant={c.role === 'shop-owner' || c.role === 'imager' ? 'destructive' : 'default'}>{c.role}</Badge>
                             </TableCell>
                             <TableCell>{new Date(c.createdAt).toLocaleDateString()}</TableCell>
                             <TableCell className="text-right">
