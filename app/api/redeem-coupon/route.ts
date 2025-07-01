@@ -18,7 +18,12 @@ function getAdminApp(): App {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
     if (!projectId || !clientEmail || !privateKey) {
-        const errorMessage = "Server Configuration Incomplete: Your app's .env file is missing required Firebase Admin credentials. Please go to your Firebase project settings, generate a new service account key, and add the project_id, client_email, and private_key to your .env file.";
+        const errorMessage = `Server Configuration Error: Your app's .env file is missing required Firebase Admin credentials.
+To fix this:
+1. Go to your Firebase project settings -> Service Accounts.
+2. Click "Generate new private key" to download your credentials file.
+3. Add the project_id, client_email, and private_key from the file to your .env file.
+4. Restart your development server.`;
         console.error(errorMessage);
         throw new Error(errorMessage);
     }
