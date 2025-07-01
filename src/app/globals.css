@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,7 +8,8 @@ body {
 }
 
 @layer base {
-  :root {
+  :root,
+  html[data-theme="admin"] {
     --background: 220 40% 98%;
     --foreground: 222.2 84% 4.9%;
     --card: 220 40% 98%;
@@ -20,7 +22,7 @@ body {
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 88 73% 47%;
+    --accent: 217 80% 70%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -34,7 +36,19 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
-  .dark {
+
+  html[data-theme="basic"] {
+    --primary: 135 65% 45%;
+    --accent: 135 60% 55%;
+  }
+
+  html[data-theme="wholesaler"] {
+    --primary: 43 85% 55%;
+    --accent: 43 80% 65%;
+  }
+
+  .dark,
+  .dark[data-theme="admin"] {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -47,7 +61,7 @@ body {
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 88 73% 47%;
+    --accent: 217 80% 70%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -59,6 +73,16 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+  }
+
+  .dark[data-theme="basic"] {
+    --primary: 135 65% 55%;
+    --accent: 135 60% 65%;
+  }
+
+  .dark[data-theme="wholesaler"] {
+    --primary: 43 85% 60%;
+    --accent: 43 80% 70%;
   }
 }
 

@@ -45,6 +45,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // This effect runs on the client and updates the theme based on the user's role.
+    let theme = 'basic'; // Default for logged out users.
+    if (user) {
+      switch (user.role) {
+        case 'basic':
+          theme = 'basic';
+          break;
+        case 'wholesaler':
+          theme = 'wholesaler';
+          break;
+        default: // developer, shop-owner, imager
+          theme = 'admin';
+      }
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [user]);
+
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (authUser) {
         const userProfile = await getUserById(authUser.uid);
