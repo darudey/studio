@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -28,14 +29,14 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
   const allCategories = ["All", ...categories];
 
   return (
-    <div className="py-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div className="py-2">
+      <div className="flex gap-4 overflow-x-auto pb-3 -mx-4 px-4">
         {allCategories.map((category) => (
           <button
             key={category}
             onClick={() => onCategorySelect(category)}
             className={cn(
-              "flex flex-col items-center text-center group transition-transform duration-200 ease-in-out hover:scale-105",
+              "flex w-20 flex-shrink-0 flex-col items-center text-center group transition-transform duration-200 ease-in-out hover:scale-105",
               selectedCategory === category && "scale-105"
             )}
           >
@@ -55,7 +56,7 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
               </div>
             </div>
             <span className={cn(
-                "mt-1.5 text-xs font-medium text-center break-words w-full",
+                "mt-1.5 w-full break-words text-center text-xs font-medium",
                 selectedCategory === category ? "text-primary font-bold" : "text-muted-foreground group-hover:text-foreground"
                 )}>
                 {category}
