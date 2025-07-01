@@ -18,8 +18,9 @@ function getAdminApp(): App {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
     if (!projectId || !clientEmail || !privateKey) {
-        console.error("Firebase Admin SDK initialization failed: One or more required environment variables (NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are not set.");
-        throw new Error("Server configuration error. The application's authentication credentials are not set up correctly.");
+        const errorMessage = "Server configuration error: The API route is missing required Firebase Admin credentials. Please ensure NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set correctly in your environment variables (.env.local for local development). Refer to the Firebase documentation on generating a service account key.";
+        console.error(errorMessage);
+        throw new Error(errorMessage);
     }
 
     // Explicitly providing credentials resolves authentication issues in serverless
