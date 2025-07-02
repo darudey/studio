@@ -63,30 +63,13 @@ export default function ManageProductsPage() {
   
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // State for immediate input value
   const [searchTerm, setSearchTerm] = useState("");
-  // State for debounced value, which triggers filtering
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState("");
   const [bulkUpdateCategory, setBulkUpdateCategory] = useState("");
   
   const [isAdding, setIsAdding] = useState(false);
-
-  // Debounce effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300); // Wait for 300ms after the user stops typing
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [searchTerm]);
-
 
   const fetchProductsAndCategories = async () => {
     setLoading(true);
@@ -108,7 +91,7 @@ export default function ManageProductsPage() {
       router.push("/login");
       return;
     } 
-    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
+    if (!['developer', 'shop-owner'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
       return;
@@ -201,14 +184,13 @@ export default function ManageProductsPage() {
 
 
   const filteredProducts = useMemo(() => {
-    const term = debouncedSearchTerm.trim();
-    if (!term) {
+    if (!searchTerm.trim()) {
       return products;
     }
     
-    const lowercasedFilter = term.toLowerCase();
+    const lowercasedFilter = searchTerm.toLowerCase();
     const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
-    const consonantFilter = getConsonants(term);
+    const consonantFilter = getConsonants(searchTerm);
 
     return products.filter(product => {
       const nameMatch = product.name.toLowerCase().includes(lowercasedFilter);
@@ -228,7 +210,7 @@ export default function ManageProductsPage() {
 
       return false;
     });
-  }, [products, debouncedSearchTerm]);
+  }, [products, searchTerm]);
 
 
   const handleSelectOne = (productId: string, isSelected: boolean) => {
@@ -320,13 +302,12 @@ export default function ManageProductsPage() {
   }
 
   return (
-    <div className="container py-12">
-        <Card>
-        <CardHeader>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div className="container py-6">
+        <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-sm -mx-6 px-6 py-4 mb-6 border-b">
+             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                    <CardTitle>Manage Products</CardTitle>
-                    <CardDescription>View, search, and manage your products.</CardDescription>
+                    <h1 className="text-2xl font-bold tracking-tight">Manage Products</h1>
+                    <p className="text-muted-foreground text-sm">View, search, and manage your products.</p>
                 </div>
                 <div className="flex w-full sm:w-auto items-center gap-2">
                 <Input 
@@ -377,70 +358,8 @@ export default function ManageProductsPage() {
                 </Button>
                 </div>
             </div>
-        </CardHeader>
-
-        {isAdding && (
-            <CardContent>
-                <Form {...addForm}>
-                    <form onSubmit={addForm.handleSubmit(onQuickAddSubmit)} className="p-4 border rounded-lg bg-muted/50 space-y-4">
-                            <h3 className="text-lg font-semibold">Add a New Product</h3>
-                            <FormField control={addForm.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={addForm.control} name="category" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Category</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Select or create a category" {...field} list="add-categories-list" />
-                                    </FormControl>
-                                    <datalist id="add-categories-list">
-                                        {allCategories.map(cat => <option key={cat} value={cat} />)}
-                                    </datalist>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <FormField control={addForm.control} name="itemCode" render={({ field }) => (
-                                <FormItem><FormLabel>Item Code (Optional)</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                        </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <FormField control={addForm.control} name="retailPrice" render={({ field }) => (
-                                <FormItem><FormLabel>Retail (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={addForm.control} name="wholesalePrice" render={({ field }) => (
-                                <FormItem><FormLabel>Wholesale (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={addForm.control} name="stock" render={({ field }) => (
-                                <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={addForm.control} name="unit" render={({ field }) => (
-                                <FormItem><FormLabel>Unit</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="piece">Piece</SelectItem><SelectItem value="kg">Kg</SelectItem><SelectItem value="g">Gram</SelectItem><SelectItem value="litre">Litre</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="dozen">Dozen</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}/>
-                            </div>
-                            <FormField control={addForm.control} name="description" render={({ field }) => (
-                                <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Product description" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                        <div className="flex gap-2">
-                            <Button type="submit">Save Product</Button>
-                            <Button variant="outline" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
-                        </div>
-                    </form>
-                </Form>
-            </CardContent>
-        )}
-
-        <CardContent>
             {selectedProductIds.length > 0 && (
-            <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 p-4 mb-4 border rounded-lg bg-muted/50">
+            <div className="mt-4 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 p-4 border rounded-lg bg-muted/50">
                 <p className="text-sm font-medium">{selectedProductIds.length} selected</p>
                 <div className="flex items-center gap-2 w-full sm:w-auto sm:max-w-xs">
                     <Input
@@ -474,6 +393,70 @@ export default function ManageProductsPage() {
                 </AlertDialog>
             </div>
             )}
+        </div>
+
+        {isAdding && (
+             <Card className="mb-6">
+                <CardContent className="pt-6">
+                    <Form {...addForm}>
+                        <form onSubmit={addForm.handleSubmit(onQuickAddSubmit)} className="space-y-4">
+                                <h3 className="text-lg font-semibold">Add a New Product</h3>
+                                <FormField control={addForm.control} name="name" render={({ field }) => (
+                                <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={addForm.control} name="category" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Category</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Select or create a category" {...field} list="add-categories-list" />
+                                        </FormControl>
+                                        <datalist id="add-categories-list">
+                                            {allCategories.map(cat => <option key={cat} value={cat} />)}
+                                        </datalist>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="itemCode" render={({ field }) => (
+                                    <FormItem><FormLabel>Item Code (Optional)</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <FormField control={addForm.control} name="retailPrice" render={({ field }) => (
+                                    <FormItem><FormLabel>Retail (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="wholesalePrice" render={({ field }) => (
+                                    <FormItem><FormLabel>Wholesale (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="stock" render={({ field }) => (
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={addForm.control} name="unit" render={({ field }) => (
+                                    <FormItem><FormLabel>Unit</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="piece">Piece</SelectItem><SelectItem value="kg">Kg</SelectItem><SelectItem value="g">Gram</SelectItem><SelectItem value="litre">Litre</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="dozen">Dozen</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                </div>
+                                <FormField control={addForm.control} name="description" render={({ field }) => (
+                                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Product description" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            <div className="flex gap-2">
+                                <Button type="submit">Save Product</Button>
+                                <Button variant="outline" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
+                            </div>
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
+        )}
+
+        <div className="border rounded-lg">
             <Table>
             <TableHeader>
                 <TableRow>
@@ -586,8 +569,7 @@ export default function ManageProductsPage() {
                 ))}
             </TableBody>
             </Table>
-        </CardContent>
-        </Card>
+        </div>
     </div>
   );
 }
