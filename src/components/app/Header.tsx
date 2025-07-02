@@ -43,10 +43,10 @@ export default function Header() {
     router.push(`/?${queryString}`);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = (productId: string) => {
+    setSearchTerm(''); // Clear the search term from the input
     setShowSuggestions(false);
-    const queryString = suggestion ? `search=${suggestion}` : '';
-    router.push(`/?${queryString}`);
+    router.push(`/products/${productId}`);
   }
 
   const filteredSuggestions = useMemo(() => {

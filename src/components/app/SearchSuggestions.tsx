@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Product } from "@/types";
@@ -6,7 +5,7 @@ import { Search } from "lucide-react";
 
 interface SearchSuggestionsProps {
   suggestions: Product[];
-  onSuggestionClick: (searchTerm: string) => void;
+  onSuggestionClick: (productId: string) => void;
 }
 
 export default function SearchSuggestions({ suggestions, onSuggestionClick }: SearchSuggestionsProps) {
@@ -23,7 +22,7 @@ export default function SearchSuggestions({ suggestions, onSuggestionClick }: Se
             className="px-4 py-2 hover:bg-muted cursor-pointer flex items-center gap-2"
             onMouseDown={(e) => { // use onMouseDown to fire before onBlur on the input
               e.preventDefault();
-              onSuggestionClick(product.name);
+              onSuggestionClick(product.id);
             }}
           >
             <Search className="h-4 w-4 text-muted-foreground" />
