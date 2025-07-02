@@ -56,24 +56,24 @@ export default function ProfilePage() {
           <CardContent className="space-y-4">
             <div>
                 <Label>Name</Label>
-                <p className="text-base font-medium">{user.name}</p>
+                <p className="text-lg font-medium">{user.name}</p>
             </div>
              <div>
                 <Label>Email</Label>
-                <p className="text-base font-medium">{user.email}</p>
+                <p className="text-lg font-medium">{user.email}</p>
             </div>
              <div>
                 <Label>Phone</Label>
-                <p className="text-base font-medium">{user.phone}</p>
+                <p className="text-lg font-medium">{user.phone}</p>
             </div>
              <div>
                 <Label>Address</Label>
-                <p className="text-base font-medium whitespace-pre-wrap">{user.address}</p>
+                <p className="text-lg font-medium whitespace-pre-wrap">{user.address}</p>
             </div>
             <div>
                 <Label>Account Type</Label>
                 <div>
-                    <Badge variant={user.role === 'developer' || user.role === 'shop-owner' || user.role === 'imager' ? 'destructive' : user.role === 'wholesaler' ? 'default' : 'secondary'} className="text-sm capitalize">
+                    <Badge variant={user.role === 'developer' || user.role === 'shop-owner' || user.role === 'imager' ? 'destructive' : user.role === 'wholesaler' ? 'default' : 'secondary'} className="text-lg capitalize">
                         {user.role}
                     </Badge>
                 </div>

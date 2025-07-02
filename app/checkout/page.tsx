@@ -146,7 +146,7 @@ export default function CheckoutPage() {
                     <CardTitle>Order Total</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex justify-between text-base font-semibold">
+                    <div className="flex justify-between text-lg font-semibold">
                         <span>Total</span>
                         <span>₹{total.toFixed(2)}</span>
                     </div>

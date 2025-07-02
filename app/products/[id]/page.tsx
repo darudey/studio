@@ -104,15 +104,15 @@ export default function ProductDetailPage() {
         </div>
         <div className="space-y-6">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">{product.name}</h1>
+            <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">{product.name}</h1>
             <Badge variant="outline" className="mt-2">{product.category}</Badge>
           </div>
-          <p className="text-muted-foreground text-base">{product.description}</p>
+          <p className="text-muted-foreground text-lg">{product.description}</p>
           
           <div className="space-y-2">
-            <p className="text-2xl font-bold">
+            <p className="text-3xl font-bold">
               ₹{price.toFixed(2)} 
-              <span className="text-base font-normal text-muted-foreground"> / {product.unit}</span>
+              <span className="text-lg font-normal text-muted-foreground"> / {product.unit}</span>
             </p>
             {user?.role === 'basic' && <p className="text-sm text-muted-foreground">Login as a wholesaler for special pricing.</p>}
           </div>
