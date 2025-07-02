@@ -59,7 +59,7 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
               </div>
               <span className={cn(
                   "mt-1.5 w-full break-words whitespace-normal text-center text-[11px] leading-tight font-medium h-8 flex items-center justify-center",
-                  selectedCategory === category ? "text-accent font-bold" : "text-muted-foreground group-hover:text-foreground"
+                  selectedCategory === category ? "text-accent font-bold" : "text-accent/80 group-hover:text-accent"
                   )}>
                   {category}
               </span>

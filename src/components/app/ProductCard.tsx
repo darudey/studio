@@ -1,3 +1,4 @@
+
 "use client"
 import Image from "next/image";
 import Link from "next/link";
@@ -87,7 +88,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               {product.name}
             </Link>
           </h3>
-          <p className="text-xs text-muted-foreground truncate mt-0.5">{product.category}</p>
+          <p className="text-xs text-accent truncate mt-0.5 font-medium">{product.category}</p>
         </div>
         
         <div className="mt-auto pt-2">
