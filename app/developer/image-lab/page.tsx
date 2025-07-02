@@ -7,15 +7,11 @@ import { useRouter } from "next/navigation";
 import { getProducts, updateProduct } from "@/lib/data";
 import type { Product } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Image as ImageIcon, Edit, Camera, FileImage } from "lucide-react";
+import { ImageIcon, Upload, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ManageProductImagesPage() {
   const { user } = useAuth();
@@ -25,15 +21,11 @@ export default function ManageProductImagesPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  
+  // State to track which product is being updated
+  const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
 
   useEffect(() => {
     if (!user) {
@@ -45,53 +37,16 @@ export default function ManageProductImagesPage() {
       return;
     }
 
+    setLoading(true);
     getProducts().then(data => {
       setProducts(data);
       setLoading(false);
     }).catch(err => {
         console.error("Failed to load products", err);
+        toast({ title: "Error", description: "Failed to load products.", variant: "destructive" });
         setLoading(false);
     });
-  }, [user, router]);
-  
-  // Effect to handle camera stream, now dependent on `editingProduct`
-  useEffect(() => {
-    const getCameraPermission = async () => {
-      // If the dialog is not open, stop any existing streams
-      if (!editingProduct) {
-        if (videoRef.current?.srcObject) {
-           (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-        }
-        return;
-      }
-      
-      // Request camera permission when dialog opens
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
-        });
-      }
-    };
-    getCameraPermission();
-
-    // Cleanup function to stop stream when component unmounts or dialog closes
-    return () => {
-       if (videoRef.current?.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-      }
-    }
-  }, [editingProduct, toast]);
-
+  }, [user, router, toast]);
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -99,18 +54,18 @@ export default function ManageProductImagesPage() {
   );
   
   const handleImageClick = (product: Product) => {
-    setEditingProduct(product);
+    // Prevent multiple uploads at once
+    if (updatingProductId) return;
+    setUpdatingProductId(product.id);
+    fileInputRef.current?.click();
   }
 
-  const handleUpdateImage = async (newImageSrc: string) => {
-    if (!editingProduct) return;
-    setIsUpdating(true);
-
-    const otherImages = editingProduct.images.slice(1);
+  const handleUpdateImage = async (productToUpdate: Product, newImageSrc: string) => {
+    const otherImages = productToUpdate.images.slice(1);
     const updatedImages = [newImageSrc, ...otherImages];
 
     const updatedProductData: Product = {
-      ...editingProduct,
+      ...productToUpdate,
       images: updatedImages,
       imageUpdatedAt: new Date().toISOString(),
     };
@@ -120,17 +75,16 @@ export default function ManageProductImagesPage() {
         
         setProducts(currentProducts => 
             currentProducts.map(p => 
-                p.id === editingProduct.id ? updatedProductData : p
+                p.id === productToUpdate.id ? updatedProductData : p
             )
         );
 
-        toast({ title: "Image Updated", description: `The image for ${editingProduct.name} has been changed.` });
+        toast({ title: "Image Updated", description: `The image for ${productToUpdate.name} has been changed.` });
     } catch (error) {
         console.error("Failed to update image", error);
         toast({ title: "Update Failed", description: "Could not save the new image.", variant: "destructive" });
     } finally {
-        setIsUpdating(false);
-        setEditingProduct(null); // This will trigger the useEffect cleanup
+        setUpdatingProductId(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -138,32 +92,26 @@ export default function ManageProductImagesPage() {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
+    if (event.target.files && event.target.files[0] && updatingProductId) {
+      const productToUpdate = products.find(p => p.id === updatingProductId);
+      if (!productToUpdate) {
+        setUpdatingProductId(null);
+        return;
+      }
+
       const file = event.target.files[0];
       const reader = new FileReader();
       reader.onload = (e) => {
         const newImage = e.target?.result as string;
-        handleUpdateImage(newImage);
+        handleUpdateImage(productToUpdate, newImage);
       };
       reader.readAsDataURL(file);
+    } else {
+        // If no file is selected, or if the process was cancelled.
+        setUpdatingProductId(null);
     }
   };
   
-  const handleCapture = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (video && canvas && hasCameraPermission) {
-      const context = canvas.getContext('2d');
-      if (context) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const newImage = canvas.toDataURL('image/png');
-        handleUpdateImage(newImage);
-      }
-    }
-  };
-
   const ProductImageSkeleton = () => (
       <Card>
           <CardContent className="p-4 grid grid-cols-3 gap-4 items-center">
@@ -197,6 +145,17 @@ export default function ManageProductImagesPage() {
           className="max-w-sm"
         />
       </div>
+      
+      {/* Hidden file input */}
+      <Input 
+        id="file-upload" 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleFileChange} 
+        ref={fileInputRef} 
+        disabled={!!updatingProductId}
+      />
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -210,7 +169,7 @@ export default function ManageProductImagesPage() {
                     <div className="col-span-2">
                         <p className="font-semibold leading-tight">{p.name}</p>
                         <p className="text-sm text-muted-foreground">{p.itemCode}</p>
-                         <p className="text-xs text-muted-foreground mt-4">Click image to change.</p>
+                         <p className="text-xs text-muted-foreground mt-4">Click image to upload.</p>
                     </div>
                     <div className="col-span-1">
                         <div 
@@ -225,7 +184,11 @@ export default function ManageProductImagesPage() {
                                 data-ai-hint={p.dataAiHint}
                             />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                <Edit className="h-8 w-8 text-white" />
+                                {updatingProductId === p.id ? (
+                                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                                ) : (
+                                    <Upload className="h-8 w-8 text-white" />
+                                )}
                             </div>
                         </div>
                     </div>
@@ -234,41 +197,6 @@ export default function ManageProductImagesPage() {
           ))}
         </div>
       )}
-
-      <Dialog open={!!editingProduct} onOpenChange={(open) => { if (!open) { setEditingProduct(null); } }}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Update Image for {editingProduct?.name}</DialogTitle>
-                <DialogDescription>Capture a new photo or upload a file.</DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 pt-4">
-                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                <canvas ref={canvasRef} className="hidden" />
-                <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
-                
-                {hasCameraPermission === false && (
-                    <Alert variant="destructive">
-                        <AlertTitle>Camera Access Denied</AlertTitle>
-                        <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
-                    </Alert>
-                )}
-                
-                <div className="grid grid-cols-2 gap-2">
-                    <Button onClick={handleCapture} disabled={!hasCameraPermission || isUpdating}>
-                        <Camera className="mr-2 h-4 w-4" />
-                        {isUpdating ? "Saving..." : "Capture"}
-                    </Button>
-                    <Button asChild variant="outline" disabled={isUpdating}>
-                        <Label htmlFor="file-upload" className="cursor-pointer">
-                            <FileImage className="mr-2 h-4 w-4" />
-                             Upload
-                        </Label>
-                    </Button>
-                </div>
-            </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
