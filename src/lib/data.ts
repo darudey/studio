@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import type { Product, User, Order, OrderItem, Coupon } from "@/types";
 
 // USER FUNCTIONS
@@ -180,13 +180,13 @@ export const markCouponAsUsed = async (couponId: string, userId: string): Promis
 
 // HOMEPAGE FUNCTIONS
 export const getRecommendedProducts = async (): Promise<Product[]> => {
-    const q = query(productsCollection, where("isRecommended", "==", true), limit(10));
+    const q = query(productsCollection, where("isRecommended", "==", true), firestoreLimit(10));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 }
 
 export const getNewestProducts = async (limitCount = 10): Promise<Product[]> => {
-    const q = query(productsCollection, orderBy("createdAt", "desc"), limit(limitCount));
+    const q = query(productsCollection, orderBy("createdAt", "desc"), firestoreLimit(limitCount));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 }
@@ -221,3 +221,43 @@ export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> =
         return [];
     }
 }
+
+// PERFORMANCE-OPTIMIZED FUNCTIONS
+export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }: { search?: string, page?: number, limit?: number }) => {
+    // This function simulates server-side search and pagination.
+    // For a real-world, large-scale app, a dedicated search service like Algolia or Typesense integrated with Firebase is recommended.
+    const allProducts = await getProducts();
+
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+
+    const filteredProducts = search.trim() ? allProducts.filter(product => {
+        const lowercasedFilter = search.toLowerCase();
+        
+        if (product.name.toLowerCase().includes(lowercasedFilter) || 
+            product.category.toLowerCase().includes(lowercasedFilter) ||
+            product.itemCode.toLowerCase().includes(lowercasedFilter)
+        ) {
+            return true;
+        }
+
+        const consonantFilter = getConsonants(lowercasedFilter);
+        if (consonantFilter.length > 1) {
+            const nameConsonants = getConsonants(product.name);
+            if (nameConsonants.includes(consonantFilter)) {
+                return true;
+            }
+        }
+        return false;
+    }) : allProducts;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+    const hasMore = endIndex < filteredProducts.length;
+
+    return {
+        products: paginatedProducts,
+        more: hasMore
+    };
+};
