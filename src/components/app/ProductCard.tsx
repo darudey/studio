@@ -1,9 +1,8 @@
-
 "use client"
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -81,22 +80,23 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-4 pb-2">
-        <CardTitle className="text-sm font-semibold leading-tight mb-1 h-8 overflow-hidden">
-            <Link href={`/products/${product.id}`} className="hover:underline">{product.name}</Link>
-        </CardTitle>
-        <div className="text-xs text-muted-foreground">{product.category}</div>
-      </CardContent>
-      <CardFooter className="p-4 pt-0 mt-auto">
-        <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col">
-            <p className="text-base font-bold text-foreground">
-              ₹{displayPrice.toFixed(2)}
-            </p>
-            <p className="text-xs text-muted-foreground -mt-1">/{product.unit}</p>
-          </div>
+      <CardContent className="flex flex-1 flex-col p-3">
+        <div>
+          <h3 className="font-medium text-sm leading-tight h-10">
+            <Link href={`/products/${product.id}`} className="hover:underline line-clamp-2">
+              {product.name}
+            </Link>
+          </h3>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{product.category}</p>
         </div>
-      </CardFooter>
+        
+        <div className="mt-auto pt-2">
+          <p className="text-lg font-bold">
+            ₹{displayPrice.toFixed(2)}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">/{product.unit}</span>
+          </p>
+        </div>
+      </CardContent>
     </Card>
   );
 }
