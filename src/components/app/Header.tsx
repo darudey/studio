@@ -25,8 +25,10 @@ export default function Header() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     getProducts().then(setAllProducts);
   }, []);
 
@@ -103,22 +105,26 @@ export default function Header() {
         </div>
 
         <div className="flex shrink-0 items-center justify-end space-x-2">
-          <ShoppingCartSheet>
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                 <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
-              )}
-              <span className="sr-only">Shopping Cart</span>
-            </Button>
-          </ShoppingCartSheet>
+          {isMounted && (
+            <>
+              <ShoppingCartSheet>
+                <Button variant="ghost" size="icon" className="relative">
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                     <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
+                  )}
+                  <span className="sr-only">Shopping Cart</span>
+                </Button>
+              </ShoppingCartSheet>
 
-          {loading ? null : user ? (
-            <UserNav />
-          ) : (
-            <Button asChild>
-              <Link href="/login">Login</Link>
-            </Button>
+              {loading ? null : user ? (
+                <UserNav />
+              ) : (
+                <Button asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

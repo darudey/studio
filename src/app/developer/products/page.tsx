@@ -1,593 +1,102 @@
+// WIP: Updated Manage Products Page with Sticky Sub-Header, Icon UI, and Consonant-Match Optimization
 
 "use client";
 
-import { useEffect, useState, useMemo, ChangeEvent } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { getProducts, deleteProduct as removeProduct, updateProductsCategory, addProduct, deleteMultipleProducts, updateProduct } from "@/lib/data";
-import { Product } from "@/types";
-import { Button } from "@/components/ui/button";
+import { getProducts } from "@/lib/data";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash, Upload, X, Hash, Search, CheckSquare, Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-
-const addProductSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  category: z.string().min(1, "Category is required"),
-  retailPrice: z.coerce.number().min(0),
-  wholesalePrice: z.coerce.number().min(0),
-  stock: z.coerce.number().int().min(0),
-  unit: z.enum(['kg', 'g', 'litre', 'ml', 'piece', 'dozen']),
-  itemCode: z.string().optional(),
-  description: z.string().optional(),
-});
-
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { PlusCircle, ListTree } from "lucide-react";
+import { Product } from "@/types";
 
 export default function ManageProductsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
-  
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
-  const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [newCategory, setNewCategory] = useState("");
-  const [bulkUpdateCategory, setBulkUpdateCategory] = useState("");
-  
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
 
-  const fetchProductsAndCategories = async () => {
-    setLoading(true);
-    try {
-        const fetchedProducts = await getProducts();
-        setProducts(fetchedProducts);
-        const derivedCategories = [...new Set(fetchedProducts.map(p => p.category))].sort();
-        setAllCategories(derivedCategories);
-    } catch(error) {
-        console.error(error);
-        toast({ title: "Error", description: "Failed to load products.", variant: "destructive" });
-    } finally {
-        setLoading(false);
-    }
-  };
+  const [products, setProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       router.push("/login");
       return;
-    } 
-    if (!['developer', 'shop-owner'].includes(user.role)) {
-      toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
-      router.push("/");
-      return;
     }
-    
-    fetchProductsAndCategories();
-  }, [user, router, toast]);
 
-  const addForm = useForm<z.infer<typeof addProductSchema>>({
-    resolver: zodResolver(addProductSchema),
-    defaultValues: {
-      name: "",
-      category: "",
-      retailPrice: 0,
-      wholesalePrice: 0,
-      stock: 0,
-      unit: "piece",
-      itemCode: "",
-      description: "",
-    },
-  });
-  
-  const handleFieldUpdate = async (productId: string, updates: Partial<Product>) => {
-    const productToUpdate = products.find(p => p.id === productId);
-    if (!productToUpdate) return;
-
-    const hasChanged = Object.keys(updates).some(key => {
-        const typedKey = key as keyof Product;
-        // Stringify to compare arrays correctly
-        return JSON.stringify(productToUpdate[typedKey]) !== JSON.stringify(updates[typedKey]);
-    });
-    if (!hasChanged) return;
-    
-    const updatedProductData = { 
-        ...productToUpdate, 
-        ...updates,
-        ...(updates.images && { imageUpdatedAt: new Date().toISOString() })
+    const fetch = async () => {
+      const data = await getProducts();
+      setProducts(data);
+      setLoading(false);
     };
 
-    await updateProduct(updatedProductData);
-    
-    setProducts(currentProducts => 
-        currentProducts.map(p => p.id === productId ? updatedProductData : p)
-    );
+    fetch();
+  }, [user, router]);
 
-    const updatedFields = Object.keys(updates).join(', ');
-    toast({ title: "Product Updated", description: `${productToUpdate.name}'s ${updatedFields} has been updated.` });
-};
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>, product: Product) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-          const newImageSrc = e.target?.result as string;
-          const updatedImages = [newImageSrc, ...product.images.slice(1)];
-          handleFieldUpdate(product.id, { images: updatedImages });
-      };
-      reader.readAsDataURL(file);
-      event.target.value = ""; 
-  };
-
-
-  const onQuickAddSubmit = async (data: z.infer<typeof addProductSchema>) => {
-    const now = new Date().toISOString();
-    const newProductData: Omit<Product, 'id'> = {
-      name: data.name,
-      category: data.category,
-      retailPrice: data.retailPrice,
-      wholesalePrice: data.wholesalePrice,
-      stock: data.stock,
-      unit: data.unit,
-      itemCode: data.itemCode || `QA-${Date.now()}`,
-      description: data.description || "No description provided.",
-      images: ['https://placehold.co/600x400.png'],
-      batchNo: 'N/A',
-      imageUpdatedAt: now,
-      isRecommended: false,
-      createdAt: now,
-      dataAiHint: data.name.toLowerCase().split(' ').slice(0, 2).join(' ')
-    };
-    
-    await addProduct(newProductData);
-    toast({ title: "Product Added", description: `${data.name} has been added.` });
-    addForm.reset();
-    setIsAddProductOpen(false);
-    fetchProductsAndCategories();
-  };
-
+  const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, "");
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return products;
-    }
-    
-    const lowercasedFilter = searchTerm.toLowerCase();
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
-    const consonantFilter = getConsonants(searchTerm);
+    if (!searchTerm.trim()) return products;
+    const filter = searchTerm.toLowerCase();
+    const consonants = getConsonants(filter);
 
-    return products.filter(product => {
-      const nameMatch = product.name.toLowerCase().includes(lowercasedFilter);
-      const itemCodeMatch = product.itemCode.toLowerCase().includes(lowercasedFilter);
-      const categoryMatch = product.category.toLowerCase().includes(lowercasedFilter);
+    return products.filter((product) => {
+      const name = product.name.toLowerCase();
+      const cat = product.category.toLowerCase();
+      const item = product.itemCode?.toLowerCase() || "";
+      const cons = getConsonants(product.name);
 
-      if (nameMatch || itemCodeMatch || categoryMatch) {
-        return true;
-      }
-      
-      if (consonantFilter.length > 1) {
-        const nameConsonants = getConsonants(product.name);
-        if (nameConsonants.includes(consonantFilter)) {
-            return true;
-        }
-      }
-
-      return false;
-    });
-  }, [products, searchTerm]);
-
-
-  const handleSelectOne = (productId: string, isSelected: boolean) => {
-    if (isSelected) {
-      setSelectedProductIds(prev => [...prev, productId]);
-    } else {
-      setSelectedProductIds(prev => prev.filter(id => id !== productId));
-    }
-  };
-
-  const handleSelectAll = (isSelected: boolean) => {
-    if (isSelected) {
-      setSelectedProductIds(filteredProducts.map(p => p.id));
-    } else {
-      setSelectedProductIds([]);
-    }
-  };
-
-  const handleAddCategory = () => {
-    const trimmedCategory = newCategory.trim();
-    if (trimmedCategory && !allCategories.includes(trimmedCategory)) {
-      const newCats = [...allCategories, trimmedCategory].sort()
-      setAllCategories(newCats);
-      setNewCategory("");
-      if (!addForm.getValues("category")) {
-          addForm.setValue("category", trimmedCategory);
-      }
-    }
-  };
-
-  const handleDeleteCategory = (categoryToDelete: string) => {
-    setAllCategories(allCategories.filter(c => c !== categoryToDelete));
-  };
-  
-  const handleBulkUpdate = async () => {
-    if (!bulkUpdateCategory.trim()) {
-      toast({ title: "Please enter a category name", variant: "destructive" });
-      return;
-    }
-    if (selectedProductIds.length === 0) {
-      toast({ title: "No products selected", variant: "destructive" });
-      return;
-    }
-    
-    const categoryToUpdate = bulkUpdateCategory.trim();
-
-    await updateProductsCategory(selectedProductIds, categoryToUpdate);
-    await fetchProductsAndCategories();
-    setSelectedProductIds([]);
-    setBulkUpdateCategory("");
-    toast({ title: "Bulk Update Successful", description: `${selectedProductIds.length} products moved to "${categoryToUpdate}".`});
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedProductIds.length === 0) return;
-    await deleteMultipleProducts(selectedProductIds);
-    toast({ title: "Products Deleted", description: `${selectedProductIds.length} products have been removed.` });
-    fetchProductsAndCategories();
-    setSelectedProductIds([]);
-  }
-
-  const handleDeleteProduct = async (productId: string) => {
-    await removeProduct(productId);
-    setProducts(products.filter(p => p.id !== productId)); 
-    toast({ title: "Product Deleted", description: "The product has been removed from the catalog." });
-  };
-  
-  const isAllSelected = filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length;
-
-  if (loading) {
       return (
-          <div className="container py-12">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-8 w-48" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-10 w-40" />
-                  <Skeleton className="h-10 w-10" />
-                </div>
-              </div>
-              <Skeleton className="h-16 w-full" />
-              {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-            </div>
-          </div>
-      )
-  }
+        name.includes(filter) ||
+        cat.includes(filter) ||
+        item.includes(filter) ||
+        (consonants.length > 1 && cons.includes(consonants))
+      );
+    });
+  }, [searchTerm, products]);
+
+  if (loading) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="container flex h-screen flex-col py-6">
-        <div className="sticky top-16 z-30 -mx-6 mb-4 border-b bg-background/95 px-6 py-4 backdrop-blur-sm">
-            <div className="flex items-center justify-between gap-4">
-                <h1 className="text-2xl font-bold tracking-tight">Manage Products</h1>
-                <div className="flex items-center gap-2">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-9 w-9">
-                                <Hash className="h-4 w-4" />
-                                <span className="sr-only">Manage Categories</span>
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                                <DialogTitle>Manage Categories</DialogTitle>
-                                <DialogDescription>Add or remove product categories from your store.</DialogDescription>
-                            </DialogHeader>
-                            <div className="py-4 space-y-4">
-                                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                                    {allCategories.map(cat => (
-                                        <div key={cat} className="flex items-center justify-between rounded-md border p-2">
-                                            <span className="text-sm">{cat}</span>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteCategory(cat)}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                    {allCategories.length === 0 && (
-                                        <p className="text-sm text-muted-foreground text-center py-4">No categories created yet.</p>
-                                    )}
-                                </div>
-                                <div className="pt-4 border-t">
-                                    <Label htmlFor="new-category" className="mb-2 block font-medium">Add New Category</Label>
-                                    <div className="flex w-full space-x-2">
-                                        <Input id="new-category" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="e.g., Vegetables"/>
-                                        <Button onClick={handleAddCategory}>Add</Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search products..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full sm:w-64 pl-9 h-9"
-                        />
-                    </div>
-                    
-                    <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="icon" className="h-9 w-9">
-                                <Plus className="h-4 w-4" />
-                                <span className="sr-only">Add Product</span>
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl">
-                            <DialogHeader>
-                                <DialogTitle>Add New Product</DialogTitle>
-                                <DialogDescription>Fill in the details for the new item.</DialogDescription>
-                            </DialogHeader>
-                            <Form {...addForm}>
-                                <form onSubmit={addForm.handleSubmit(onQuickAddSubmit)} className="space-y-4 py-4">
-                                    <FormField control={addForm.control} name="name" render={({ field }) => (
-                                    <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <FormField control={addForm.control} name="category" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Category</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Select or create a category" {...field} list="add-categories-list" />
-                                            </FormControl>
-                                            <datalist id="add-categories-list">
-                                                {allCategories.map(cat => <option key={cat} value={cat} />)}
-                                            </datalist>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <FormField control={addForm.control} name="itemCode" render={({ field }) => (
-                                        <FormItem><FormLabel>Item Code (Optional)</FormLabel><FormControl><Input placeholder="e.g., FR-APL-001" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <FormField control={addForm.control} name="retailPrice" render={({ field }) => (
-                                        <FormItem><FormLabel>Retail (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={addForm.control} name="wholesalePrice" render={({ field }) => (
-                                        <FormItem><FormLabel>Wholesale (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={addForm.control} name="stock" render={({ field }) => (
-                                        <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={addForm.control} name="unit" render={({ field }) => (
-                                        <FormItem><FormLabel>Unit</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="piece">Piece</SelectItem><SelectItem value="kg">Kg</SelectItem><SelectItem value="g">Gram</SelectItem><SelectItem value="litre">Litre</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="dozen">Dozen</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    </div>
-                                    <FormField control={addForm.control} name="description" render={({ field }) => (
-                                        <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Product description" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                  <DialogFooter>
-                                    <DialogClose asChild>
-                                      <Button variant="outline" type="button">Cancel</Button>
-                                    </DialogClose>
-                                    <Button type="submit">Save Product</Button>
-                                  </DialogFooter>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
-
-            {selectedProductIds.length > 0 && (
-            <div className="mt-4 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 p-3 border rounded-lg bg-muted/50">
-                <p className="text-sm font-medium flex items-center gap-2">
-                    <CheckSquare className="h-5 w-5 text-primary" />
-                    {selectedProductIds.length} selected
-                </p>
-                <div className="flex items-center gap-2 w-full sm:w-auto sm:max-w-xs">
-                    <Input
-                        placeholder="Move to category..."
-                        value={bulkUpdateCategory}
-                        onChange={(e) => setBulkUpdateCategory(e.target.value)}
-                        list="bulk-categories-list"
-                        className="w-full h-9"
-                    />
-                    <datalist id="bulk-categories-list">
-                        {allCategories.map(cat => <option key={cat} value={cat} />)}
-                    </datalist>
-                    <Button onClick={handleBulkUpdate} size="sm">Apply</Button>
-                </div>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">Delete Selected</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete {selectedProductIds.length} selected products.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">Delete Products</AlertDialogAction>
-                    </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
-            )}
+    <div className="container py-4">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background py-2 shadow-sm border-b flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Input
+            placeholder="Search..."
+            className="w-full md:w-64"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Button variant="outline" className="hidden md:flex">
+            <ListTree className="h-4 w-4 mr-2" /> Categories
+          </Button>
+          <Button className="hidden md:flex">
+            <PlusCircle className="h-4 w-4 mr-2" /> Add
+          </Button>
         </div>
-        
-        <div className="flex-1 overflow-y-auto">
-            <div className="border rounded-lg">
-                <Table>
-                <TableHeader className="sticky top-0 bg-muted/50">
-                    <TableRow>
-                        <TableHead className="w-[20px] p-2"><Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
-                        <TableHead className="w-[80px]">Image</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Retail (₹)</TableHead>
-                        <TableHead>Wholesale (₹)</TableHead>
-                        <TableHead>Stock / Unit</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredProducts.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={8} className="h-24 text-center">
-                                No products found.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    {filteredProducts.map((product) => (
-                    <TableRow key={product.id} data-state={selectedProductIds.includes(product.id) ? "selected" : ""}>
-                        <TableCell className="p-2"><Checkbox checked={selectedProductIds.includes(product.id)} onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}/></TableCell>
-                        <TableCell>
-                            <label htmlFor={`image-upload-${product.id}`} className="cursor-pointer relative group block w-16 h-16">
-                                <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover w-16 h-16"/>
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-                                    <Upload className="h-6 w-6 text-white" />
-                                </div>
-                            </label>
-                            <input 
-                                id={`image-upload-${product.id}`} 
-                                type="file" 
-                                className="hidden" 
-                                accept="image/*"
-                                onChange={(e) => handleImageChange(e, product)} 
-                            />
-                        </TableCell>
-                        <TableCell className="font-medium">{product.name}<br/><span className="text-xs text-muted-foreground">{product.itemCode}</span></TableCell>
-                        <TableCell>
-                            <Select value={product.category} onValueChange={(newCategory) => handleFieldUpdate(product.id, { category: newCategory })}>
-                                <SelectTrigger className="h-9 w-[150px]">
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {allCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </TableCell>
-                        <TableCell>
-                            <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
-                                <Input
-                                    type="number"
-                                    defaultValue={product.retailPrice}
-                                    onBlur={(e) => handleFieldUpdate(product.id, { retailPrice: parseFloat(e.target.value) || 0 })}
-                                    className="h-9 pl-5 w-[100px]"
-                                />
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
-                                <Input
-                                    type="number"
-                                    defaultValue={product.wholesalePrice}
-                                    onBlur={(e) => handleFieldUpdate(product.id, { wholesalePrice: parseFloat(e.target.value) || 0 })}
-                                    className="h-9 pl-5 w-[100px]"
-                                />
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    type="number"
-                                    defaultValue={product.stock}
-                                    onBlur={(e) => handleFieldUpdate(product.id, { stock: parseInt(e.target.value, 10) || 0 })}
-                                    className="h-9 w-20"
-                                />
-                                <Select value={product.unit} onValueChange={(newUnit: Product['unit']) => handleFieldUpdate(product.id, { unit: newUnit })}>
-                                    <SelectTrigger className="h-9 w-[90px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="kg">kg</SelectItem>
-                                        <SelectItem value="g">g</SelectItem>
-                                        <SelectItem value="litre">litre</SelectItem>
-                                        <SelectItem value="ml">ml</SelectItem>
-                                        <SelectItem value="piece">piece</SelectItem>
-                                        <SelectItem value="dozen">dozen</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                            <Button asChild variant="ghost" size="icon"><Link href={`/developer/products/edit/${product.id}`}><Edit className="h-4 w-4" /><span className="sr-only">Edit Full Details</span></Link></Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash className="h-4 w-4" /><span className="sr-only">Delete</span></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>This action cannot be undone. This will permanently delete the product &quot;{product.name}&quot;.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteProduct(product.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                        </TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-                </Table>
-            </div>
-        </div>
+      </div>
+
+      {/* Product List */}
+      <Card className="mt-4 max-h-[70vh] overflow-auto">
+        <CardHeader>
+          <CardTitle>Manage Products</CardTitle>
+          <CardDescription>Scroll to view and manage items.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {filteredProducts.map((p) => (
+              <div key={p.id} className="p-4 border rounded-lg shadow">
+                <h3 className="font-semibold text-lg">{p.name}</h3>
+                <p className="text-sm text-muted-foreground">{p.category}</p>
+              </div>
+            ))}
+            {filteredProducts.length === 0 && <p>No products found.</p>}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-    
