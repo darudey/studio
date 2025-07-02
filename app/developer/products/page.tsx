@@ -85,7 +85,7 @@ export default function ManageProductsPage() {
   return (
     <div className="container py-12">
       <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Manage Products</h1>
+        <h1 className="text-xl font-bold">Manage Products</h1>
         <Input
           placeholder="Search products..."
           value={searchTerm}
