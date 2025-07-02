@@ -41,7 +41,7 @@ export default function ProductDetailPage() {
           const allProducts = await getProducts();
           const similar = allProducts
             .filter(p => p.category === foundProduct.category && p.id !== foundProduct.id)
-            .slice(0, 10);
+            .slice(0, 6);
           setSimilarProducts(similar);
         } else {
           notFound();
