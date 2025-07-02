@@ -28,7 +28,6 @@ export default function ManageProductImagesPage() {
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,18 +54,18 @@ export default function ManageProductImagesPage() {
     });
   }, [user, router]);
   
-  // Effect to handle camera stream
+  // Effect to handle camera stream, now dependent on `editingProduct`
   useEffect(() => {
     const getCameraPermission = async () => {
-      // If the dialog is not open or camera view is not requested, stop any existing streams
-      if (!editingProduct || !showCamera) {
+      // If the dialog is not open, stop any existing streams
+      if (!editingProduct) {
         if (videoRef.current?.srcObject) {
            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
         }
         return;
       }
       
-      // Request camera permission
+      // Request camera permission when dialog opens
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
@@ -85,13 +84,13 @@ export default function ManageProductImagesPage() {
     };
     getCameraPermission();
 
-    // Cleanup function to stop stream when component unmounts or dependencies change
+    // Cleanup function to stop stream when component unmounts or dialog closes
     return () => {
        if (videoRef.current?.srcObject) {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
       }
     }
-  }, [editingProduct, showCamera, toast]);
+  }, [editingProduct, toast]);
 
 
   const filteredProducts = products.filter(p => 
@@ -131,8 +130,7 @@ export default function ManageProductImagesPage() {
         toast({ title: "Update Failed", description: "Could not save the new image.", variant: "destructive" });
     } finally {
         setIsUpdating(false);
-        setEditingProduct(null);
-        setShowCamera(false);
+        setEditingProduct(null); // This will trigger the useEffect cleanup
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -237,46 +235,38 @@ export default function ManageProductImagesPage() {
         </div>
       )}
 
-      <Dialog open={!!editingProduct} onOpenChange={(open) => { if (!open) { setEditingProduct(null); setShowCamera(false); } }}>
+      <Dialog open={!!editingProduct} onOpenChange={(open) => { if (!open) { setEditingProduct(null); } }}>
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Update Image for {editingProduct?.name}</DialogTitle>
-                <DialogDescription>Choose a new primary image by uploading or using your camera.</DialogDescription>
+                <DialogDescription>Capture a new photo or upload a file.</DialogDescription>
             </DialogHeader>
 
-            <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
-            <canvas ref={canvasRef} className="hidden" />
-
-            {showCamera ? (
-                <div className="space-y-2">
-                    <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                    {hasCameraPermission === false && (
-                        <Alert variant="destructive">
-                            <AlertTitle>Camera Access Required</AlertTitle>
-                            <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
-                        </Alert>
-                    )}
-                    <div className="flex gap-2">
-                        <Button onClick={handleCapture} disabled={!hasCameraPermission || isUpdating} className="w-full">
-                            {isUpdating ? "Saving..." : "Capture Photo"}
-                        </Button>
-                        <Button variant="outline" onClick={() => setShowCamera(false)} className="w-full" disabled={isUpdating}>Cancel</Button>
-                    </div>
-                </div>
-            ) : (
-                <div className="flex flex-col sm:flex-row gap-4 py-4">
-                    <Button asChild variant="outline" className="w-full h-24 text-lg" disabled={isUpdating}>
-                        <Label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center justify-center gap-2">
-                            <FileImage className="h-8 w-8" />
-                            Upload File
+            <div className="space-y-4 pt-4">
+                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                <canvas ref={canvasRef} className="hidden" />
+                <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
+                
+                {hasCameraPermission === false && (
+                    <Alert variant="destructive">
+                        <AlertTitle>Camera Access Denied</AlertTitle>
+                        <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
+                    </Alert>
+                )}
+                
+                <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={handleCapture} disabled={!hasCameraPermission || isUpdating}>
+                        <Camera className="mr-2 h-4 w-4" />
+                        {isUpdating ? "Saving..." : "Capture"}
+                    </Button>
+                    <Button asChild variant="outline" disabled={isUpdating}>
+                        <Label htmlFor="file-upload" className="cursor-pointer">
+                            <FileImage className="mr-2 h-4 w-4" />
+                             Upload
                         </Label>
                     </Button>
-                    <Button onClick={() => setShowCamera(true)} variant="outline" className="w-full h-24 text-lg flex-col gap-2" disabled={isUpdating}>
-                        <Camera className="h-8 w-8" />
-                        Use Camera
-                    </Button>
                 </div>
-            )}
+            </div>
         </DialogContent>
       </Dialog>
     </div>
