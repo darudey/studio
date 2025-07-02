@@ -130,9 +130,18 @@ export default function ManageProductsPage() {
   };
   
   const ProductCardSkeleton = () => (
-      <div className="border p-4 rounded-lg shadow-sm space-y-2">
+      <div className="border p-4 rounded-lg shadow-sm space-y-3">
         <Skeleton className="h-5 bg-muted rounded w-3/4" />
-        <Skeleton className="h-4 bg-muted rounded w-1/2" />
+        <div className="space-y-2 pt-2 border-t border-muted/20">
+            <div className="flex justify-between">
+                <Skeleton className="h-4 bg-muted rounded w-1/2" />
+                <Skeleton className="h-4 bg-muted rounded w-1/4" />
+            </div>
+            <div className="flex justify-between">
+                <Skeleton className="h-4 bg-muted rounded w-1/3" />
+                <Skeleton className="h-4 bg-muted rounded w-1/3" />
+            </div>
+        </div>
       </div>
   );
 
@@ -235,9 +244,18 @@ export default function ManageProductsPage() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {products.map((p) => (
-              <button key={p.id} className="border p-4 rounded-lg shadow-sm text-left hover:shadow-md transition-shadow" onClick={() => setEditingProduct(p)}>
-                <h4 className="font-medium truncate">{p.name}</h4>
-                <p className="text-sm text-muted-foreground">{p.category}</p>
+              <button key={p.id} className="border p-4 rounded-lg shadow-sm text-left hover:shadow-md transition-shadow flex flex-col" onClick={() => setEditingProduct(p)}>
+                <h4 className="font-medium truncate flex-grow">{p.name}</h4>
+                <div className="mt-2 pt-2 border-t border-muted/20 text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between items-center gap-2">
+                        <span className="truncate"><span className="font-semibold text-foreground/80">CG:</span> {p.category}</span>
+                        <span className="flex-shrink-0"><span className="font-semibold text-foreground/80">ST:</span> {p.stock}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                        <span><span className="font-semibold text-foreground/80">RP:</span> ₹{p.retailPrice.toFixed(0)}</span>
+                        <span><span className="font-semibold text-foreground/80">WP:</span> ₹{p.wholesalePrice.toFixed(0)}</span>
+                    </div>
+                </div>
               </button>
             ))}
           </div>
@@ -258,4 +276,3 @@ export default function ManageProductsPage() {
     </div>
   );
 }
-
