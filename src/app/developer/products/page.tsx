@@ -1,4 +1,3 @@
-// WIP: Updated Manage Products Page with Sticky Sub-Header, Icon UI, and Consonant-Match Optimization
 
 "use client";
 
@@ -10,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { PlusCircle, ListTree } from "lucide-react";
-import { Product } from "@/types";
+import type { Product } from "@/types";
 
 export default function ManageProductsPage() {
   const { user } = useAuth();
@@ -25,14 +24,18 @@ export default function ManageProductsPage() {
       router.push("/login");
       return;
     }
+    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
+      router.push("/");
+      return;
+    }
 
-    const fetch = async () => {
+    const fetchData = async () => {
       const data = await getProducts();
       setProducts(data);
       setLoading(false);
     };
 
-    fetch();
+    fetchData();
   }, [user, router]);
 
   const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, "");
@@ -42,7 +45,7 @@ export default function ManageProductsPage() {
     const filter = searchTerm.toLowerCase();
     const consonants = getConsonants(filter);
 
-    return products.filter((product) => {
+    return products.filter((product: Product) => {
       const name = product.name.toLowerCase();
       const cat = product.category.toLowerCase();
       const item = product.itemCode?.toLowerCase() || "";
@@ -87,7 +90,7 @@ export default function ManageProductsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {filteredProducts.map((p) => (
+            {filteredProducts.map((p: Product) => (
               <div key={p.id} className="p-4 border rounded-lg shadow">
                 <h3 className="font-semibold text-lg">{p.name}</h3>
                 <p className="text-sm text-muted-foreground">{p.category}</p>
