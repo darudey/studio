@@ -228,7 +228,7 @@ export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }
     // For a real-world, large-scale app, a dedicated search service like Algolia or Typesense integrated with Firebase is recommended.
     const allProducts = await getProducts();
 
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
 
     const filteredProducts = search.trim() ? allProducts.filter(product => {
         const lowercasedFilter = search.toLowerCase();
