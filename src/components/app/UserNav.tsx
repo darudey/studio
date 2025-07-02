@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { LogOut, ReceiptText, User as UserIcon, Users, PlusCircle, ClipboardList, Ticket } from "lucide-react";
+import { LogOut, ReceiptText, User as UserIcon, Users, PlusCircle, ClipboardList, Ticket, Image as ImageIcon } from "lucide-react";
 import { Badge } from "../ui/badge";
 
 export default function UserNav() {
@@ -80,38 +80,25 @@ export default function UserNav() {
           )}
         </DropdownMenuGroup>
 
-        {user.role === 'shop-owner' && (
+        {['shop-owner', 'imager'].includes(user.role) && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Shop Owner</DropdownMenuLabel>
+            <DropdownMenuLabel>{user.role === 'shop-owner' ? 'Shop Owner' : 'Imager'}</DropdownMenuLabel>
             <DropdownMenuGroup>
-               <Link href="/shop-owner/orders">
+               {user.role === 'shop-owner' && (
+                  <Link href="/shop-owner/orders">
+                    <DropdownMenuItem>
+                      <ReceiptText className="mr-2 h-4 w-4" />
+                      <span>All Orders</span>
+                    </DropdownMenuItem>
+                  </Link>
+               )}
+              <Link href="/developer/image-lab">
                 <DropdownMenuItem>
-                  <ReceiptText className="mr-2 h-4 w-4" />
-                  <span>All Orders</span>
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  <span>Image Lab</span>
                 </DropdownMenuItem>
               </Link>
-              <Link href="/developer/products">
-                <DropdownMenuItem>
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  <span>Manage Products</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/add-item">
-                <DropdownMenuItem>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  <span>Add Product</span>
-                </DropdownMenuItem>
-              </Link>
-            </DropdownMenuGroup>
-          </>
-        )}
-
-        {user.role === 'imager' && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Imager</DropdownMenuLabel>
-            <DropdownMenuGroup>
               <Link href="/developer/products">
                 <DropdownMenuItem>
                   <ClipboardList className="mr-2 h-4 w-4" />
@@ -143,6 +130,12 @@ export default function UserNav() {
                 <DropdownMenuItem>
                   <Ticket className="mr-2 h-4 w-4" />
                   <span>Manage Coupons</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/developer/image-lab">
+                <DropdownMenuItem>
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  <span>Image Lab</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/products">

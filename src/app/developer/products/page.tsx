@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo, useCallback, startTransition } from "reac
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getProducts, updateProductsCategory, deleteMultipleProducts, renameCategory, deleteCategory } from "@/lib/data";
+import { getProducts, updateProductsCategory, deleteMultipleProducts, renameCategory, deleteCategory, updateProduct } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PlusCircle, MoreHorizontal, Trash2, ListTree, FolderSymlink, Check, X, ClipboardList } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Trash2, ListTree, FolderSymlink, Check, X, ClipboardList, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function ManageProductsPage() {
   const { user } = useAuth();
@@ -28,11 +30,16 @@ export default function ManageProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
 
   // Dialog states
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [isManageCategoryDialogOpen, setIsManageCategoryDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
   
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [targetCategory, setTargetCategory] = useState("");
@@ -66,7 +73,7 @@ export default function ManageProductsPage() {
     if (!searchTerm.trim()) return products;
 
     const lowercasedFilter = searchTerm.toLowerCase();
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
     const consonantFilter = getConsonants(lowercasedFilter);
 
     return products.filter(product => {
@@ -131,6 +138,43 @@ export default function ManageProductsPage() {
     await fetchProducts();
     setIsProcessing(false);
   }
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!editingProduct) return;
+    const { name, value } = e.target;
+    setEditingProduct({ ...editingProduct, [name]: value });
+  };
+  
+  const handleSelectChange = (name: string, value: string) => {
+    if (!editingProduct) return;
+    setEditingProduct({ ...editingProduct, [name]: value });
+  };
+
+  const handleSaveChanges = async () => {
+    if (!editingProduct) return;
+
+    setIsSaving(true);
+    try {
+      const productToUpdate: Product = {
+        ...editingProduct,
+        retailPrice: Number(editingProduct.retailPrice) || 0,
+        wholesalePrice: Number(editingProduct.wholesalePrice) || 0,
+        stock: Number(editingProduct.stock) || 0,
+      };
+
+      await updateProduct(productToUpdate);
+      toast({ title: "Success", description: "Product updated successfully." });
+      
+      await fetchProducts();
+      
+      setEditingProduct(null);
+    } catch (error) {
+      console.error("Failed to update product", error);
+      toast({ title: "Error", description: "Failed to update product.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const RowSkeleton = () => (
     <TableRow>
@@ -249,6 +293,81 @@ export default function ManageProductsPage() {
         </div>
       </header>
       <main className="flex-1 overflow-y-auto">
+        <Dialog open={!!editingProduct} onOpenChange={(isOpen) => !isOpen && setEditingProduct(null)}>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+              {editingProduct && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Edit Product</DialogTitle>
+                    <DialogDescription>
+                      Make changes to &quot;{editingProduct.name}&quot;. Click save when you&apos;re done.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">Name</Label>
+                      <Input id="name" name="name" value={editingProduct.name} onChange={handleFormChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="description" className="text-right">Description</Label>
+                      <Textarea id="description" name="description" value={editingProduct.description} onChange={handleFormChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="category" className="text-right">Category</Label>
+                      <Input id="category" name="category" value={editingProduct.category} onChange={handleFormChange} list="categories-list" className="col-span-3" />
+                      <datalist id="categories-list">
+                          {allCategories.map(cat => <option key={cat} value={cat} />)}
+                      </datalist>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="itemCode" className="text-right">Item Code</Label>
+                      <Input id="itemCode" name="itemCode" value={editingProduct.itemCode} onChange={handleFormChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="batchNo" className="text-right">Batch No.</Label>
+                      <Input id="batchNo" name="batchNo" value={editingProduct.batchNo} onChange={handleFormChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="retailPrice" className="text-right">Retail Price (₹)</Label>
+                      <Input id="retailPrice" name="retailPrice" type="number" value={editingProduct.retailPrice} onChange={handleFormChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="wholesalePrice" className="text-right">Wholesale Price (₹)</Label>
+                      <Input id="wholesalePrice" name="wholesalePrice" type="number" value={editingProduct.wholesalePrice} onChange={handleFormChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="stock" className="text-right">Stock</Label>
+                      <Input id="stock" name="stock" type="number" value={editingProduct.stock} onChange={handleFormChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="unit" className="text-right">Unit</Label>
+                      <Select name="unit" value={editingProduct.unit} onValueChange={(value) => handleSelectChange('unit', value)}>
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Select a unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                          <SelectItem value="g">Gram (g)</SelectItem>
+                          <SelectItem value="litre">Litre (litre)</SelectItem>
+                          <SelectItem value="ml">Millilitre (ml)</SelectItem>
+                          <SelectItem value="piece">Piece</SelectItem>
+                          <SelectItem value="dozen">Dozen</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setEditingProduct(null)} disabled={isSaving}>Cancel</Button>
+                    <Button type="button" onClick={handleSaveChanges} disabled={isSaving}>
+                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Changes
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </DialogContent>
+        </Dialog>
+
         <Table>
           <TableHeader className="sticky top-0 bg-background z-[1]">
             <TableRow>
@@ -279,8 +398,8 @@ export default function ManageProductsPage() {
                          <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
                        </DropdownMenuTrigger>
                        <DropdownMenuContent align="end">
-                         <DropdownMenuItem onSelect={() => router.push(`/developer/products/edit/${p.id}`)}>Edit</DropdownMenuItem>
-                         <DropdownMenuItem>View</DropdownMenuItem>
+                         <DropdownMenuItem onSelect={() => setEditingProduct(p)}>Quick Edit</DropdownMenuItem>
+                         <DropdownMenuItem onSelect={() => router.push(`/developer/products/edit/${p.id}`)}>Edit Details</DropdownMenuItem>
                        </DropdownMenuContent>
                      </DropdownMenu>
                   </TableCell>
