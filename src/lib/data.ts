@@ -43,15 +43,55 @@ export const updateUser = async (user: User): Promise<void> => {
 const productsCollection = collection(db, 'products');
 
 export const getProducts = async (): Promise<Product[]> => {
-    const snapshot = await getDocs(productsCollection);
+    const snapshot = await getDocs(query(productsCollection, orderBy("createdAt", "desc")));
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+};
+
+export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }: { search?: string; page?: number; limit?: number; }) => {
+    // This is a client-side implementation for demonstration.
+    // For production, this logic should be on a server/cloud function with proper indexing.
+    const allProducts = await getProducts();
+
+    const lowercasedSearch = search.toLowerCase();
+    
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    const consonantFilter = getConsonants(lowercasedSearch);
+
+    const filtered = lowercasedSearch
+        ? allProducts.filter(product => {
+            const nameMatch = product.name.toLowerCase().includes(lowercasedSearch);
+            const categoryMatch = product.category.toLowerCase().includes(lowercasedSearch);
+            const itemCodeMatch = product.itemCode.toLowerCase().includes(lowercasedSearch);
+
+            if (nameMatch || categoryMatch || itemCodeMatch) return true;
+
+            if (consonantFilter.length > 1) {
+                if (getConsonants(product.name).includes(consonantFilter)) return true;
+            }
+            return false;
+          })
+        : allProducts;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedProducts = filtered.slice(startIndex, endIndex);
+
+    return {
+        products: paginatedProducts,
+        more: endIndex < filtered.length,
+    };
 };
 
 export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
     if (ids.length === 0) return [];
-    const q = query(productsCollection, where(documentId(), 'in', ids));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    // Firestore 'in' queries are limited to 30 items. We need to batch.
+    const productPromises: Promise<Product[]>[] = [];
+    for (let i = 0; i < ids.length; i += 30) {
+        const chunk = ids.slice(i, i + 30);
+        const q = query(productsCollection, where(documentId(), 'in', chunk));
+        productPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product))));
+    }
+    return (await Promise.all(productPromises)).flat();
 };
 
 export const getProductById = async (id: string): Promise<Product | null> => {
@@ -151,33 +191,6 @@ export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon>
     return { id: docRef.id, ...couponData };
 };
 
-export const findCouponByCode = async (code: string): Promise<Coupon | null> => {
-    const q = query(couponsCollection, where("code", "==", code));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-        return null;
-    }
-
-    const couponDoc = snapshot.docs[0];
-    const coupon = { id: couponDoc.id, ...couponDoc.data() } as Coupon;
-
-    // Explicitly check if the coupon is already used
-    if (coupon.isUsed) {
-        return null;
-    }
-
-    return coupon;
-};
-
-export const markCouponAsUsed = async (couponId: string, userId: string): Promise<void> => {
-    const couponRef = doc(db, 'coupons', couponId);
-    await updateDoc(couponRef, {
-        isUsed: true,
-        usedBy: userId
-    });
-};
-
 // HOMEPAGE FUNCTIONS
 export const getRecommendedProducts = async (): Promise<Product[]> => {
     const q = query(productsCollection, where("isRecommended", "==", true), firestoreLimit(10));
@@ -222,42 +235,27 @@ export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> =
     }
 }
 
-// PERFORMANCE-OPTIMIZED FUNCTIONS
-export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }: { search?: string, page?: number, limit?: number }) => {
-    // This function simulates server-side search and pagination.
-    // For a real-world, large-scale app, a dedicated search service like Algolia or Typesense integrated with Firebase is recommended.
-    const allProducts = await getProducts();
+// CATEGORY MANAGEMENT
+export const renameCategory = async (oldName: string, newName: string): Promise<void> => {
+    const q = query(productsCollection, where("category", "==", oldName));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return;
 
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { category: newName });
+    });
+    await batch.commit();
+}
 
-    const filteredProducts = search.trim() ? allProducts.filter(product => {
-        const lowercasedFilter = search.toLowerCase();
-        
-        if (product.name.toLowerCase().includes(lowercasedFilter) || 
-            product.category.toLowerCase().includes(lowercasedFilter) ||
-            product.itemCode.toLowerCase().includes(lowercasedFilter)
-        ) {
-            return true;
-        }
+export const deleteCategory = async (categoryName: string): Promise<void> => {
+    const q = query(productsCollection, where("category", "==", categoryName));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return;
 
-        const consonantFilter = getConsonants(lowercasedFilter);
-        if (consonantFilter.length > 1) {
-            const nameConsonants = getConsonants(product.name);
-            if (nameConsonants.includes(consonantFilter)) {
-                return true;
-            }
-        }
-        return false;
-    }) : allProducts;
-
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-
-    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-    const hasMore = endIndex < filteredProducts.length;
-
-    return {
-        products: paginatedProducts,
-        more: hasMore
-    };
-};
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { category: "Uncategorized" });
+    });
+    await batch.commit();
+}

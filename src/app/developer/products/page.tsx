@@ -1,128 +1,301 @@
 
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, startTransition } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getPaginatedProducts } from "@/lib/data";
+import Link from "next/link";
+import { getProducts, updateProductsCategory, deleteMultipleProducts, renameCategory, deleteCategory } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { debounce } from "lodash";
+import { useToast } from "@/hooks/use-toast";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { PlusCircle, MoreHorizontal, Trash2, ListTree, FolderSymlink, Check, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ManageProductsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
-  const [isSearching, setIsSearching] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const limit = 20;
+  // Dialog states
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [isManageCategoryDialogOpen, setIsManageCategoryDialogOpen] = useState(false);
+  
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [targetCategory, setTargetCategory] = useState("");
 
-  const fetchProducts = useCallback(async (query: string, pageNum: number) => {
-    // Show skeleton loader only for the first page load/search
-    if (pageNum === 1) {
-      setIsSearching(true);
-    } else {
-      setLoading(true); // For "Load More" button
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getProducts();
+      setProducts(data);
+      const uniqueCategories = [...new Set(data.map(p => p.category))].sort();
+      setAllCategories(uniqueCategories);
+    } catch (error) {
+      toast({ title: "Error", description: "Could not fetch products.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    
-    const { products: newProducts, more } = await getPaginatedProducts({
-      search: query,
-      page: pageNum,
-      limit,
-    });
-    
-    setProducts(prev => pageNum === 1 ? newProducts : [...prev, ...newProducts]);
-    setHasMore(more);
-    setPage(pageNum);
-
-    setLoading(false);
-    setIsSearching(false);
-  }, []);
-
-  const debouncedFetch = useMemo(() => {
-    return debounce((query: string) => {
-      fetchProducts(query, 1);
-    }, 300);
-  }, [fetchProducts]);
+  }, [toast]);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
-      return;
+    } else if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
+      router.push('/');
+    } else {
+      fetchProducts();
     }
-    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
-      router.push("/");
-      return;
-    }
-    debouncedFetch(searchTerm);
-    return () => {
-      debouncedFetch.cancel();
-    };
-  }, [user, router, searchTerm, debouncedFetch]);
+  }, [user, router, fetchProducts]);
 
-  const loadMore = () => {
-    if (!loading && hasMore) {
-      fetchProducts(searchTerm, page + 1);
-    }
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm.trim()) return products;
+
+    const lowercasedFilter = searchTerm.toLowerCase();
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
+    const consonantFilter = getConsonants(lowercasedFilter);
+
+    return products.filter(product => {
+        const nameMatch = product.name.toLowerCase().includes(lowercasedFilter);
+        const categoryMatch = product.category.toLowerCase().includes(lowercasedFilter);
+        const itemCodeMatch = product.itemCode.toLowerCase().includes(lowercasedFilter);
+        
+        if (nameMatch || categoryMatch || itemCodeMatch) return true;
+        
+        if (consonantFilter.length > 1) {
+            if (getConsonants(product.name).includes(consonantFilter)) return true;
+        }
+        return false;
+    });
+  }, [searchTerm, products]);
+  
+  const handleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(pId => pId !== id));
   };
   
-  const ProductCardSkeleton = () => (
-      <div className="border p-4 rounded-lg shadow-sm space-y-2">
-        <Skeleton className="h-5 bg-muted rounded w-3/4" />
-        <Skeleton className="h-4 bg-muted rounded w-1/2" />
-      </div>
-  );
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedIds(checked ? filteredProducts.map(p => p.id) : []);
+  };
+  
+  const handleBulkDelete = async () => {
+    setIsProcessing(true);
+    await deleteMultipleProducts(selectedIds);
+    toast({ title: `${selectedIds.length} products deleted.` });
+    setSelectedIds([]);
+    await fetchProducts();
+    setIsProcessing(false);
+  };
+  
+  const handleBulkMove = async () => {
+    if (!targetCategory) {
+      toast({ title: "No category selected", description: "Please select a target category.", variant: "destructive" });
+      return;
+    }
+    setIsProcessing(true);
+    await updateProductsCategory(selectedIds, targetCategory);
+    toast({ title: "Products Moved", description: `${selectedIds.length} products moved to ${targetCategory}.` });
+    setSelectedIds([]);
+    setTargetCategory("");
+    setIsMoveDialogOpen(false);
+    await fetchProducts(); // Refresh data
+    setIsProcessing(false);
+  };
 
-  if (!user) {
-    return <div className="container py-12 text-center">Redirecting...</div>;
+  const handleRenameCategory = async (oldName: string, newName: string) => {
+    if (!newName || oldName === newName) return;
+    setIsProcessing(true);
+    await renameCategory(oldName, newName);
+    toast({ title: "Category Renamed", description: `"${oldName}" is now "${newName}".` });
+    await fetchProducts();
+    setIsProcessing(false);
   }
 
-  return (
-    <div className="container py-12">
-      <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Manage Products</h1>
-        <Input
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
-      </div>
+  const handleDeleteCategory = async (categoryName: string) => {
+    setIsProcessing(true);
+    await deleteCategory(categoryName);
+    toast({ title: "Category Deleted", description: `Products from "${categoryName}" moved to "Uncategorized".` });
+    await fetchProducts();
+    setIsProcessing(false);
+  }
 
-      {isSearching ? (
-         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(12)].map((_, i) => <ProductCardSkeleton key={i} />)}
-         </div>
-      ) : products.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((p) => (
-              <div key={p.id} className="border p-4 rounded-lg shadow-sm">
-                <h4 className="font-medium truncate">{p.name}</h4>
-                <p className="text-sm text-muted-foreground">{p.category}</p>
-              </div>
-            ))}
+  const RowSkeleton = () => (
+    <TableRow>
+      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+      <TableCell><Skeleton className="h-6 w-48" /></TableCell>
+      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+      <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+    </TableRow>
+  );
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-4rem)]">
+      <header className="sticky top-16 z-10 border-b bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            <h1 className="text-xl font-bold tracking-tight">Manage Products</h1>
+            {selectedIds.length > 0 ? (
+               <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
+                  <span className="font-semibold text-sm flex items-center gap-1.5"><Check className="h-4 w-4 text-green-600"/>{selectedIds.length} selected</span>
+                  <div className="h-5 w-px bg-border" />
+                  <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-7"><FolderSymlink className="h-4 w-4 mr-2"/>Move</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Move to Category</DialogTitle>
+                        <DialogDescription>Move the {selectedIds.length} selected products to a new or existing category.</DialogDescription>
+                      </DialogHeader>
+                      <Input
+                        placeholder="Type new category or select existing"
+                        value={targetCategory}
+                        onChange={(e) => setTargetCategory(e.target.value)}
+                        list="categories-list"
+                      />
+                      <datalist id="categories-list">
+                        {allCategories.map(cat => <option key={cat} value={cat}/>)}
+                      </datalist>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsMoveDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleBulkMove} disabled={isProcessing}>{isProcessing ? "Moving..." : "Move Products"}</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4 mr-2"/>Delete</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete {selectedIds.length} products. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete} disabled={isProcessing}>{isProcessing ? "Deleting..." : "Yes, delete"}</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <Button variant="ghost" size="sm" className="h-7" onClick={() => setSelectedIds([])}><X className="h-4 w-4 mr-2"/>Clear</Button>
+               </div>
+            ) : (
+                <Input
+                  placeholder="Search products by name, category, code..."
+                  className="max-w-sm"
+                  value={searchTerm}
+                  onChange={(e) => startTransition(() => setSearchTerm(e.target.value))}
+                />
+            )}
           </div>
-          {hasMore && (
-            <div className="mt-8 text-center">
-              <Button onClick={loadMore} disabled={loading}>
-                {loading ? "Loading..." : "Load More"}
-              </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center py-16">
-          <h2 className="text-xl font-semibold">No products found</h2>
-          <p className="text-muted-foreground mt-2">Try adjusting your search.</p>
+          <div className="flex items-center gap-2">
+            <Dialog open={isManageCategoryDialogOpen} onOpenChange={setIsManageCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm"><ListTree className="mr-2 h-4"/>Manage Categories</Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[80vh] flex flex-col">
+                <DialogHeader><DialogTitle>Manage Categories</DialogTitle><DialogDescription>Rename or delete existing categories. Changes will affect all products.</DialogDescription></DialogHeader>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                  <div className="space-y-2">
+                    {allCategories.map(cat => (
+                      <div key={cat} className="flex items-center justify-between gap-2 rounded-md border p-2">
+                        <span className="font-medium text-sm">{cat}</span>
+                        <div className="flex items-center gap-1">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7">Rename</Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>Rename &quot;{cat}&quot;</AlertDialogTitle><AlertDialogDescription>Enter the new name for this category.</AlertDialogDescription></AlertDialogHeader>
+                              <Input id={`rename-${cat}`} defaultValue={cat}/>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRenameCategory(cat, (document.getElementById(`rename-${cat}`) as HTMLInputElement).value)}>Rename</Button>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          <AlertDialog>
+                             <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive" disabled={cat === "Uncategorized"}>Delete</Button></AlertDialogTrigger>
+                             <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>Delete &quot;{cat}&quot;?</AlertDialogTitle><AlertDialogDescription>Products in this category will be moved to &quot;Uncategorized&quot;. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteCategory(cat)}>Yes, delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                             </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button asChild size="sm">
+              <Link href="/developer/add-item"><PlusCircle className="mr-2 h-4"/>Add Product</Link>
+            </Button>
+          </div>
         </div>
-      )}
+      </header>
+      <main className="flex-1 overflow-y-auto">
+        <Table>
+          <TableHeader className="sticky top-0 bg-background z-[1]">
+            <TableRow>
+              <TableHead className="w-[50px]"><Checkbox onCheckedChange={handleSelectAll} checked={selectedIds.length === filteredProducts.length && filteredProducts.length > 0} /></TableHead>
+              <TableHead>Product</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Retail Price</TableHead>
+              <TableHead>Wholesale Price</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead className="w-[50px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+                [...Array(10)].map((_, i) => <RowSkeleton key={i} />)
+            ) : filteredProducts.length > 0 ? (
+              filteredProducts.map(p => (
+                <TableRow key={p.id} data-state={selectedIds.includes(p.id) ? "selected" : "unselected"}>
+                  <TableCell><Checkbox onCheckedChange={(checked) => handleSelectOne(p.id, !!checked)} checked={selectedIds.includes(p.id)} /></TableCell>
+                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell>{p.category}</TableCell>
+                  <TableCell>₹{p.retailPrice.toFixed(2)}</TableCell>
+                  <TableCell>₹{p.wholesalePrice.toFixed(2)}</TableCell>
+                  <TableCell>{p.stock}</TableCell>
+                  <TableCell className="text-right">
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem onSelect={() => router.push(`/developer/products/edit/${p.id}`)}>Edit</DropdownMenuItem>
+                         <DropdownMenuItem>View</DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">No products found.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </main>
     </div>
   );
 }
+
+    
