@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -73,7 +72,7 @@ export default function ProductPage() {
     }
 
     const lowercasedFilter = searchTerm.toLowerCase();
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[^bcdfghjklmnpqrstvwxyz]/gi, '');
     const consonantFilter = getConsonants(searchTerm);
 
     return productsToFilter.filter(product => {
@@ -85,7 +84,7 @@ export default function ProductPage() {
         return true;
       }
       
-      if (consonantFilter.length > 1) {
+      if (consonantFilter.length >= 2) {
         const nameConsonants = getConsonants(product.name);
         if (nameConsonants.includes(consonantFilter)) {
             return true;

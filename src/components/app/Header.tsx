@@ -55,7 +55,7 @@ export default function Header() {
     }
 
     const lowercasedFilter = searchTerm.toLowerCase();
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\\s\\W\\d_]/gi, '');
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[^bcdfghjklmnpqrstvwxyz]/gi, '');
     const consonantFilter = getConsonants(searchTerm);
 
     return allProducts
@@ -66,7 +66,7 @@ export default function Header() {
           return true;
         }
         // Consonant match fallback
-        if (consonantFilter.length > 1) {
+        if (consonantFilter.length >= 2) {
             const nameConsonants = getConsonants(product.name);
             if (nameConsonants.includes(consonantFilter)) {
                 return true;
