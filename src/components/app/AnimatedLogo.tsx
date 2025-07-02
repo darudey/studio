@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 
 // SVG icon size decreased to ~70%
 const ShopIcon = () => (
-    <svg width="34" height="28" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+    <svg width="34" height="28" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-blue-600 dark:text-blue-400">
         {/* Shop Awning */}
         <path d="M2 12 C 2 6, 30 6, 30 12 L 30 16 L 2 16 L 2 12 Z" stroke="currentColor" strokeWidth="2" fill="none" />
         <path d="M6 16V12" stroke="currentColor" strokeWidth="2" />
@@ -65,7 +65,7 @@ const AnimatedLogo = () => {
             style={{ width: '50px' }} // Fixed width to prevent layout shift
         >
             {isTextVisible ? (
-                <div key={animationKey} className="flex flex-col text-[9px] font-bold text-primary leading-tight">
+                <div key={animationKey} className="flex flex-col text-[9px] font-bold text-blue-600 dark:text-blue-400 leading-tight">
                     <div className="whitespace-nowrap">
                         {line1.split('').map((char, index) => (
                             <span
