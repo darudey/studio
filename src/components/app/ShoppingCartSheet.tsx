@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                     <span>₹{total.toFixed(2)}</span>
                  </div>
                  <SheetClose asChild>
-                    <Button asChild className="w-full bg-accent hover:bg-accent/90">
+                    <Button asChild className="w-full">
                         <Link href="/checkout">Proceed to Checkout</Link>
                     </Button>
                  </SheetClose>

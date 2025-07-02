@@ -43,8 +43,8 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
               )}
             >
               <div className={cn(
-                "w-16 h-16 bg-cyan-100/50 dark:bg-slate-800 rounded-xl flex items-center justify-center p-2 shadow-sm transition-all duration-200",
-                selectedCategory === category ? "ring-2 ring-primary ring-offset-2" : "group-hover:shadow-md"
+                "w-16 h-16 bg-accent/20 rounded-xl flex items-center justify-center p-2 shadow-sm transition-all duration-200",
+                selectedCategory === category ? "ring-2 ring-accent ring-offset-2" : "group-hover:shadow-md"
               )}>
                 <div className="relative w-full h-full">
                   <Image
@@ -59,7 +59,7 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
               </div>
               <span className={cn(
                   "mt-1.5 w-full break-words whitespace-normal text-center text-[11px] leading-tight font-medium h-8 flex items-center justify-center",
-                  selectedCategory === category ? "text-primary font-bold" : "text-muted-foreground group-hover:text-foreground"
+                  selectedCategory === category ? "text-accent font-bold" : "text-muted-foreground group-hover:text-foreground"
                   )}>
                   {category}
               </span>
