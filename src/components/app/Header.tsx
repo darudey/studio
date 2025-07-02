@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -89,7 +90,7 @@ export default function Header() {
 
         <div className="relative flex-1 max-w-4xl">
            <form onSubmit={handleSearchSubmit}>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600 z-10" />
               <Input
                 type="search"
                 placeholder="Search products..."
@@ -109,7 +110,7 @@ export default function Header() {
             <>
               <ShoppingCartSheet>
                 <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingCart className="h-5 w-5" />
+                  <ShoppingCart className="h-5 w-5 text-blue-600" />
                   {cartCount > 0 && (
                      <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
                   )}

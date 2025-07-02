@@ -280,7 +280,7 @@ export default function AddItemPage() {
                     </CardHeader>
                     <CardContent>
                         <Label htmlFor="bulk-import" className={cn(buttonVariants({variant: 'outline'}), "w-full cursor-pointer flex items-center justify-center")}>
-                            <Upload className="mr-2 h-4 w-4" />
+                            <Upload className="mr-2 h-4 w-4 text-blue-600" />
                             {isImporting ? 'Importing...' : 'Upload File'}
                         </Label>
                         <Input 
@@ -332,10 +332,10 @@ export default function AddItemPage() {
                                         ) : (
                                             <div className="flex gap-2 sm:gap-4">
                                                 <Button asChild variant="outline" className="w-full">
-                                                    <Label htmlFor="file-upload" className="cursor-pointer flex items-center"><FileImage className="h-4 w-4 mr-2" /> Upload</Label>
+                                                    <Label htmlFor="file-upload" className="cursor-pointer flex items-center"><FileImage className="h-4 w-4 mr-2 text-blue-600" /> Upload</Label>
                                                 </Button>
                                                 <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
-                                                <Button onClick={() => setShowCamera(true)} variant="outline" className="w-full"><Camera className="h-4 w-4 mr-2" /> Camera</Button>
+                                                <Button onClick={() => setShowCamera(true)} variant="outline" className="w-full"><Camera className="h-4 w-4 mr-2 text-blue-600" /> Camera</Button>
                                             </div>
                                         )}
                                     </div>

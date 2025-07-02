@@ -135,7 +135,7 @@ export default function ManageProductImagesPage() {
     <div className="container py-12">
       <div className="flex justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ImageIcon className="h-6 w-6" />
+            <ImageIcon className="h-6 w-6 text-blue-600" />
             Image Lab
         </h1>
         <Input 

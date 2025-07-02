@@ -162,7 +162,7 @@ export default function ManageCouponsPage() {
                             <TableCell>{new Date(c.createdAt).toLocaleDateString()}</TableCell>
                             <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" onClick={() => copyToClipboard(c.code)}>
-                                    <Copy className="h-4 w-4" />
+                                    <Copy className="h-4 w-4 text-blue-600" />
                                 </Button>
                             </TableCell>
                             </TableRow>

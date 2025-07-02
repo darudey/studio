@@ -21,7 +21,7 @@ const AppSidebarContent = () => {
         <div className="flex h-full flex-col gap-2">
             <div className="flex h-16 items-center border-b px-4">
                  <Link href="/" className="flex items-center gap-2 font-semibold">
-                    <Package2 className="h-6 w-6 text-primary" />
+                    <Package2 className="h-6 w-6 text-blue-600" />
                     <span className="">Wholesale Hub</span>
                 </Link>
             </div>
@@ -32,8 +32,8 @@ const AppSidebarContent = () => {
                             key={item.view}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                                currentView === item.view && "bg-muted text-primary"
+                                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-blue-600",
+                                currentView === item.view && "bg-muted text-blue-600"
                             )}
                         >
                             <item.icon className="h-4 w-4" />

@@ -142,7 +142,7 @@ export default function ProductDetailPage() {
             </div>
             
              <Collapsible>
-                <CollapsibleTrigger className="flex items-center gap-1 text-sm font-semibold text-green-600 data-[state=open]:text-red-600">
+                <CollapsibleTrigger className="flex items-center gap-1 text-sm font-semibold text-blue-600 data-[state=open]:text-red-600">
                     <span className="data-[state=closed]:block data-[state=open]:hidden">View product details</span>
                     <span className="data-[state=open]:block data-[state=closed]:hidden">Hide product details</span>
                     <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />

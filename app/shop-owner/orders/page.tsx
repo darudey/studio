@@ -116,7 +116,7 @@ export default function CustomersWithOrdersPage() {
                     <TableCell className="text-right">
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/shop-owner/orders/${customer.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className="mr-2 h-4 w-4 text-blue-600" />
                           View Orders
                         </Link>
                       </Button>

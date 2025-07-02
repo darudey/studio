@@ -65,16 +65,16 @@ export default function ProductCard({ product }: ProductCardProps) {
                     onClick={handleAddToCart}
                     aria-label="Add to Cart"
                 >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 text-blue-600" />
                 </Button>
             ) : (
                 <div className="flex items-center gap-1 rounded-full border bg-background p-0.5 shadow-md">
                     <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={handleDecrease}>
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-4 w-4 text-blue-600" />
                     </Button>
                     <span className="w-8 text-center font-bold text-md tabular-nums">{quantityInCart}</span>
                     <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={handleIncrease}>
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 text-blue-600" />
                     </Button>
                 </div>
             )}

@@ -152,7 +152,7 @@ export default function ManageProductsPage() {
   return (
     <div className="container py-12">
       <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
-        <ClipboardList className="h-6 w-6" />
+        <ClipboardList className="h-6 w-6 text-blue-600" />
         <Input
           placeholder="Search products..."
           value={searchTerm}

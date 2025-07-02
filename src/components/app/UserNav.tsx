@@ -60,20 +60,20 @@ export default function UserNav() {
         <DropdownMenuGroup>
           <Link href="/profile">
             <DropdownMenuItem>
-              <UserIcon className="mr-2 h-4 w-4" />
+              <UserIcon className="mr-2 h-4 w-4 text-blue-600" />
               <span>Profile</span>
             </DropdownMenuItem>
           </Link>
           <Link href="/orders">
             <DropdownMenuItem>
-              <ReceiptText className="mr-2 h-4 w-4" />
+              <ReceiptText className="mr-2 h-4 w-4 text-blue-600" />
               <span>Order History</span>
             </DropdownMenuItem>
           </Link>
           {user.role === 'basic' && (
             <Link href="/redeem">
               <DropdownMenuItem>
-                <Ticket className="mr-2 h-4 w-4" />
+                <Ticket className="mr-2 h-4 w-4 text-blue-600" />
                 <span>Redeem Coupon</span>
               </DropdownMenuItem>
             </Link>
@@ -88,26 +88,26 @@ export default function UserNav() {
                {user.role === 'shop-owner' && (
                   <Link href="/shop-owner/orders">
                     <DropdownMenuItem>
-                      <ReceiptText className="mr-2 h-4 w-4" />
+                      <ReceiptText className="mr-2 h-4 w-4 text-blue-600" />
                       <span>All Orders</span>
                     </DropdownMenuItem>
                   </Link>
                )}
               <Link href="/developer/image-lab">
                 <DropdownMenuItem>
-                  <ImageIcon className="mr-2 h-4 w-4" />
+                  <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Image Lab</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/products">
                 <DropdownMenuItem>
-                  <ClipboardList className="mr-2 h-4 w-4" />
+                  <ClipboardList className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Manage Products</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/add-item">
                 <DropdownMenuItem>
-                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <PlusCircle className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Add Product</span>
                 </DropdownMenuItem>
               </Link>
@@ -122,37 +122,37 @@ export default function UserNav() {
             <DropdownMenuGroup>
                <Link href="/developer/users">
                 <DropdownMenuItem>
-                  <Users className="mr-2 h-4 w-4" />
+                  <Users className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Manage Users</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/coupons">
                 <DropdownMenuItem>
-                  <Ticket className="mr-2 h-4 w-4" />
+                  <Ticket className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Manage Coupons</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/image-lab">
                 <DropdownMenuItem>
-                  <ImageIcon className="mr-2 h-4 w-4" />
+                  <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Image Lab</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/products">
                 <DropdownMenuItem>
-                  <ClipboardList className="mr-2 h-4 w-4" />
+                  <ClipboardList className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Manage Products</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/add-item">
                 <DropdownMenuItem>
-                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <PlusCircle className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Add Product</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/shop-owner/orders">
                 <DropdownMenuItem>
-                  <ReceiptText className="mr-2 h-4 w-4" />
+                  <ReceiptText className="mr-2 h-4 w-4 text-blue-600" />
                   <span>All Orders</span>
                 </DropdownMenuItem>
               </Link>
@@ -162,7 +162,7 @@ export default function UserNav() {
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="mr-2 h-4 w-4 text-blue-600" />
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -145,7 +145,7 @@ export default function UserOrdersPage() {
         <div className="flex items-center mb-6">
             <Button variant="outline" size="icon" asChild>
                 <Link href="/shop-owner/orders">
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4 text-blue-600" />
                     <span className="sr-only">Back to all customers</span>
                 </Link>
             </Button>
