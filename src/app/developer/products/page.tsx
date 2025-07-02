@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PlusCircle, MoreHorizontal, Trash2, ListTree, FolderSymlink, Check, X } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Trash2, ListTree, FolderSymlink, Check, X, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -148,7 +148,7 @@ export default function ManageProductsPage() {
       <header className="sticky top-16 z-10 border-b bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
-            <h1 className="text-xl font-bold tracking-tight">Manage Products</h1>
+            <ClipboardList className="h-6 w-6" />
             {selectedIds.length > 0 ? (
                <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
                   <span className="font-semibold text-sm flex items-center gap-1.5"><Check className="h-4 w-4 text-green-600"/>{selectedIds.length} selected</span>
@@ -297,5 +297,3 @@ export default function ManageProductsPage() {
     </div>
   );
 }
-
-    
