@@ -6,12 +6,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getProducts, deleteProduct as removeProduct, updateProductsCategory, addProduct, deleteMultipleProducts, updateProduct, getCategories, addCategory, deleteCategory } from "@/lib/data";
+import { getProducts, deleteProduct as removeProduct, updateProductsCategory, addProduct, deleteMultipleProducts, updateProduct } from "@/lib/data";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash, Plus, Upload, X, Hash, Search, CheckSquare } from "lucide-react";
+import { Edit, Trash, Upload, X, Hash, Search, CheckSquare, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -74,12 +74,10 @@ export default function ManageProductsPage() {
   const fetchProductsAndCategories = async () => {
     setLoading(true);
     try {
-        const [fetchedProducts, fetchedCategories] = await Promise.all([
-          getProducts(),
-          getCategories()
-        ]);
+        const fetchedProducts = await getProducts();
         setProducts(fetchedProducts);
-        setAllCategories(fetchedCategories.sort());
+        const derivedCategories = [...new Set(fetchedProducts.map(p => p.category))].sort();
+        setAllCategories(derivedCategories);
     } catch(error) {
         console.error(error);
         toast({ title: "Error", description: "Failed to load products.", variant: "destructive" });
@@ -93,7 +91,7 @@ export default function ManageProductsPage() {
       router.push("/login");
       return;
     } 
-    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
+    if (!['developer', 'shop-owner'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
       return;
@@ -122,6 +120,7 @@ export default function ManageProductsPage() {
 
     const hasChanged = Object.keys(updates).some(key => {
         const typedKey = key as keyof Product;
+        // Stringify to compare arrays correctly
         return JSON.stringify(productToUpdate[typedKey]) !== JSON.stringify(updates[typedKey]);
     });
     if (!hasChanged) return;
@@ -177,9 +176,6 @@ export default function ManageProductsPage() {
     };
     
     await addProduct(newProductData);
-    if (!allCategories.includes(data.category)) {
-      setAllCategories(prev => [...prev, data.category].sort());
-    }
     toast({ title: "Product Added", description: `${data.name} has been added.` });
     addForm.reset();
     setIsAddProductOpen(false);
@@ -233,21 +229,20 @@ export default function ManageProductsPage() {
     }
   };
 
-  const handleAddCategory = async () => {
+  const handleAddCategory = () => {
     const trimmedCategory = newCategory.trim();
     if (trimmedCategory && !allCategories.includes(trimmedCategory)) {
-      await addCategory(trimmedCategory);
       const newCats = [...allCategories, trimmedCategory].sort()
       setAllCategories(newCats);
       setNewCategory("");
-      toast({ title: "Category added", description: `"${trimmedCategory}" has been added.` });
+      if (!addForm.getValues("category")) {
+          addForm.setValue("category", trimmedCategory);
+      }
     }
   };
 
-  const handleDeleteCategory = async (categoryToDelete: string) => {
-    await deleteCategory(categoryToDelete);
+  const handleDeleteCategory = (categoryToDelete: string) => {
     setAllCategories(allCategories.filter(c => c !== categoryToDelete));
-    toast({ title: "Category removed", description: `"${categoryToDelete}" has been removed.` });
   };
   
   const handleBulkUpdate = async () => {
@@ -263,7 +258,7 @@ export default function ManageProductsPage() {
     const categoryToUpdate = bulkUpdateCategory.trim();
 
     await updateProductsCategory(selectedProductIds, categoryToUpdate);
-    await fetchProductsAndCategories(); // Refetch to get updated products
+    await fetchProductsAndCategories();
     setSelectedProductIds([]);
     setBulkUpdateCategory("");
     toast({ title: "Bulk Update Successful", description: `${selectedProductIds.length} products moved to "${categoryToUpdate}".`});
@@ -594,3 +589,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
