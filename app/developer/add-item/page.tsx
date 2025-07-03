@@ -172,15 +172,21 @@ export default function AddItemPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsImporting(true);
     const reader = new FileReader();
 
+    reader.onerror = () => {
+      toast({ title: "Import Failed", description: "The selected file could not be read.", variant: "destructive" });
+      if (bulkImportInputRef.current) {
+        bulkImportInputRef.current.value = "";
+      }
+    };
+    
     reader.onload = async (e) => {
+      setIsImporting(true);
       try {
         const data = e.target?.result;
         if (!data) {
-          toast({ title: "Import Failed", description: "Could not read file data.", variant: "destructive" });
-          return;
+          throw new Error("Could not read file data.");
         }
         
         const workbook = XLSX.read(data, { type: "array" });
@@ -279,14 +285,6 @@ export default function AddItemPage() {
         }
       }
     };
-    
-    reader.onerror = () => {
-        setIsImporting(false);
-        toast({ title: "Import Failed", description: "The selected file could not be read.", variant: "destructive" });
-        if (bulkImportInputRef.current) {
-            bulkImportInputRef.current.value = "";
-        }
-    }
 
     reader.readAsArrayBuffer(file);
   };
@@ -436,5 +434,3 @@ export default function AddItemPage() {
     </div>
   );
 }
-
-    
