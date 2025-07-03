@@ -219,13 +219,16 @@ export default function ManageProductImagesPage() {
                                         <TooltipTrigger asChild>
                                             <div
                                                 role="button"
-                                                className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                                                className={cn(
+                                                    buttonVariants({ size: "icon" }),
+                                                    "bg-accent text-accent-foreground hover:bg-accent/90"
+                                                )}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     toast({ title: "Coming Soon", description: "Category image upload will be available in a future update." });
                                                 }}
                                             >
-                                                <Upload className="h-5 w-5 text-blue-600"/>
+                                                <Upload className="h-5 w-5"/>
                                             </div>
                                         </TooltipTrigger>
                                         <TooltipContent>
