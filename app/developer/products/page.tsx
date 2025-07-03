@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getPaginatedProducts, updateProduct, getCategories, renameCategory, deleteCategory, addCategory } from "@/lib/data";
+import { getPaginatedProducts, updateProduct, getCategories, renameCategory, deleteCategory } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -83,10 +82,9 @@ export default function ManageProductsPage() {
 
   const refreshAllData = useCallback(async () => {
     setIsCategoryActionLoading(true);
-    await Promise.all([
-      fetchProducts(searchTerm, 1),
-      getCategories().then(setAllCategories),
-    ]);
+    await fetchProducts(searchTerm, 1);
+    const cats = await getCategories();
+    setAllCategories(cats);
     setIsCategoryActionLoading(false);
   }, [fetchProducts, searchTerm]);
 
@@ -165,9 +163,7 @@ export default function ManageProductsPage() {
       });
       return;
     }
-    if (
-      allCategories.find((c) => c.toLowerCase() === trimmedName.toLowerCase())
-    ) {
+    if (allCategories.find((c) => c.toLowerCase() === trimmedName.toLowerCase())) {
       toast({
         title: "Duplicate Category",
         description: "This category already exists.",
@@ -175,27 +171,14 @@ export default function ManageProductsPage() {
       });
       return;
     }
-
-    setIsCategoryActionLoading(true);
-    try {
-      await addCategory(trimmedName);
-      setNewCategoryName("");
-      toast({
-        title: "Category Saved",
-        description: `"${trimmedName}" has been added.`,
-      });
-      const freshCategories = await getCategories();
-      setAllCategories(freshCategories);
-    } catch (error) {
-      console.error("Failed to add category", error);
-      toast({
-        title: "Error",
-        description: "Failed to save the new category.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCategoryActionLoading(false);
-    }
+    
+    // Add to local state only
+    setAllCategories(prev => [...prev, trimmedName].sort());
+    setNewCategoryName("");
+    toast({
+        title: "Category Added Temporarily",
+        description: `"${trimmedName}" is available. Assign it to a product to save permanently.`,
+    });
   };
 
   const handleStartRename = (category: string) => {
@@ -380,7 +363,6 @@ export default function ManageProductsPage() {
                         disabled={isCategoryActionLoading}
                     />
                     <Button onClick={handleAddNewCategory} disabled={isCategoryActionLoading}>
-                       {isCategoryActionLoading && newCategoryName && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                        Add
                     </Button>
                 </div>
