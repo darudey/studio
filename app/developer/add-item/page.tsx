@@ -173,10 +173,11 @@ export default function AddItemPage() {
 
     setIsImporting(true);
     try {
+        const data = await file.arrayBuffer();
+        
         const allProducts = await getProducts();
         const existingProductNames = new Set(allProducts.map(p => p.name.toLowerCase()));
-
-        const data = await file.arrayBuffer();
+        
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
@@ -415,5 +416,7 @@ export default function AddItemPage() {
     </div>
   );
 }
+
+    
 
     
