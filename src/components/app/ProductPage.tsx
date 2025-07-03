@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -7,7 +6,6 @@ import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
-import PromotionalBanners from './PromotionalBanners';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '../ui/skeleton';
 import { useSearchParams } from 'next/navigation';
@@ -109,8 +107,6 @@ export default function ProductPage() {
 
       {!isFilteredView ? (
         <>
-            <PromotionalBanners />
-            
             {recommendedProducts.length > 0 && (
                 <div className="py-6 bg-[hsl(var(--section-background))]">
                     <div className="container">
