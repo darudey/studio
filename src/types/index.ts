@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   itemCode: string;
@@ -65,4 +66,11 @@ export type Coupon = {
     usedBy?: string;
     createdAt: string;
     createdBy: string;
+};
+
+export type Category = {
+    id: string; // The category name
+    name: string;
+    imageUrl: string;
+    createdAt: string;
 };

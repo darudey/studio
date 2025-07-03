@@ -1,7 +1,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
-import type { Product, User, Order, OrderItem, Coupon } from "@/types";
+import type { Product, User, Order, OrderItem, Coupon, Category } from "@/types";
 
 // USER FUNCTIONS
 const usersCollection = collection(db, 'users');
@@ -236,6 +236,8 @@ export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> =
 }
 
 // CATEGORY MANAGEMENT
+const categoriesCollection = collection(db, 'categories');
+
 export const getCategories = async (): Promise<string[]> => {
     const products = await getProducts();
     const categories = [...new Set(products.map(p => p.category))].sort();
@@ -244,6 +246,17 @@ export const getCategories = async (): Promise<string[]> => {
     }
     return categories;
 };
+
+export const updateCategoryImage = async (categoryName: string, imageUrl: string): Promise<void> => {
+    const categoryRef = doc(db, 'categories', categoryName);
+    const categoryData: Omit<Category, 'id'> = {
+        name: categoryName,
+        imageUrl,
+        createdAt: new Date().toISOString(),
+    };
+    await setDoc(categoryRef, categoryData, { merge: true });
+};
+
 
 export const renameCategory = async (oldName: string, newName: string): Promise<void> => {
     if (oldName === "Uncategorized") {

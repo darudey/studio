@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getProducts, updateProduct, getCategories } from "@/lib/data";
+import { getProducts, updateProduct, getCategories, updateCategoryImage } from "@/lib/data";
 import type { Product } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function ManageProductImagesPage() {
@@ -28,8 +28,10 @@ export default function ManageProductImagesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
+  const [updatingCategoryName, setUpdatingCategoryName] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const categoryFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -72,7 +74,7 @@ export default function ManageProductImagesPage() {
   }, [products, categories, searchTerm]);
 
   const handleImageClick = (product: Product) => {
-    if (updatingProductId) return;
+    if (updatingProductId || updatingCategoryName) return;
     setUpdatingProductId(product.id);
     fileInputRef.current?.click();
   }
@@ -109,7 +111,7 @@ export default function ManageProductImagesPage() {
   };
   
   const handleResetImage = async (productToUpdate: Product) => {
-    if (updatingProductId) return;
+    if (updatingProductId || updatingCategoryName) return;
     setUpdatingProductId(productToUpdate.id);
     const otherImages = productToUpdate.images.slice(1);
     const updatedImages = ['https://placehold.co/400x400.png', ...otherImages];
@@ -156,6 +158,53 @@ export default function ManageProductImagesPage() {
     }
   };
   
+  const handleCategoryUploadClick = (categoryName: string) => {
+    if (updatingCategoryName || updatingProductId) return;
+    setUpdatingCategoryName(categoryName);
+    categoryFileInputRef.current?.click();
+  };
+
+  const handleCategoryFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const categoryName = updatingCategoryName;
+    if (event.target.files && event.target.files[0] && categoryName) {
+      setUpdatingCategoryName(categoryName); // Keep showing loader
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+        const newImage = e.target?.result as string;
+        try {
+          await updateCategoryImage(categoryName, newImage);
+          toast({
+            title: "Category Image Updated",
+            description: `The image for ${categoryName} has been updated.`,
+          });
+        } catch (error) {
+          console.error("Failed to update category image", error);
+          toast({
+            title: "Update Failed",
+            description: "Could not save the new category image.",
+            variant: "destructive",
+          });
+        } finally {
+          setUpdatingCategoryName(null);
+          if (categoryFileInputRef.current) {
+            categoryFileInputRef.current.value = "";
+          }
+        }
+      };
+      
+      reader.onerror = () => {
+        setUpdatingCategoryName(null);
+        toast({ title: "Import Failed", description: "Error reading the file.", variant: "destructive" });
+      }
+      
+      reader.readAsDataURL(file);
+    } else {
+        setUpdatingCategoryName(null);
+    }
+  };
+
   const ProductImageSkeleton = () => (
       <Card>
           <CardContent className="p-4 grid grid-cols-3 gap-4 items-center">
@@ -199,6 +248,16 @@ export default function ManageProductImagesPage() {
         ref={fileInputRef} 
         disabled={!!updatingProductId}
       />
+      <Input 
+        id="category-file-upload" 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleCategoryFileChange} 
+        ref={categoryFileInputRef} 
+        disabled={!!updatingCategoryName}
+      />
+
 
       {loading ? (
         <div className="space-y-4">
@@ -225,10 +284,14 @@ export default function ManageProductImagesPage() {
                                                 )}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    toast({ title: "Coming Soon", description: "Category image upload will be available in a future update." });
+                                                    handleCategoryUploadClick(category);
                                                 }}
                                             >
-                                                <Upload className="h-5 w-5"/>
+                                                {updatingCategoryName === category ? (
+                                                    <Loader2 className="h-5 w-5 animate-spin"/>
+                                                ) : (
+                                                    <Upload className="h-5 w-5"/>
+                                                )}
                                             </div>
                                         </TooltipTrigger>
                                         <TooltipContent>
