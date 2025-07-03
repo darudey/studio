@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function ManageProductImagesPage() {
   const { user } = useAuth();
@@ -216,16 +217,16 @@ export default function ManageProductImagesPage() {
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon"
+                                            <div
+                                                role="button"
+                                                className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     toast({ title: "Coming Soon", description: "Category image upload will be available in a future update." });
                                                 }}
                                             >
                                                 <Upload className="h-5 w-5 text-blue-600"/>
-                                            </Button>
+                                            </div>
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>Upload category image</p>
