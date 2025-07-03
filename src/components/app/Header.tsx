@@ -109,8 +109,8 @@ export default function Header() {
           {isMounted && (
             <>
               <ShoppingCartSheet>
-                <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingCart className="h-5 w-5 text-white" />
+                <Button size="icon" className="relative rounded-full bg-white text-blue-600 hover:bg-white/90">
+                  <ShoppingCart className="h-5 w-5" />
                   {cartCount > 0 && (
                      <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
                   )}
@@ -121,7 +121,7 @@ export default function Header() {
               {loading ? null : user ? (
                 <UserNav />
               ) : (
-                <Button asChild className="bg-white/20 text-white hover:bg-white/30">
+                <Button asChild className="bg-white text-blue-600 hover:bg-white/90">
                   <Link href="/login">Login</Link>
                 </Button>
               )}
