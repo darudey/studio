@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -15,7 +16,9 @@ import { Zap } from 'lucide-react';
 const HorizontalProductScroller = ({ products }: { products: Product[] }) => (
     <div className="flex gap-4 overflow-x-auto pb-4">
         {products.map(product => (
-            <ProductCard key={product.id} product={product} />
+            <div key={product.id} className="w-40 flex-shrink-0">
+                <ProductCard product={product} />
+            </div>
         ))}
     </div>
 );
@@ -105,6 +108,7 @@ export default function ProductPage() {
     });
   }, [allProducts, selectedCategory, searchTerm]);
 
+  const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
   if (loading) {
       return (
@@ -119,8 +123,6 @@ export default function ProductPage() {
       )
   }
 
-  const displayedProducts = searchTerm.trim() ? filteredProducts : trendingProducts.length > 0 ? trendingProducts : newestProducts;
-
   return (
     <div className="bg-background min-h-screen">
       <CategoryNav 
@@ -129,28 +131,40 @@ export default function ProductPage() {
         onCategorySelect={setSelectedCategory}
       />
 
-      {selectedCategory === "All" && searchTerm.trim() === '' && (
-          <PromotionalBanners />
-      )}
+      {!isFilteredView ? (
+        <>
+            <PromotionalBanners />
+            <div className="py-6 px-4 bg-[hsl(var(--section-background))]">
+                <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
+                    <Zap className="text-yellow-500"/>
+                    Lowest Prices Ever
+                </h2>
+                <HorizontalProductScroller products={trendingProducts.length > 0 ? trendingProducts : newestProducts} />
+            </div>
 
-      <div className="py-6 px-4 bg-[hsl(var(--section-background))]">
-        <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
-            <Zap className="text-yellow-500"/>
-            {searchTerm.trim() ? "Search Results" : "Lowest Prices Ever"}
-        </h2>
-        {displayedProducts.length > 0 ? (
-            <HorizontalProductScroller products={displayedProducts} />
-        ) : (
-          <div className="text-center py-10">
-            <h2 className="text-xl font-semibold">No products found</h2>
-            <p className="text-muted-foreground mt-2">Try adjusting your filters or searching again.</p>
-          </div>
-        )}
-      </div>
-
-      {recommendedProducts.length > 0 && selectedCategory === "All" && searchTerm.trim() === '' && (
-        <div className="py-6 px-4 bg-background">
-            <ProductCarousel title="Bestsellers" products={recommendedProducts} />
+            {recommendedProducts.length > 0 && (
+                <div className="py-6 px-4 bg-background">
+                    <ProductCarousel title="Bestsellers" products={recommendedProducts} />
+                </div>
+            )}
+        </>
+      ) : (
+        <div className="p-4">
+             <h2 className="text-2xl font-bold tracking-tight mb-4">
+                {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
+            </h2>
+            {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {filteredProducts.map(product => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-10">
+                    <h2 className="text-xl font-semibold">No products found</h2>
+                    <p className="text-muted-foreground mt-2">Try adjusting your filters or searching again.</p>
+                </div>
+            )}
         </div>
       )}
     </div>

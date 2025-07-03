@@ -30,7 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link href={`/products/${product.id}`} className="block w-40 flex-shrink-0">
+    <Link href={`/products/${product.id}`} className="block w-full h-full">
       <div className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80">
         <div className="relative">
             <div className="aspect-square relative">
@@ -61,7 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
         
         <div className="mt-4 flex-grow flex flex-col">
-            <p className="text-xs text-gray-500 truncate">{product.unit}</p>
+            <p className="text-xs text-blue-600">{product.unit}</p>
             <h3 className="font-medium text-sm leading-tight mt-1 flex-grow h-10 line-clamp-2">
                 {product.name}
             </h3>
