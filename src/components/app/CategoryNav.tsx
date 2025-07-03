@@ -45,12 +45,12 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
                 key={category}
                 onClick={() => onCategorySelect(category)}
                 className={cn(
-                    "flex flex-col items-center justify-center gap-1 text-[#0000CD] w-16 transition-opacity",
+                    "flex flex-col items-center justify-center gap-1 text-blue-800 w-16 transition-opacity",
                     selectedCategory === category ? "font-bold" : "opacity-80 hover:opacity-100"
                 )}
                 >
-                <Icon className="h-6 w-6 text-[#0000CD]" />
-                <span className="text-xs">{category}</span>
+                <Icon className="h-6 w-6 text-blue-800" />
+                <span className="text-[9px]">{category}</span>
                 </button>
             )
           })}
