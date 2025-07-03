@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -32,7 +31,7 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
   return (
     <div className="pt-2 pb-1">
       <div className="overflow-x-auto py-3">
-        <div className="flex items-start space-x-4 whitespace-nowrap">
+        <div className="flex items-start space-x-2 whitespace-nowrap">
           {allCategories.map((category) => (
             <button
               key={category}
@@ -43,7 +42,7 @@ export default function CategoryNav({ categories, selectedCategory, onCategorySe
               )}
             >
               <div className={cn(
-                "w-16 h-16 bg-accent/20 rounded-xl flex items-center justify-center p-2 shadow-sm transition-all duration-200",
+                "w-16 h-16 bg-accent/20 rounded-xl flex items-center justify-center shadow-sm transition-all duration-200",
                 selectedCategory === category ? "ring-2 ring-accent ring-offset-2" : "group-hover:shadow-md"
               )}>
                 <div className="relative w-full h-full">
