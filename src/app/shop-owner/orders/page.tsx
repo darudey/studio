@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -18,22 +19,33 @@ interface CustomerWithOrderInfo extends User {
 }
 
 export default function CustomersWithOrdersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [customers, setCustomers] = useState<CustomerWithOrderInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    if (!['developer', 'shop-owner'].includes(user.role)) {
-      router.push("/");
-      return;
-    }
+    // This effect handles authentication checks and data fetching.
+    const checkAuthAndFetch = async () => {
+      if (authLoading) {
+        // Auth state is still being determined. The main return will show a loading skeleton.
+        return;
+      }
 
-    const fetchData = async () => {
+      if (!user) {
+        // Auth is done, but there's no user. Redirect to login.
+        router.push("/login");
+        return;
+      }
+
+      // We have a user, now check their role for permission.
+      if (!['developer', 'shop-owner'].includes(user.role)) {
+        router.push("/");
+        return;
+      }
+
+      // If all checks pass, attempt to fetch the data.
+      try {
         const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
         
         const ordersByUser = allOrders.reduce((acc, order) => {
@@ -62,13 +74,20 @@ export default function CustomersWithOrdersPage() {
             .sort((a, b) => new Date(b.lastOrderDate).getTime() - new Date(a.lastOrderDate).getTime());
             
         setCustomers(customerList);
+      } catch (error) {
+        console.error("Firestore Error on All Orders page:", error);
+        // The permission error is caught here. The page will show the empty state.
+      } finally {
+        // Ensure the loading spinner is turned off, regardless of success or failure.
         setLoading(false);
-    }
-    fetchData();
+      }
+    };
 
-  }, [user, router]);
+    checkAuthAndFetch();
+
+  }, [user, authLoading, router]);
   
-  if (loading) {
+  if (loading || authLoading) {
     return (
         <div className="container py-12">
           <Card>
@@ -115,7 +134,7 @@ export default function CustomersWithOrdersPage() {
                     <TableCell className="text-right">
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/shop-owner/orders/${customer.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className="mr-2 h-4 w-4 text-blue-600" />
                           View Orders
                         </Link>
                       </Button>
