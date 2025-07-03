@@ -167,20 +167,26 @@ export default function AddItemPage() {
     }
   };
 
-  const handleBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBulkImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsImporting(true);
-    try {
-        // Read and parse the file immediately to avoid permission issues.
-        const data = await file.arrayBuffer();
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const data = e.target?.result;
+        if (!data) {
+          toast({ title: "Import Failed", description: "Could not read file data.", variant: "destructive" });
+          return;
+        }
+        
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json<any>(worksheet);
-        
-        // Now, with the file data secure in memory, fetch existing products.
+
         const allProducts = await getProducts();
         const existingProductNames = new Set(allProducts.map(p => p.name.toLowerCase()));
         
@@ -230,7 +236,7 @@ export default function AddItemPage() {
             };
             
             importedProducts.push(newProductData);
-            existingProductNames.add(productName.toLowerCase()); // Add to set to avoid duplicates within the same file
+            existingProductNames.add(productName.toLowerCase());
             if (newProductData.category) {
                 newCategoriesSet.add(newProductData.category);
             }
@@ -262,15 +268,26 @@ export default function AddItemPage() {
           title: "Import Complete",
           description: description,
         });
-    } catch (error) {
-      console.error("Bulk import failed:", error);
-      toast({ title: "Import Failed", description: "An unexpected error occurred.", variant: "destructive" });
-    } finally {
-      setIsImporting(false);
-      if (event.target) {
-        event.target.value = "";
+      } catch (error) {
+        console.error("Bulk import failed:", error);
+        toast({ title: "Import Failed", description: "An unexpected error occurred during processing.", variant: "destructive" });
+      } finally {
+        setIsImporting(false);
+        if (event.target) {
+          event.target.value = "";
+        }
       }
+    };
+    
+    reader.onerror = () => {
+        setIsImporting(false);
+        toast({ title: "Import Failed", description: "The selected file could not be read.", variant: "destructive" });
+        if (event.target) {
+            event.target.value = "";
+        }
     }
+
+    reader.readAsArrayBuffer(file);
   };
 
 
@@ -417,9 +434,3 @@ export default function AddItemPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
