@@ -4,11 +4,11 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getProducts, updateProduct, getCategories, updateCategoryImage } from "@/lib/data";
-import type { Product } from "@/types";
+import { getProducts, updateProduct, getCategories, updateCategoryImage, getAllCategoriesData } from "@/lib/data";
+import type { Product, Category } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ImageIcon, Upload, Loader2, Trash2 } from "lucide-react";
+import { ImageIcon, Upload, Loader2, Trash2, LayoutGrid, Umbrella, Headphones, Gem, Lamp, Package, Popcorn } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,58 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const ChowminIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M60 46 H4 C2.89543 46 2 46.8954 2 48 V52 C2 53.1046 2.89543 54 4 54 H60 C61.1046 54 62 53.1046 62 52 V48 C62 46.8954 61.1046 46 60 46 Z" />
+      <path d="M12 45 C 8 38, 16 34, 20 38" />
+      <path d="M24 45 C 20 38, 28 34, 32 38" />
+      <path d="M36 45 C 32 38, 40 34, 44 38" />
+      <path d="M48 45 C 44 38, 52 34, 56 38" />
+      <path d="M18 41 C 14 34, 22 30, 26 34" />
+      <path d="M30 41 C 26 34, 34 30, 38 34" />
+      <path d="M42 41 C 38 34, 46 30, 50 34" />
+      <path d="M25 36 L30 42" strokeWidth="2" />
+      <path d="M40 36 L45 42" strokeWidth="2" />
+    </svg>
+  );
+
+const categoryIcons: { [key: string]: React.ElementType } = {
+  'all': LayoutGrid,
+  'monsoon': Umbrella,
+  'electronics': Headphones,
+  'beauty': Gem,
+  'decor': Lamp,
+  'fashion': Popcorn,
+  'chowmin': ChowminIcon,
+  'cosmetics': Gem,
+  'general': Package,
+  'puja items': Package,
+};
+
+const getIconForCategory = (category: string): React.ElementType => {
+    const lowerCategory = category.toLowerCase();
+    if (categoryIcons[lowerCategory]) {
+        return categoryIcons[lowerCategory];
+    }
+    for (const key in categoryIcons) {
+        if (lowerCategory.includes(key)) {
+            return categoryIcons[key];
+        }
+    }
+    return Package;
+};
+
+
 export default function ManageProductImagesPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -24,6 +76,7 @@ export default function ManageProductImagesPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [categoryData, setCategoryData] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -46,10 +99,12 @@ export default function ManageProductImagesPage() {
     setLoading(true);
     Promise.all([
         getProducts(),
-        getCategories()
-    ]).then(([productsData, categoriesData]) => {
+        getCategories(),
+        getAllCategoriesData()
+    ]).then(([productsData, categoriesData, allCategoryObjects]) => {
       setProducts(productsData);
       setCategories(categoriesData);
+      setCategoryData(allCategoryObjects);
       setLoading(false);
     }).catch(err => {
         console.error("Failed to load page data", err);
@@ -174,7 +229,18 @@ export default function ManageProductImagesPage() {
       reader.onload = async (e) => {
         const newImage = e.target?.result as string;
         try {
-          await updateCategoryImage(categoryName, newImage);
+            const updatedCategory = await updateCategoryImage(categoryName, newImage);
+            
+            setCategoryData(currentData => {
+                const existingIndex = currentData.findIndex(c => c.name === categoryName);
+                if (existingIndex > -1) {
+                    const newData = [...currentData];
+                    newData[existingIndex] = updatedCategory;
+                    return newData;
+                }
+                return [...currentData, updatedCategory];
+            });
+
           toast({
             title: "Category Image Updated",
             description: `The image for ${categoryName} has been updated.`,
@@ -267,7 +333,12 @@ export default function ManageProductImagesPage() {
         </div>
       ) : (
         <Accordion type="multiple" defaultValue={Object.keys(productsByCategory).slice(0, 1)} className="w-full space-y-4">
-            {Object.entries(productsByCategory).map(([category, categoryProducts]) => (
+            {Object.entries(productsByCategory).map(([category, categoryProducts]) => {
+                const categoryImageObject = categoryData.find(c => c.name === category);
+                const categoryImageUrl = categoryImageObject?.imageUrl;
+                const DefaultIcon = getIconForCategory(category);
+                
+                return (
                 <AccordionItem value={category} key={category} className="border-b-0">
                     <Card>
                         <AccordionTrigger className="p-4 hover:no-underline">
@@ -279,8 +350,10 @@ export default function ManageProductImagesPage() {
                                             <div
                                                 role="button"
                                                 className={cn(
-                                                    buttonVariants({ size: "icon" }),
-                                                    "bg-accent text-accent-foreground hover:bg-accent/90"
+                                                    "flex items-center justify-center rounded-md transition-all",
+                                                    categoryImageUrl
+                                                        ? "w-10 h-10 relative group/img border" 
+                                                        : "bg-accent text-accent-foreground hover:bg-accent/90 w-10 h-10"
                                                 )}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -290,12 +363,23 @@ export default function ManageProductImagesPage() {
                                                 {updatingCategoryName === category ? (
                                                     <Loader2 className="h-5 w-5 animate-spin"/>
                                                 ) : (
-                                                    <Upload className="h-5 w-5"/>
+                                                    <>
+                                                        {categoryImageUrl ? (
+                                                            <>
+                                                                <Image src={categoryImageUrl} alt={category} fill className="object-cover rounded-md"/>
+                                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity rounded-md">
+                                                                    <Upload className="h-5 w-5 text-white"/>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <DefaultIcon className="h-5 w-5"/>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>Upload category image</p>
+                                            <p>{categoryImageUrl ? 'Change' : 'Upload'} category image</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
@@ -356,7 +440,7 @@ export default function ManageProductImagesPage() {
                         </AccordionContent>
                     </Card>
                 </AccordionItem>
-            ))}
+            )})}
         </Accordion>
       )}
     </div>

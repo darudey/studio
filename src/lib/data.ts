@@ -247,14 +247,27 @@ export const getCategories = async (): Promise<string[]> => {
     return categories;
 };
 
-export const updateCategoryImage = async (categoryName: string, imageUrl: string): Promise<void> => {
+export const getAllCategoriesData = async (): Promise<Category[]> => {
+    const snapshot = await getDocs(categoriesCollection);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+};
+
+export const updateCategoryImage = async (categoryName: string, imageUrl: string): Promise<Category> => {
     const categoryRef = doc(db, 'categories', categoryName);
-    const categoryData: Omit<Category, 'id'> = {
+    const docSnap = await getDoc(categoryRef);
+
+    const categoryData: Category = {
+        id: categoryName,
         name: categoryName,
         imageUrl,
-        createdAt: new Date().toISOString(),
+        createdAt: docSnap.exists() ? docSnap.data().createdAt : new Date().toISOString(),
     };
-    await setDoc(categoryRef, categoryData, { merge: true });
+    
+    // Omit id before writing to firestore
+    const { id, ...dataToSave } = categoryData;
+    await setDoc(categoryRef, dataToSave, { merge: true });
+    
+    return categoryData;
 };
 
 
