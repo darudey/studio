@@ -1,19 +1,32 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getProducts, updateProduct } from "@/lib/data";
+import { getPaginatedProducts, updateProduct, getProducts, renameCategory, deleteCategory } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { debounce } from "lodash";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { ClipboardList, Loader2, Hash, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ManageProductsPage() {
   const { user } = useAuth();
@@ -21,25 +34,59 @@ export default function ManageProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [isSearching, setIsSearching] = useState(true);
+
+  // State for the edit dialog
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-        const data = await getProducts();
-        setProducts(data);
-        const uniqueCategories = [...new Set(data.map(p => p.category))].sort();
-        setAllCategories(uniqueCategories);
-    } catch(err) {
-        toast({ title: "Error", description: "Failed to load products.", variant: "destructive" });
-    } finally {
-        setLoading(false);
+  // State for category management
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [renamingCategory, setRenamingCategory] = useState<{ oldName: string; newName: string } | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [isCategoryActionLoading, setIsCategoryActionLoading] = useState(false);
+
+  const limit = 20;
+
+  const fetchProducts = useCallback(async (query: string, pageNum: number) => {
+    if (pageNum === 1) {
+      setIsSearching(true);
+    } else {
+      setLoading(true);
     }
-  }, [toast]);
+    
+    const { products: newProducts, more } = await getPaginatedProducts({
+      search: query,
+      page: pageNum,
+      limit,
+    });
+    
+    setProducts(prev => pageNum === 1 ? newProducts : [...prev, ...newProducts]);
+    setHasMore(more);
+    setPage(pageNum);
+
+    setLoading(false);
+    setIsSearching(false);
+  }, []);
+
+  const debouncedFetch = useMemo(() => {
+    return debounce((query: string) => {
+      fetchProducts(query, 1);
+    }, 300);
+  }, [fetchProducts]);
+
+  const refreshAllData = useCallback(() => {
+    fetchProducts(searchTerm, 1);
+    getProducts().then(allProds => {
+      const uniqueCategories = [...new Set(allProds.map(p => p.category))].sort();
+      setAllCategories(uniqueCategories);
+    });
+  }, [fetchProducts, searchTerm]);
 
   useEffect(() => {
     if (!user) {
@@ -50,37 +97,24 @@ export default function ManageProductsPage() {
       router.push("/");
       return;
     }
-    fetchProducts();
-  }, [user, router, fetchProducts]);
 
-  const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return products;
-    }
-    const lowercasedFilter = searchTerm.toLowerCase();
-    const getConsonants = (str: string) => str.toLowerCase().replace(/[^bcdfghjklmnpqrstvwxyz]/gi, '');
-    const consonantFilter = getConsonants(searchTerm);
-
-    return products.filter(product => {
-      const nameMatch = product.name.toLowerCase().includes(lowercasedFilter);
-      const categoryMatch = product.category.toLowerCase().includes(lowercasedFilter);
-      const itemCodeMatch = product.itemCode.toLowerCase().includes(lowercasedFilter);
-      
-      if (nameMatch || categoryMatch || itemCodeMatch) {
-        return true;
-      }
-      
-      if (consonantFilter.length >= 2) {
-        const nameConsonants = getConsonants(product.name);
-        if (nameConsonants.includes(consonantFilter)) {
-            return true;
-        }
-      }
-
-      return false;
+    // Fetch all categories for the edit dialog dropdown
+    getProducts().then(allProds => {
+      const uniqueCategories = [...new Set(allProds.map(p => p.category))].sort();
+      setAllCategories(uniqueCategories);
     });
-  }, [searchTerm, products]);
 
+    debouncedFetch(searchTerm);
+    return () => {
+      debouncedFetch.cancel();
+    };
+  }, [user, router, searchTerm, debouncedFetch]);
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      fetchProducts(searchTerm, page + 1);
+    }
+  };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!editingProduct) return;
@@ -98,6 +132,7 @@ export default function ManageProductsPage() {
 
     setIsSaving(true);
     try {
+      // Coerce prices and stock to numbers before saving
       const productToUpdate: Product = {
         ...editingProduct,
         retailPrice: Number(editingProduct.retailPrice) || 0,
@@ -108,8 +143,8 @@ export default function ManageProductsPage() {
       await updateProduct(productToUpdate);
       toast({ title: "Success", description: "Product updated successfully." });
       
-      // Refresh the product list by calling fetchProducts
-      fetchProducts();
+      // Refresh the product list
+      fetchProducts(searchTerm, 1);
       
       setEditingProduct(null); // Close dialog on success
     } catch (error) {
@@ -118,6 +153,66 @@ export default function ManageProductsPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Category Management Handlers
+  const handleAddNewCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName || allCategories.find(c => c.toLowerCase() === trimmedName.toLowerCase())) {
+        toast({ title: "Invalid Category", description: "Category name cannot be empty or a duplicate.", variant: "destructive" });
+        return;
+    }
+    setAllCategories(prev => [...prev, trimmedName].sort());
+    setNewCategoryName("");
+    toast({ title: "Category Added", description: `"${trimmedName}" is now available. Assign it to a product to save it.` });
+  };
+
+  const handleStartRename = (category: string) => {
+    setRenamingCategory({ oldName: category, newName: category });
+  };
+
+  const handleRenameCategory = async () => {
+      if (!renamingCategory) return;
+      const trimmedNewName = renamingCategory.newName.trim();
+      
+      if (!trimmedNewName || trimmedNewName.toLowerCase() === renamingCategory.oldName.toLowerCase()) {
+          setRenamingCategory(null);
+          return;
+      }
+      if (allCategories.find(c => c.toLowerCase() === trimmedNewName.toLowerCase())) {
+          toast({ title: "Rename Failed", description: "A category with that name already exists.", variant: "destructive" });
+          return;
+      }
+
+      setIsCategoryActionLoading(true);
+      try {
+          await renameCategory(renamingCategory.oldName, trimmedNewName);
+          toast({ title: "Category Renamed", description: `"${renamingCategory.oldName}" was renamed to "${trimmedNewName}".` });
+          refreshAllData();
+          setRenamingCategory(null);
+      } catch (error) {
+          console.error("Failed to rename category", error);
+          toast({ title: "Error", description: "Failed to rename category.", variant: "destructive" });
+      } finally {
+          setIsCategoryActionLoading(false);
+      }
+  };
+  
+  const handleDeleteCategory = async () => {
+      if (!categoryToDelete) return;
+
+      setIsCategoryActionLoading(true);
+      try {
+          await deleteCategory(categoryToDelete);
+          toast({ title: "Category Deleted", description: `Products in "${categoryToDelete}" were moved to "Uncategorized".` });
+          refreshAllData();
+          setCategoryToDelete(null);
+      } catch (error) {
+          console.error("Failed to delete category", error);
+          toast({ title: "Error", description: "Failed to delete category.", variant: "destructive" });
+      } finally {
+          setIsCategoryActionLoading(false);
+      }
   };
   
   const ProductCardSkeleton = () => (
@@ -143,16 +238,19 @@ export default function ManageProductsPage() {
   return (
     <div className="container py-12">
       <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ClipboardList className="h-6 w-6" />
-            Product Catalog
-        </h1>
-        <Input
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
+        <ClipboardList className="h-6 w-6 text-blue-600" />
+        <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+            <Button variant="outline" size="icon" onClick={() => setIsCategoryManagerOpen(true)} title="Manage Categories">
+                <Hash className="h-4 w-4 text-blue-600" />
+                <span className="sr-only">Manage Categories</span>
+            </Button>
+        </div>
       </div>
 
       <Dialog open={!!editingProduct} onOpenChange={(isOpen) => !isOpen && setEditingProduct(null)}>
@@ -229,15 +327,83 @@ export default function ManageProductsPage() {
           )}
         </DialogContent>
       </Dialog>
+      
+      <Dialog open={isCategoryManagerOpen} onOpenChange={(isOpen) => !isOpen && setRenamingCategory(null)}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Manage Categories</DialogTitle>
+                <DialogDescription>Add, rename, or delete product categories.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="flex gap-2">
+                    <Input 
+                        placeholder="New category name..."
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                    />
+                    <Button onClick={handleAddNewCategory}>Add</Button>
+                </div>
+                <ScrollArea className="h-64">
+                    <div className="space-y-2 pr-4">
+                        {allCategories.map(cat => (
+                            <div key={cat} className="flex items-center justify-between gap-2 p-2 rounded-md border">
+                                {renamingCategory?.oldName === cat ? (
+                                    <Input 
+                                        value={renamingCategory.newName}
+                                        onChange={(e) => setRenamingCategory({...renamingCategory, newName: e.target.value})}
+                                        onBlur={handleRenameCategory}
+                                        onKeyDown={(e) => { if(e.key === 'Enter') handleRenameCategory() }}
+                                        autoFocus
+                                        className="h-8"
+                                    />
+                                ) : (
+                                    <span className="font-medium text-sm">{cat}</span>
+                                )}
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartRename(cat)} disabled={cat === "Uncategorized"}>
+                                        <Pencil className="h-4 w-4 text-blue-600"/>
+                                    </Button>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCategoryToDelete(cat)} disabled={cat === "Uncategorized"}>
+                                            <Trash2 className="h-4 w-4 text-red-600"/>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </div>
+        </DialogContent>
+      </Dialog>
 
-      {loading ? (
+      <AlertDialog open={!!categoryToDelete} onOpenChange={(isOpen) => !isOpen && setCategoryToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This will delete the category &quot;{categoryToDelete}&quot; and move all its products to &quot;Uncategorized&quot;. This action cannot be undone.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCategoryActionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCategory} disabled={isCategoryActionLoading}>
+                {isCategoryActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Continue
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+      {isSearching ? (
          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(12)].map((_, i) => <ProductCardSkeleton key={i} />)}
          </div>
-      ) : filteredProducts.length > 0 ? (
+      ) : products.length > 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((p) => (
+            {products.map((p) => (
               <button key={p.id} className="border p-4 rounded-lg shadow-sm text-left hover:shadow-md transition-shadow flex flex-col" onClick={() => setEditingProduct(p)}>
                 <h4 className="font-medium truncate flex-grow">{p.name}</h4>
                 <div className="mt-2 pt-2 border-t border-muted/20 text-xs text-muted-foreground space-y-1">
@@ -253,6 +419,13 @@ export default function ManageProductsPage() {
               </button>
             ))}
           </div>
+          {hasMore && (
+            <div className="mt-8 text-center">
+              <Button onClick={loadMore} disabled={loading}>
+                {loading ? "Loading..." : "Load More"}
+              </Button>
+            </div>
+          )}
         </>
       ) : (
         <div className="text-center py-16">
@@ -263,3 +436,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
