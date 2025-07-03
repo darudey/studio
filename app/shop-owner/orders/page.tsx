@@ -19,12 +19,16 @@ interface CustomerWithOrderInfo extends User {
 }
 
 export default function CustomersWithOrdersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [customers, setCustomers] = useState<CustomerWithOrderInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+        return; // Wait for authentication to resolve
+    }
+
     if (!user) {
       router.push("/login");
       return;
@@ -67,9 +71,9 @@ export default function CustomersWithOrdersPage() {
     }
     fetchData();
 
-  }, [user, router]);
+  }, [user, authLoading, router]);
   
-  if (loading) {
+  if (loading || authLoading) {
     return (
         <div className="container py-12">
           <Card>
