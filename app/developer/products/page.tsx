@@ -268,11 +268,17 @@ export default function ManageProductsPage() {
       </div>
 
       <Dialog open={!!editingProduct} onOpenChange={(isOpen) => !isOpen && setEditingProduct(null)}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           {editingProduct && (
             <>
               <DialogHeader>
-                <DialogTitle>Edit Product</DialogTitle>
+                <div className="flex items-center justify-between">
+                  <DialogTitle>Edit Product</DialogTitle>
+                  <Button type="button" size="sm" onClick={handleSaveChanges} disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save
+                  </Button>
+                </div>
                 <DialogDescription>
                   Make changes to &quot;{editingProduct.name}&quot;. Click save when you&apos;re done.
                 </DialogDescription>
@@ -337,10 +343,14 @@ export default function ManageProductsPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditingProduct(null)} disabled={isSaving}>Cancel</Button>
-                <Button type="button" onClick={handleSaveChanges} disabled={isSaving}>
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Changes
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingProduct(null)}
+                  disabled={isSaving}
+                  className="w-full"
+                >
+                  Cancel
                 </Button>
               </DialogFooter>
             </>
