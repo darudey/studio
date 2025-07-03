@@ -80,7 +80,7 @@ export default function Header() {
 
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full bg-[hsl(var(--header-background))]">
       <div className="container flex h-16 items-center justify-between gap-2 px-2 sm:px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2 font-semibold">
@@ -90,11 +90,11 @@ export default function Header() {
 
         <div className="relative flex-1 max-w-4xl">
            <form onSubmit={handleSearchSubmit}>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600 z-10" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
                 placeholder="Search products..."
-                className="w-full rounded-full bg-muted pl-10"
+                className="w-full rounded-md bg-white text-black pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
@@ -110,7 +110,7 @@ export default function Header() {
             <>
               <ShoppingCartSheet>
                 <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingCart className="h-5 w-5 text-blue-600" />
+                  <ShoppingCart className="h-5 w-5 text-white" />
                   {cartCount > 0 && (
                      <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
                   )}
@@ -121,7 +121,7 @@ export default function Header() {
               {loading ? null : user ? (
                 <UserNav />
               ) : (
-                <Button asChild>
+                <Button asChild className="bg-white/20 text-white hover:bg-white/30">
                   <Link href="/login">Login</Link>
                 </Button>
               )}

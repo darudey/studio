@@ -6,9 +6,19 @@ import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
+import PromotionalBanners from './PromotionalBanners';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '../ui/skeleton';
 import { useSearchParams } from 'next/navigation';
+import { Zap } from 'lucide-react';
+
+const HorizontalProductScroller = ({ products }: { products: Product[] }) => (
+    <div className="flex gap-4 overflow-x-auto pb-4">
+        {products.map(product => (
+            <ProductCard key={product.id} product={product} />
+        ))}
+    </div>
+);
 
 export default function ProductPage() {
   const { user } = useAuth();
@@ -99,11 +109,8 @@ export default function ProductPage() {
   if (loading) {
       return (
           <div className="container py-8">
-              <div className="overflow-x-auto py-3">
-                <div className="flex items-start space-x-4">
-                    {[...Array(10)].map((_, i) => <Skeleton key={i} className="w-20 h-[92px] flex-shrink-0" />)}
-                </div>
-              </div>
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-48 w-full mt-4" />
               <Skeleton className="h-8 w-48 my-6" />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 mt-6">
                 {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
@@ -112,39 +119,40 @@ export default function ProductPage() {
       )
   }
 
+  const displayedProducts = searchTerm.trim() ? filteredProducts : trendingProducts.length > 0 ? trendingProducts : newestProducts;
+
   return (
-    <div className="container">
+    <div className="bg-background min-h-screen">
       <CategoryNav 
         categories={allCategories}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
       />
-      
+
       {selectedCategory === "All" && searchTerm.trim() === '' && (
-        <>
-          <ProductCarousel title="Trending Now" products={trendingProducts} />
-          <ProductCarousel title="Recommended for You" products={recommendedProducts} />
-          <ProductCarousel title="New Arrivals" products={newestProducts} />
-        </>
+          <PromotionalBanners />
       )}
 
-      <div className="py-8">
-        <h2 className="text-2xl font-bold tracking-tight mb-4">
-            {selectedCategory === "All" ? "All Products" : selectedCategory}
+      <div className="py-6 px-4 bg-[hsl(var(--section-background))]">
+        <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
+            <Zap className="text-yellow-500"/>
+            {searchTerm.trim() ? "Search Results" : "Lowest Prices Ever"}
         </h2>
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {filteredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+        {displayedProducts.length > 0 ? (
+            <HorizontalProductScroller products={displayedProducts} />
         ) : (
-          <div className="text-center py-16">
+          <div className="text-center py-10">
             <h2 className="text-xl font-semibold">No products found</h2>
             <p className="text-muted-foreground mt-2">Try adjusting your filters or searching again.</p>
           </div>
         )}
       </div>
+
+      {recommendedProducts.length > 0 && selectedCategory === "All" && searchTerm.trim() === '' && (
+        <div className="py-6 px-4 bg-background">
+            <ProductCarousel title="Bestsellers" products={recommendedProducts} />
+        </div>
+      )}
     </div>
   );
 }

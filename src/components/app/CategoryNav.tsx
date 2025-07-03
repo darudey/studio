@@ -1,7 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { LayoutGrid, Umbrella, Headphones, Gem, Lamp, Package, Popcorn } from "lucide-react";
+import React from 'react';
 
 interface CategoryNavProps {
   categories: string[];
@@ -9,62 +10,49 @@ interface CategoryNavProps {
   onCategorySelect: (category: string) => void;
 }
 
-const getHintForCategory = (category: string): string => {
-    const catLower = category.toLowerCase();
-    if (catLower.includes('all')) return 'shopping cart';
-    if (catLower.includes('fruit') || catLower.includes('vegetable') || catLower.includes('food')) return 'food health';
-    if (catLower.includes('electronic') || catLower.includes('mobile') || catLower.includes('gadget')) return 'electronics gadgets';
-    if (catLower.includes('fashion') || catLower.includes('cloth')) return 'fashion clothing';
-    if (catLower.includes('home') || catLower.includes('appliance')) return 'home appliances';
-    if (catLower.includes('beauty')) return 'beauty cosmetics';
-    if (catLower.includes('toy') || catLower.includes('baby')) return 'toys baby';
-    if (catLower.includes('sport')) return 'sports equipment';
-    // A simple heuristic to get a keyword
-    const hint = catLower.split(' ')[0].replace(/[^a-z]/g, '');
-    return hint.length > 2 ? hint : category;
-}
+const categoryIcons: { [key: string]: React.ElementType } = {
+  'all': LayoutGrid,
+  'monsoon': Umbrella,
+  'electronics': Headphones,
+  'beauty': Gem,
+  'decor': Lamp,
+  'fashion': Popcorn,
+  // Add more specific mappings as needed
+};
+
+const getIconForCategory = (category: string): React.ElementType => {
+    const lowerCategory = category.toLowerCase();
+    for (const key in categoryIcons) {
+        if (lowerCategory.includes(key)) {
+            return categoryIcons[key];
+        }
+    }
+    return Package; // Default fallback icon
+};
 
 
 export default function CategoryNav({ categories, selectedCategory, onCategorySelect }: CategoryNavProps) {
   const allCategories = ["All", ...categories];
 
   return (
-    <div className="pt-2 pb-1">
-      <div className="overflow-x-auto py-3">
-        <div className="flex items-start space-x-2 whitespace-nowrap">
-          {allCategories.map((category) => (
-            <button
-              key={category}
-              onClick={() => onCategorySelect(category)}
-              className={cn(
-                "inline-flex w-20 flex-shrink-0 flex-col items-center text-center group transition-transform duration-200 ease-in-out hover:scale-105",
-                selectedCategory === category && "scale-105"
-              )}
-            >
-              <div className={cn(
-                "w-16 h-16 bg-accent/20 rounded-xl flex items-center justify-center shadow-sm transition-all duration-200",
-                selectedCategory === category ? "ring-2 ring-accent ring-offset-2" : "group-hover:shadow-md"
-              )}>
-                <div className="relative w-full h-full">
-                  <Image
-                    src={`https://placehold.co/56x56.png`}
-                    alt={category}
-                    fill
-                    className="object-contain"
-                    sizes="56px"
-                    data-ai-hint={getHintForCategory(category)}
-                  />
-                </div>
-              </div>
-              <span className={cn(
-                  "mt-1.5 w-full break-words whitespace-normal text-center text-[11px] leading-tight font-medium h-8 flex items-center justify-center",
-                  selectedCategory === category ? "text-accent font-bold" : "text-accent/80 group-hover:text-accent"
-                  )}>
-                  {category}
-              </span>
-            </button>
-          ))}
-        </div>
+    <div className="bg-[hsl(var(--header-background))] px-4 pb-4">
+      <div className="flex items-center justify-around text-center">
+          {allCategories.slice(0, 5).map((category) => {
+            const Icon = getIconForCategory(category);
+            return (
+                <button
+                key={category}
+                onClick={() => onCategorySelect(category)}
+                className={cn(
+                    "flex flex-col items-center justify-center gap-1 text-white w-16 transition-opacity",
+                    selectedCategory === category ? "font-bold" : "opacity-80 hover:opacity-100"
+                )}
+                >
+                <Icon className="h-6 w-6 text-blue-300" />
+                <span className="text-xs">{category}</span>
+                </button>
+            )
+          })}
       </div>
     </div>
   );
