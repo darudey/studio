@@ -236,26 +236,60 @@ export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> =
 }
 
 // CATEGORY MANAGEMENT
+const categoriesCollection = collection(db, 'categories');
+
+export const getCategories = async (): Promise<string[]> => {
+    const snapshot = await getDocs(query(categoriesCollection, orderBy("name")));
+    const categories = snapshot.docs.map(doc => doc.data().name as string);
+    // Ensure "Uncategorized" is always present if it's not already
+    if (!categories.includes("Uncategorized")) {
+        return ["Uncategorized", ...categories];
+    }
+    return categories;
+};
+
+export const addCategory = async (categoryName: string): Promise<void> => {
+    const categoryRef = doc(db, 'categories', categoryName);
+    await setDoc(categoryRef, { name: categoryName, createdAt: new Date().toISOString() });
+};
+
+
 export const renameCategory = async (oldName: string, newName: string): Promise<void> => {
-    const q = query(productsCollection, where("category", "==", oldName));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return;
+    // Firestore doesn't support renaming document IDs, so we delete the old and create a new one.
+    const oldCategoryRef = doc(db, 'categories', oldName);
+    const newCategoryRef = doc(db, 'categories', newName);
 
     const batch = writeBatch(db);
-    snapshot.docs.forEach(doc => {
+
+    // Create new category doc
+    batch.set(newCategoryRef, { name: newName, createdAt: new Date().toISOString() });
+    // Delete old category doc
+    batch.delete(oldCategoryRef);
+    
+    // Find all products with the old category and update them
+    const productsToUpdateQuery = query(productsCollection, where("category", "==", oldName));
+    const productSnapshot = await getDocs(productsToUpdateQuery);
+    productSnapshot.docs.forEach(doc => {
         batch.update(doc.ref, { category: newName });
     });
+
     await batch.commit();
 }
 
 export const deleteCategory = async (categoryName: string): Promise<void> => {
-    const q = query(productsCollection, where("category", "==", categoryName));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return;
-
+    const productsToUpdateQuery = query(productsCollection, where("category", "==", categoryName));
+    const productSnapshot = await getDocs(productsToUpdateQuery);
+    
     const batch = writeBatch(db);
-    snapshot.docs.forEach(doc => {
+    
+    // Update products
+    productSnapshot.docs.forEach(doc => {
         batch.update(doc.ref, { category: "Uncategorized" });
     });
+
+    // Delete the category doc
+    const categoryRef = doc(db, 'categories', categoryName);
+    batch.delete(categoryRef);
+
     await batch.commit();
 }

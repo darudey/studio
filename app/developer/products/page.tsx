@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getPaginatedProducts, updateProduct, getProducts, renameCategory, deleteCategory } from "@/lib/data";
+import { getPaginatedProducts, updateProduct, getCategories, renameCategory, deleteCategory, addCategory } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,12 +81,13 @@ export default function ManageProductsPage() {
     }, 300);
   }, [fetchProducts]);
 
-  const refreshAllData = useCallback(() => {
-    fetchProducts(searchTerm, 1);
-    getProducts().then(allProds => {
-      const uniqueCategories = [...new Set(allProds.map(p => p.category))].sort();
-      setAllCategories(uniqueCategories);
-    });
+  const refreshAllData = useCallback(async () => {
+    setIsCategoryActionLoading(true);
+    await Promise.all([
+      fetchProducts(searchTerm, 1),
+      getCategories().then(setAllCategories),
+    ]);
+    setIsCategoryActionLoading(false);
   }, [fetchProducts, searchTerm]);
 
   useEffect(() => {
@@ -99,10 +101,7 @@ export default function ManageProductsPage() {
     }
 
     // Fetch all categories for the edit dialog dropdown
-    getProducts().then(allProds => {
-      const uniqueCategories = [...new Set(allProds.map(p => p.category))].sort();
-      setAllCategories(uniqueCategories);
-    });
+    getCategories().then(setAllCategories);
 
     debouncedFetch(searchTerm);
     return () => {
@@ -158,13 +157,45 @@ export default function ManageProductsPage() {
   // Category Management Handlers
   const handleAddNewCategory = async () => {
     const trimmedName = newCategoryName.trim();
-    if (!trimmedName || allCategories.find(c => c.toLowerCase() === trimmedName.toLowerCase())) {
-        toast({ title: "Invalid Category", description: "Category name cannot be empty or a duplicate.", variant: "destructive" });
-        return;
+    if (!trimmedName) {
+      toast({
+        title: "Invalid Name",
+        description: "Category name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
     }
-    setAllCategories(prev => [...prev, trimmedName].sort());
-    setNewCategoryName("");
-    toast({ title: "Category Added", description: `"${trimmedName}" is now available. Assign it to a product to save it.` });
+    if (
+      allCategories.find((c) => c.toLowerCase() === trimmedName.toLowerCase())
+    ) {
+      toast({
+        title: "Duplicate Category",
+        description: "This category already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCategoryActionLoading(true);
+    try {
+      await addCategory(trimmedName);
+      setNewCategoryName("");
+      toast({
+        title: "Category Saved",
+        description: `"${trimmedName}" has been added.`,
+      });
+      const freshCategories = await getCategories();
+      setAllCategories(freshCategories);
+    } catch (error) {
+      console.error("Failed to add category", error);
+      toast({
+        title: "Error",
+        description: "Failed to save the new category.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCategoryActionLoading(false);
+    }
   };
 
   const handleStartRename = (category: string) => {
@@ -346,8 +377,12 @@ export default function ManageProductsPage() {
                         placeholder="New category name..."
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
+                        disabled={isCategoryActionLoading}
                     />
-                    <Button onClick={handleAddNewCategory}>Add</Button>
+                    <Button onClick={handleAddNewCategory} disabled={isCategoryActionLoading}>
+                       {isCategoryActionLoading && newCategoryName && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                       Add
+                    </Button>
                 </div>
                 <ScrollArea className="h-64">
                     <div className="space-y-2 pr-4">
@@ -361,15 +396,16 @@ export default function ManageProductsPage() {
                                         onKeyDown={(e) => { if(e.key === 'Enter') handleRenameCategory() }}
                                         autoFocus
                                         className="h-8"
+                                        disabled={isCategoryActionLoading}
                                     />
                                 ) : (
                                     <span className="font-medium text-sm">{cat}</span>
                                 )}
                                 <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartRename(cat)} disabled={cat === "Uncategorized"}>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartRename(cat)} disabled={cat === "Uncategorized" || isCategoryActionLoading}>
                                         <Pencil className="h-4 w-4 text-blue-600"/>
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCategoryToDelete(cat)} disabled={cat === "Uncategorized"}>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCategoryToDelete(cat)} disabled={cat === "Uncategorized" || isCategoryActionLoading}>
                                         <Trash2 className="h-4 w-4 text-red-600"/>
                                     </Button>
                                 </div>
@@ -440,5 +476,3 @@ export default function ManageProductsPage() {
     </div>
   );
 }
-
-    
