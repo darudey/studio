@@ -16,18 +16,18 @@ export default function ProductCarousel({ title, products }: ProductCarouselProp
     }
 
     return (
-        <div className="w-full py-6">
+        <div className="w-full">
             <h2 className="text-2xl font-bold tracking-tight mb-4">{title}</h2>
             <Carousel
                 opts={{
                     align: "start",
-                    loop: products.length > 2,
+                    loop: products.length > 3,
                 }}
                 className="w-full"
             >
                 <CarouselContent className="-ml-4">
                     {products.map((product) => (
-                        <CarouselItem key={product.id} className="basis-1/2 md:basis-1/3 lg:basis-1/4 pl-4">
+                        <CarouselItem key={product.id} className="basis-1/2 sm:basis-1/3 pl-4">
                             <div className="h-full">
                                 <ProductCard product={product} />
                             </div>

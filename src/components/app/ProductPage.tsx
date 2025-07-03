@@ -11,23 +11,10 @@ import PromotionalBanners from './PromotionalBanners';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '../ui/skeleton';
 import { useSearchParams } from 'next/navigation';
-import { Zap } from 'lucide-react';
-
-const HorizontalProductScroller = ({ products }: { products: Product[] }) => (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-        {products.map(product => (
-            <div key={product.id} className="w-40 flex-shrink-0">
-                <ProductCard product={product} />
-            </div>
-        ))}
-    </div>
-);
 
 export default function ProductPage() {
   const { user } = useAuth();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
-  const [newestProducts, setNewestProducts] = useState<Product[]>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -45,25 +32,14 @@ export default function ProductPage() {
         try {
             const [
                 products,
-                newest,
                 recommended
             ] = await Promise.all([
                 getProducts(),
-                getNewestProducts(),
                 getRecommendedProducts()
             ]);
 
             setAllProducts(products);
-            setNewestProducts(newest);
             setRecommendedProducts(recommended);
-
-            try {
-                const trending = await getTrendingProducts();
-                setTrendingProducts(trending);
-            } catch (err) {
-                console.warn("Could not fetch trending products. This is expected for users without sufficient permissions.", err);
-                setTrendingProducts([]);
-            }
 
         } catch (e) {
             console.error("Failed to fetch main product data:", e);
@@ -134,27 +110,36 @@ export default function ProductPage() {
       {!isFilteredView ? (
         <>
             <PromotionalBanners />
-            <div className="py-6 px-4 bg-[hsl(var(--section-background))]">
-                <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
-                    <Zap className="text-yellow-500"/>
-                    Lowest Prices Ever
-                </h2>
-                <HorizontalProductScroller products={trendingProducts.length > 0 ? trendingProducts : newestProducts} />
-            </div>
-
+            
             {recommendedProducts.length > 0 && (
-                <div className="py-6 px-4 bg-background">
-                    <ProductCarousel title="Bestsellers" products={recommendedProducts} />
+                <div className="py-6 bg-[hsl(var(--section-background))]">
+                    <div className="container">
+                        <ProductCarousel title="Daily Essentials" products={recommendedProducts} />
+                    </div>
                 </div>
             )}
+            
+            {allCategories.map((category, index) => {
+                const categoryProducts = allProducts.filter(p => p.category === category);
+                if (categoryProducts.length === 0) return null;
+                // Alternate background colors for visual separation
+                const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
+                return (
+                    <div key={category} className={`py-6 ${bgColor}`}>
+                        <div className="container">
+                             <ProductCarousel title={category} products={categoryProducts} />
+                        </div>
+                    </div>
+                )
+            })}
         </>
       ) : (
-        <div className="p-4">
+        <div className="container p-4">
              <h2 className="text-2xl font-bold tracking-tight mb-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
             {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map(product => (
                         <ProductCard key={product.id} product={product} />
                     ))}

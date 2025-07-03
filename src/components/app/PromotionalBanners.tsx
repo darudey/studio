@@ -1,3 +1,4 @@
+
 "use client"
 import Image from "next/image"
 
@@ -5,7 +6,7 @@ const promoData = [
     { title: "Monsoon Must-haves", hint: "umbrella rain", off: "50%" },
     { title: "Self Care & More", hint: "cosmetics skincare", off: "25%" },
     { title: "Kitchen Essentials", hint: "kitchen utensils", off: "35%" },
-    { title: "Daily Deals", hint: "shopping sale", off: "50%" },
+    { title: "Daily Essentials", hint: "groceries daily", off: "50%" },
 ]
 
 export default function PromotionalBanners() {
