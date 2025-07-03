@@ -1,4 +1,3 @@
-
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -11,6 +10,31 @@ interface CategoryNavProps {
   onCategorySelect: (category: string) => void;
 }
 
+const ChowminIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M60 46 H4 C2.89543 46 2 46.8954 2 48 V52 C2 53.1046 2.89543 54 4 54 H60 C61.1046 54 62 53.1046 62 52 V48 C62 46.8954 61.1046 46 60 46 Z" />
+      <path d="M12 45 C 8 38, 16 34, 20 38" />
+      <path d="M24 45 C 20 38, 28 34, 32 38" />
+      <path d="M36 45 C 32 38, 40 34, 44 38" />
+      <path d="M48 45 C 44 38, 52 34, 56 38" />
+      <path d="M18 41 C 14 34, 22 30, 26 34" />
+      <path d="M30 41 C 26 34, 34 30, 38 34" />
+      <path d="M42 41 C 38 34, 46 30, 50 34" />
+      <path d="M25 36 L30 42" strokeWidth="2" />
+      <path d="M40 36 L45 42" strokeWidth="2" />
+    </svg>
+  );
+
 const categoryIcons: { [key: string]: React.ElementType } = {
   'all': LayoutGrid,
   'monsoon': Umbrella,
@@ -18,7 +42,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
   'beauty': Gem,
   'decor': Lamp,
   'fashion': Popcorn,
-  'chowmin': Package,
+  'chowmin': ChowminIcon,
   'cosmetics': Gem,
   'general': Package,
   'puja items': Package,
