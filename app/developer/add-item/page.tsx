@@ -173,14 +173,10 @@ export default function AddItemPage() {
 
     setIsImporting(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const data = e.target?.result;
-        if (!data) {
-             toast({ title: "Import Failed", description: "Could not read the file.", variant: "destructive" });
-             setIsImporting(false);
-             return;
-        }
+        const allProducts = await getProducts();
+        const existingProductNames = new Set(allProducts.map(p => p.name.toLowerCase()));
+
+        const data = await file.arrayBuffer();
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
@@ -195,23 +191,27 @@ export default function AddItemPage() {
 
         json.forEach((row, index) => {
             const rowNumber = index + 2;
-            // A name is the only hard requirement.
+            
             if (!row.Name || typeof row.Name !== 'string' || !row.Name.trim()) {
                 skippedRows.push({ row: rowNumber, reason: "Missing Product Name" });
                 return;
             }
 
-            // Provide safe fallbacks for prices if they are empty or invalid
+            const productName = (row.Name as string).trim();
+            if (existingProductNames.has(productName.toLowerCase())) {
+                skippedRows.push({ row: rowNumber, reason: `Product "${productName}" already exists.` });
+                return;
+            }
+
             const retailPrice = parseFloat(row['Selling Price']);
             const wholesalePrice = parseFloat(row['Purchase Price']);
             const stock = parseInt(row['Stock Quantity'], 10);
 
-            // Check if Unit is valid, otherwise default to 'piece'
             const rowUnit = typeof row.Unit === 'string' ? row.Unit.toLowerCase().trim() : 'piece';
             const unit = validUnits.includes(rowUnit) ? rowUnit : 'piece';
 
             const newProductData: Omit<Product, 'id'> = {
-              name: row.Name,
+              name: productName,
               itemCode: row['Item Code']?.toString() || `IMP-${Date.now()}-${index}`,
               batchNo: row['Batch No.']?.toString() || 'N/A',
               description: row.description || 'No description provided.',
@@ -222,12 +222,13 @@ export default function AddItemPage() {
               wholesalePrice: !isNaN(wholesalePrice) ? wholesalePrice : 0,
               unit: unit as Product['unit'],
               stock: !isNaN(stock) ? stock : 0,
-              dataAiHint: row.Name.toLowerCase().split(' ').slice(0, 2).join(' '),
+              dataAiHint: productName.toLowerCase().split(' ').slice(0, 2).join(' '),
               isRecommended: false,
               createdAt: now,
             };
             
             importedProducts.push(newProductData);
+            existingProductNames.add(productName.toLowerCase()); // Add to set to avoid duplicates within the same file
             if (newProductData.category) {
                 newCategoriesSet.add(newProductData.category);
             }
@@ -239,20 +240,26 @@ export default function AddItemPage() {
 
         setCategories(Array.from(newCategoriesSet).sort());
         
-        let description = `${importedProducts.length} products have been imported.`;
+        let description = `${importedProducts.length} product${importedProducts.length !== 1 ? 's' : ''} have been imported.`;
         if (skippedRows.length > 0) {
-            description += ` ${skippedRows.length} rows were skipped due to missing product names.`;
+            const duplicateCount = skippedRows.filter(r => r.reason.includes("already exists")).length;
+            const missingNameCount = skippedRows.length - duplicateCount;
+            
+            let skippedMessages: string[] = [];
+            if (duplicateCount > 0) {
+                skippedMessages.push(`${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''}`);
+            }
+             if (missingNameCount > 0) {
+                skippedMessages.push(`${missingNameCount} with missing name${missingNameCount > 1 ? 's' : ''}`);
+            }
+
+            description += ` ${skippedRows.length} rows were skipped (${skippedMessages.join(" & ")}).`;
         }
         
         toast({
           title: "Import Complete",
           description: description,
         });
-      };
-      reader.onerror = () => {
-        toast({ title: "Import Failed", description: "Error reading the file.", variant: "destructive" });
-      }
-      reader.readAsArrayBuffer(file);
     } catch (error) {
       console.error("Bulk import failed:", error);
       toast({ title: "Import Failed", description: "An unexpected error occurred.", variant: "destructive" });
@@ -408,3 +415,5 @@ export default function AddItemPage() {
     </div>
   );
 }
+
+    
