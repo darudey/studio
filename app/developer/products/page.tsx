@@ -93,7 +93,7 @@ export default function ManageProductsPage() {
       router.push('/login');
       return;
     }
-    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
+    if (!['developer', 'shop-owner'].includes(user.role)) {
       router.push("/");
       return;
     }
@@ -328,7 +328,7 @@ export default function ManageProductsPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isCategoryManagerOpen} onOpenChange={(isOpen) => !isOpen && setRenamingCategory(null)}>
+      <Dialog open={isCategoryManagerOpen} onOpenChange={(open) => { setIsCategoryManagerOpen(open); if (!open) { setRenamingCategory(null); } }}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Manage Categories</DialogTitle>
