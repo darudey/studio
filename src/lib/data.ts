@@ -1,7 +1,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
-import type { Product, User, Order, OrderItem, Coupon, Category } from "@/types";
+import type { Product, User, Order, OrderItem, Coupon } from "@/types";
 
 // USER FUNCTIONS
 const usersCollection = collection(db, 'users');
@@ -236,8 +236,6 @@ export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> =
 }
 
 // CATEGORY MANAGEMENT
-const categoriesCollection = collection(db, 'categories');
-
 export const getCategories = async (): Promise<string[]> => {
     const products = await getProducts();
     const categories = [...new Set(products.map(p => p.category))].sort();
@@ -246,30 +244,6 @@ export const getCategories = async (): Promise<string[]> => {
     }
     return categories;
 };
-
-export const getAllCategoriesData = async (): Promise<Category[]> => {
-    const snapshot = await getDocs(categoriesCollection);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-};
-
-export const updateCategoryImage = async (categoryName: string, imageUrl: string): Promise<Category> => {
-    const categoryRef = doc(db, 'categories', categoryName);
-    const docSnap = await getDoc(categoryRef);
-
-    const categoryData: Category = {
-        id: categoryName,
-        name: categoryName,
-        imageUrl,
-        createdAt: docSnap.exists() ? docSnap.data().createdAt : new Date().toISOString(),
-    };
-    
-    // Omit id before writing to firestore
-    const { id, ...dataToSave } = categoryData;
-    await setDoc(categoryRef, dataToSave, { merge: true });
-    
-    return categoryData;
-};
-
 
 export const renameCategory = async (oldName: string, newName: string): Promise<void> => {
     if (oldName === "Uncategorized") {
