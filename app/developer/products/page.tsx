@@ -144,7 +144,7 @@ export default function ManageProductsPage() {
       toast({ title: "Success", description: "Product updated successfully." });
       
       // Refresh the product list
-      fetchProducts(searchTerm, 1);
+      refreshAllData();
       
       setEditingProduct(null); // Close dialog on success
     } catch (error) {
@@ -274,10 +274,16 @@ export default function ManageProductsPage() {
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="category" className="text-right">Category</Label>
-                  <Input id="category" name="category" value={editingProduct.category} onChange={handleFormChange} list="categories-list" className="col-span-3" />
-                   <datalist id="categories-list">
-                      {allCategories.map(cat => <option key={cat} value={cat} />)}
-                  </datalist>
+                    <Select name="category" value={editingProduct.category} onValueChange={(value) => handleSelectChange('category', value)}>
+                        <SelectTrigger className="col-span-3" id="category">
+                            <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {allCategories.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="itemCode" className="text-right">Item Code</Label>
@@ -328,7 +334,7 @@ export default function ManageProductsPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isCategoryManagerOpen} onOpenChange={(open) => { setIsCategoryManagerOpen(open); if (!open) { setRenamingCategory(null); } }}>
+      <Dialog open={isCategoryManagerOpen} onOpenChange={(open) => { if (!open) { setRenamingCategory(null); } setIsCategoryManagerOpen(open); }}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Manage Categories</DialogTitle>
@@ -434,3 +440,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
