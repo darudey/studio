@@ -50,6 +50,7 @@ export default function AddItemPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bulkImportInputRef = useRef<HTMLInputElement>(null);
 
   const [isImporting, setIsImporting] = useState(false);
 
@@ -273,8 +274,8 @@ export default function AddItemPage() {
         toast({ title: "Import Failed", description: "An unexpected error occurred during processing.", variant: "destructive" });
       } finally {
         setIsImporting(false);
-        if (event.target) {
-          event.target.value = "";
+        if (bulkImportInputRef.current) {
+          bulkImportInputRef.current.value = "";
         }
       }
     };
@@ -282,8 +283,8 @@ export default function AddItemPage() {
     reader.onerror = () => {
         setIsImporting(false);
         toast({ title: "Import Failed", description: "The selected file could not be read.", variant: "destructive" });
-        if (event.target) {
-            event.target.value = "";
+        if (bulkImportInputRef.current) {
+            bulkImportInputRef.current.value = "";
         }
     }
 
@@ -311,6 +312,7 @@ export default function AddItemPage() {
                         </Label>
                         <Input 
                             id="bulk-import" 
+                            ref={bulkImportInputRef}
                             type="file" 
                             className="hidden" 
                             accept=".xlsx, .xls, .csv"
@@ -434,3 +436,5 @@ export default function AddItemPage() {
     </div>
   );
 }
+
+    
