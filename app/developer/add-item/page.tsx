@@ -173,15 +173,16 @@ export default function AddItemPage() {
 
     setIsImporting(true);
     try {
+        // Read and parse the file immediately to avoid permission issues.
         const data = await file.arrayBuffer();
-        
-        const allProducts = await getProducts();
-        const existingProductNames = new Set(allProducts.map(p => p.name.toLowerCase()));
-        
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json<any>(worksheet);
+        
+        // Now, with the file data secure in memory, fetch existing products.
+        const allProducts = await getProducts();
+        const existingProductNames = new Set(allProducts.map(p => p.name.toLowerCase()));
         
         const importedProducts: Omit<Product, 'id'>[] = [];
         const newCategoriesSet = new Set<string>(categories);
@@ -416,6 +417,8 @@ export default function AddItemPage() {
     </div>
   );
 }
+
+    
 
     
 
