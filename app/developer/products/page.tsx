@@ -21,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -238,7 +237,7 @@ export default function ManageProductsPage() {
 
   return (
     <div className="container py-12">
-      <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
+      <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
         <ClipboardList className="h-6 w-6 text-blue-600" />
         <div className="flex items-center gap-2">
             <Input
@@ -364,11 +363,9 @@ export default function ManageProductsPage() {
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartRename(cat)} disabled={cat === "Uncategorized"}>
                                         <Pencil className="h-4 w-4 text-blue-600"/>
                                     </Button>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCategoryToDelete(cat)} disabled={cat === "Uncategorized"}>
-                                            <Trash2 className="h-4 w-4 text-red-600"/>
-                                        </Button>
-                                    </AlertDialogTrigger>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCategoryToDelete(cat)} disabled={cat === "Uncategorized"}>
+                                        <Trash2 className="h-4 w-4 text-red-600"/>
+                                    </Button>
                                 </div>
                             </div>
                         ))}
@@ -437,5 +434,3 @@ export default function ManageProductsPage() {
     </div>
   );
 }
-
-    
