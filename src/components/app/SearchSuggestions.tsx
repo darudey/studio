@@ -1,7 +1,7 @@
 "use client";
 
 import { Product } from "@/types";
-import { Search } from "lucide-react";
+import Image from "next/image";
 
 interface SearchSuggestionsProps {
   suggestions: Product[];
@@ -14,22 +14,33 @@ export default function SearchSuggestions({ suggestions, onSuggestionClick }: Se
   }
 
   return (
-    <div className="absolute top-full mt-2 w-full rounded-md bg-background border shadow-lg z-50">
-      <ul className="py-1">
+    <div className="absolute top-full mt-1 w-full rounded-md bg-background border shadow-lg z-50 max-h-96 overflow-y-auto">
+      <div className="p-2 space-y-2">
         {suggestions.map((product) => (
-          <li
+          <div
             key={product.id}
-            className="px-4 py-2 hover:bg-muted cursor-pointer flex items-center gap-2"
-            onMouseDown={(e) => { // use onMouseDown to fire before onBlur on the input
+            className="p-2 hover:bg-muted cursor-pointer flex items-center gap-3 rounded-md border"
+            onMouseDown={(e) => {
               e.preventDefault();
               onSuggestionClick(product.id);
             }}
           >
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <span>{product.name}</span>
-          </li>
+            <div className="relative h-12 w-12 flex-shrink-0">
+              <Image
+                src={product.images[0]}
+                alt={product.name}
+                fill
+                className="object-cover rounded-md"
+                data-ai-hint={product.dataAiHint}
+              />
+            </div>
+            <div className="flex-1 overflow-hidden">
+                <p className="font-medium text-sm leading-tight truncate">{product.name}</p>
+                <p className="text-xs text-muted-foreground">in {product.category}</p>
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
