@@ -35,8 +35,7 @@ export default function Header() {
 
   useEffect(() => {
     if (user) {
-      // Query all notifications for the user, ordered by creation date.
-      // This is more robust and aligns with the query on the notifications page.
+      // Query notifications for the user, ordered by creation date.
       const q = query(
         collection(db, "notifications"),
         where("userId", "==", user.id),
@@ -44,7 +43,7 @@ export default function Header() {
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        // Filter for unread notifications on the client side.
+        // Filter for unread notifications on the client side to avoid needing a composite index.
         const unreadDocs = snapshot.docs.filter(doc => doc.data().isRead === false);
         setUnreadCount(unreadDocs.length);
       }, (error) => {
