@@ -1,8 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingCart } from "lucide-react";
+import { Search, ShoppingCart, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import UserNav from "./UserNav";
@@ -16,6 +15,8 @@ import { getProducts } from "@/lib/data";
 import { Product } from "@/types";
 import SearchSuggestions from "./SearchSuggestions";
 import AnimatedLogo from "./AnimatedLogo";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function Header() {
   const { user, loading } = useAuth();
@@ -27,6 +28,30 @@ export default function Header() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+
+  useEffect(() => {
+    if (user && ['developer', 'shop-owner'].includes(user.role)) {
+      let lastChecked = localStorage.getItem('lastCheckedOrdersTimestamp');
+
+      if (!lastChecked) {
+        lastChecked = new Date().toISOString();
+        localStorage.setItem('lastCheckedOrdersTimestamp', lastChecked);
+      }
+
+      const q = query(collection(db, "orders"), where("date", ">", lastChecked));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setNewOrdersCount(snapshot.size);
+      }, (error) => {
+        console.error("Error listening for new orders:", error);
+      });
+
+      return () => unsubscribe();
+    } else {
+        setNewOrdersCount(0);
+    }
+  }, [user]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -108,6 +133,18 @@ export default function Header() {
         <div className="flex shrink-0 items-center justify-end space-x-2">
           {isMounted && (
             <>
+              {user && ['developer', 'shop-owner'].includes(user.role) && (
+                <Button asChild size="icon" className="relative rounded-full bg-white text-blue-600 hover:bg-white/90">
+                  <Link href="/shop-owner/orders">
+                    <Bell className="h-5 w-5" />
+                    {newOrdersCount > 0 && (
+                      <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{newOrdersCount}</Badge>
+                    )}
+                    <span className="sr-only">New Orders</span>
+                  </Link>
+                </Button>
+              )}
+            
               <ShoppingCartSheet>
                 <Button size="icon" className="relative rounded-full bg-white text-blue-600 hover:bg-white/90">
                   <ShoppingCart className="h-5 w-5" />
