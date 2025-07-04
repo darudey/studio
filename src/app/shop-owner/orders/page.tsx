@@ -25,26 +25,25 @@ export default function CustomersWithOrdersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This effect handles authentication checks and data fetching.
     const checkAuthAndFetch = async () => {
+      // First, wait for the authentication status to be resolved.
       if (authLoading) {
-        // Auth state is still being determined. The main return will show a loading skeleton.
         return;
       }
 
+      // If auth is resolved and there is no user, redirect to login.
       if (!user) {
-        // Auth is done, but there's no user. Redirect to login.
         router.push("/login");
         return;
       }
 
-      // We have a user, now check their role for permission.
+      // If there is a user, check their role for permission to view this page.
       if (!['developer', 'shop-owner'].includes(user.role)) {
         router.push("/");
         return;
       }
 
-      // If all checks pass, attempt to fetch the data.
+      // Only after all authentication and permission checks pass, attempt to fetch data.
       try {
         const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
         
@@ -54,7 +53,7 @@ export default function CustomersWithOrdersPage() {
             }
             acc[order.userId].push(order);
             return acc;
-            }, {} as Record<string, Order[]>);
+        }, {} as Record<string, Order[]>);
 
         const customerList: CustomerWithOrderInfo[] = Object.keys(ordersByUser)
             .map(userId => {
@@ -75,10 +74,12 @@ export default function CustomersWithOrdersPage() {
             
         setCustomers(customerList);
       } catch (error) {
+        // This block will catch the "Missing or insufficient permissions" error.
+        // It will log the error for debugging but will not crash the page.
+        // The 'customers' state will remain empty, showing the "No customers" message.
         console.error("Firestore Error on All Orders page:", error);
-        // The permission error is caught here. The page will show the empty state.
       } finally {
-        // Ensure the loading spinner is turned off, regardless of success or failure.
+        // Ensure the loading spinner is turned off, regardless of success or a permission error.
         setLoading(false);
       }
     };
