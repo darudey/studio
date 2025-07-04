@@ -107,9 +107,15 @@ export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Prod
 
 export const addMultipleProducts = async (productsData: Omit<Product, 'id'>[]): Promise<void> => {
     const batch = writeBatch(db);
+    const allProducts = await getProducts();
+    const existingProductNames = new Set(allProducts.map(p => p.name.toLowerCase()));
+
     productsData.forEach(product => {
-        const docRef = doc(productsCollection);
-        batch.set(docRef, product);
+        if (!existingProductNames.has(product.name.toLowerCase())) {
+            const docRef = doc(productsCollection);
+            batch.set(docRef, product);
+            existingProductNames.add(product.name.toLowerCase());
+        }
     });
     await batch.commit();
 }
@@ -234,6 +240,18 @@ export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> =
         return [];
     }
 }
+
+export const getSimilarProducts = async (category: string, excludeId: string): Promise<Product[]> => {
+    const q = query(
+        productsCollection,
+        where("category", "==", category),
+        where(documentId(), "!=", excludeId),
+        firestoreLimit(6)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+}
+
 
 // CATEGORY MANAGEMENT
 export const getCategories = async (): Promise<string[]> => {
