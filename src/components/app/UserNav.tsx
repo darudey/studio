@@ -80,19 +80,17 @@ export default function UserNav() {
           )}
         </DropdownMenuGroup>
 
-        {['shop-owner', 'imager'].includes(user.role) && (
+        {user.role === 'shop-owner' && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>{user.role === 'shop-owner' ? 'Shop Owner' : 'Imager'}</DropdownMenuLabel>
+            <DropdownMenuLabel>Shop Owner</DropdownMenuLabel>
             <DropdownMenuGroup>
-               {user.role === 'shop-owner' && (
-                  <Link href="/shop-owner/orders">
-                    <DropdownMenuItem>
-                      <ReceiptText className="mr-2 h-4 w-4 text-blue-600" />
-                      <span>All Orders</span>
-                    </DropdownMenuItem>
-                  </Link>
-               )}
+               <Link href="/shop-owner/orders">
+                <DropdownMenuItem>
+                  <ReceiptText className="mr-2 h-4 w-4 text-blue-600" />
+                  <span>All Orders</span>
+                </DropdownMenuItem>
+              </Link>
               <Link href="/developer/image-lab">
                 <DropdownMenuItem>
                   <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
@@ -109,6 +107,21 @@ export default function UserNav() {
                 <DropdownMenuItem>
                   <PlusCircle className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Add Product</span>
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuGroup>
+          </>
+        )}
+        
+        {user.role === 'imager' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Imager</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <Link href="/developer/image-lab">
+                <DropdownMenuItem>
+                  <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
+                  <span>Image Lab</span>
                 </DropdownMenuItem>
               </Link>
             </DropdownMenuGroup>

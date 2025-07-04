@@ -66,7 +66,7 @@ export default function EditItemPage() {
       router.push("/login");
       return;
     }
-    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
+    if (!['developer', 'shop-owner'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
       return;
@@ -268,10 +268,10 @@ export default function EditItemPage() {
                                 ) : (
                                     <div className="flex gap-2 sm:gap-4">
                                         <Button asChild variant="outline" className="w-full">
-                                            <Label htmlFor="file-upload" className="cursor-pointer flex items-center"><FileImage className="h-4 w-4 mr-2" /> Upload</Label>
+                                            <Label htmlFor="file-upload" className="cursor-pointer flex items-center"><FileImage className="h-4 w-4 mr-2 text-blue-600" /> Upload</Label>
                                         </Button>
                                         <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
-                                        <Button type="button" onClick={() => setShowCamera(true)} variant="outline" className="w-full"><Camera className="h-4 w-4 mr-2" /> Camera</Button>
+                                        <Button type="button" onClick={() => setShowCamera(true)} variant="outline" className="w-full"><Camera className="h-4 w-4 mr-2 text-blue-600" /> Camera</Button>
                                     </div>
                                 )}
                             </div>
