@@ -49,27 +49,23 @@ export default function CustomersWithOrdersPage() {
       try {
         const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
         
-        const ordersByUser = allOrders.reduce((acc, order) => {
-            if (!acc[order.userId]) {
-                acc[order.userId] = [];
+        const usersById = new Map(allUsers.map(user => [user.id, user]));
+        const customerOrderInfo = new Map<string, { orderCount: number; lastOrderDate: string }>();
+
+        for (const order of allOrders) {
+            const info = customerOrderInfo.get(order.userId) || { orderCount: 0, lastOrderDate: '1970-01-01T00:00:00.000Z' };
+            info.orderCount++;
+            if (order.date > info.lastOrderDate) {
+                info.lastOrderDate = order.date;
             }
-            acc[order.userId].push(order);
-            return acc;
-        }, {} as Record<string, Order[]>);
+            customerOrderInfo.set(order.userId, info);
+        }
 
-        const customerList: CustomerWithOrderInfo[] = Object.keys(ordersByUser)
-            .map(userId => {
-                const customer = allUsers.find(u => u.id === userId);
+        const customerList: CustomerWithOrderInfo[] = Array.from(customerOrderInfo.entries())
+            .map(([userId, info]) => {
+                const customer = usersById.get(userId);
                 if (!customer) return null;
-
-                const userOrders = ordersByUser[userId];
-                const lastOrder = userOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                
-                return {
-                ...customer,
-                orderCount: userOrders.length,
-                lastOrderDate: lastOrder.date,
-                };
+                return { ...customer, ...info };
             })
             .filter((c): c is CustomerWithOrderInfo => c !== null)
             .sort((a, b) => new Date(b.lastOrderDate).getTime() - new Date(a.lastOrderDate).getTime());
