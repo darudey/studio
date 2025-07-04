@@ -11,6 +11,18 @@ export const getUsers = async (): Promise<User[]> => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
 };
 
+export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
+    if (ids.length === 0) return [];
+    // Firestore 'in' queries are limited to 30 items. We need to batch.
+    const userPromises: Promise<User[]>[] = [];
+    for (let i = 0; i < ids.length; i += 30) {
+        const chunk = ids.slice(i, i + 30);
+        const q = query(usersCollection, where(documentId(), 'in', chunk));
+        userPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User))));
+    }
+    return (await Promise.all(userPromises)).flat();
+};
+
 export const getUserById = async (id: string): Promise<User | null> => {
     const docRef = doc(db, 'users', id);
     const docSnap = await getDoc(docRef);

@@ -4,21 +4,20 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getAllOrders, getUsers } from "@/lib/data";
-import { Order, User } from "@/types";
+import { getNotificationsForUser, markUserNotificationsAsRead } from "@/lib/data";
+import { Notification } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight, BellRing } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-type OrderWithCustomer = Order & { customer?: User };
 
 export default function NotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [notifications, setNotifications] = useState<OrderWithCustomer[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -29,32 +28,22 @@ export default function NotificationsPage() {
       router.push("/login?redirect=/notifications");
       return;
     }
-    if (!['developer', 'shop-owner'].includes(user.role)) {
-      router.push("/");
-      return;
-    }
-
-    // When this page is viewed, update the timestamp to 'clear' notifications.
-    localStorage.setItem('lastCheckedOrdersTimestamp', new Date().toISOString());
-
-    const fetchNotifications = async () => {
+    
+    const fetchAndReadNotifications = async () => {
       setLoading(true);
       try {
-        const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
-        const usersMap = new Map(allUsers.map(u => [u.id, u]));
-        
-        const ordersWithCustomerInfo = allOrders.map(order => ({
-          ...order,
-          customer: usersMap.get(order.userId),
-        }));
-        
-        setNotifications(ordersWithCustomerInfo);
+        const userNotifications = await getNotificationsForUser(user.id);
+        setNotifications(userNotifications);
+        // Mark as read after fetching and displaying
+        if (userNotifications.some(n => !n.isRead)) {
+            await markUserNotificationsAsRead(user.id);
+        }
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
         if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
             toast({
                 title: "Permission Denied",
-                description: "Could not load notifications due to Firestore Rules. Please update them to grant access.",
+                description: "Your Firestore Rules are preventing access to notifications. Please update them to grant access.",
                 variant: "destructive",
                 duration: 10000,
             });
@@ -64,14 +53,14 @@ export default function NotificationsPage() {
       }
     };
     
-    fetchNotifications();
+    fetchAndReadNotifications();
 
   }, [user, authLoading, router, toast]);
 
   if (loading || authLoading) {
     return (
       <div className="container py-12">
-        <Card>
+        <Card className="max-w-4xl mx-auto">
           <CardHeader>
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-64 mt-2" />
@@ -93,21 +82,21 @@ export default function NotificationsPage() {
             Notifications
           </CardTitle>
           <CardDescription>
-            Here are the latest updates and orders from your customers.
+            Here are your latest updates.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {notifications.length > 0 ? (
-            <div className="space-y-4">
-              {notifications.map(order => (
-                <Link key={order.id} href={`/shop-owner/orders/${order.userId}`} className="block">
-                    <div className="border p-4 rounded-lg hover:bg-muted transition-colors flex items-center justify-between">
+            <div className="space-y-2">
+              {notifications.map(notification => (
+                <Link key={notification.id} href={notification.link} className="block">
+                    <div className={cn("border p-4 rounded-lg hover:bg-muted transition-colors flex items-center justify-between", !notification.isRead && "bg-blue-50/50 border-blue-200 dark:bg-blue-900/20")}>
                         <div>
                             <p className="font-medium">
-                                New order from <span className="text-blue-600">{order.customer?.name || 'A customer'}</span>
+                                {notification.message}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                                Total: ₹{order.total.toFixed(2)} &bull; {formatDistanceToNow(new Date(order.date), { addSuffix: true })}
+                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                             </p>
                         </div>
                         <ArrowRight className="h-5 w-5 text-muted-foreground" />
@@ -117,7 +106,7 @@ export default function NotificationsPage() {
             </div>
           ) : (
             <div className="text-center py-10 text-muted-foreground">
-              You have no new notifications.
+              You have no notifications.
             </div>
           )}
         </CardContent>

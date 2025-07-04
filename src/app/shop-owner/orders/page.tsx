@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getAllOrders, getUsers } from "@/lib/data";
-import type { User } from "@/types";
+import { getNotificationsForUser, getUsersByIds } from "@/lib/data";
+import type { User, Notification } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -41,39 +41,61 @@ export default function CustomersWithOrdersPage() {
 
       try {
         setLoading(true);
-        const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
-        
-        const customerOrderInfo = new Map<string, { orderCount: number; lastOrderDate: string; user: User }>();
+        // 1. Fetch notifications for the admin, which is secure and avoids broad 'list' queries
+        const notifications = await getNotificationsForUser(user.id);
 
-        for (const order of allOrders) {
-            const customer = allUsers.find(u => u.id === order.userId);
-            if (!customer) continue;
-
-            const info = customerOrderInfo.get(order.userId) || { orderCount: 0, lastOrderDate: '1970-01-01T00:00:00.000Z', user: customer };
-            info.orderCount++;
-            if (order.date > info.lastOrderDate) {
-                info.lastOrderDate = order.date;
-            }
-            customerOrderInfo.set(order.userId, info);
+        if (notifications.length === 0) {
+            setCustomers([]);
+            setLoading(false);
+            return;
         }
 
-        const customerList: CustomerWithOrderInfo[] = Array.from(customerOrderInfo.values())
-            .map(info => ({
-                ...info.user,
-                orderCount: info.orderCount,
-                lastOrderDate: info.lastOrderDate,
-            }))
+        // 2. Process notifications to aggregate customer data
+        const customerInfoMap = new Map<string, { orderCount: number; lastOrderDate: string; }>();
+        const customerIds = new Set<string>();
+
+        notifications.forEach(notification => {
+            // Extract userId from the link, e.g., /shop-owner/orders/USER_ID
+            const pathParts = notification.link.split('/');
+            const customerId = pathParts[pathParts.length - 1];
+
+            if (customerId && notification.link.startsWith('/shop-owner/orders/')) {
+                customerIds.add(customerId);
+                const info = customerInfoMap.get(customerId) || { orderCount: 0, lastOrderDate: '1970-01-01T00:00:00.000Z' };
+                info.orderCount++;
+                if (notification.createdAt > info.lastOrderDate) {
+                    info.lastOrderDate = notification.createdAt;
+                }
+                customerInfoMap.set(customerId, info);
+            }
+        });
+
+        // 3. Fetch user profiles for the customers found
+        const users = await getUsersByIds(Array.from(customerIds));
+        const usersMap = new Map(users.map(u => [u.id, u]));
+
+        // 4. Combine info into the final list for rendering
+        const customerList: CustomerWithOrderInfo[] = Array.from(customerInfoMap.entries())
+            .map(([userId, info]) => {
+                const customerUser = usersMap.get(userId);
+                return customerUser ? {
+                    ...customerUser,
+                    orderCount: info.orderCount,
+                    lastOrderDate: info.lastOrderDate,
+                } : null;
+            })
+            .filter((c): c is CustomerWithOrderInfo => c !== null)
             .sort((a, b) => new Date(b.lastOrderDate).getTime() - new Date(a.lastOrderDate).getTime());
             
         setCustomers(customerList);
+        
       } catch (error) {
         if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
             console.error("Firestore Security Rules Error: The current user does not have permission to list all orders and users. Please update your firestore.rules to allow 'list' access for shop-owner and developer roles on the 'orders' and 'users' collections.", error);
             toast({
                 title: "Permission Denied",
-                description: "Your Firestore Rules are preventing access. Please update them to allow 'list' access for your role on the 'orders' and 'users' collections.",
-                variant: "destructive",
-                duration: 10000,
+                description: "You do not have permission to view all orders. Please contact an administrator.",
+                variant: "destructive"
             });
         } else {
             console.error("Failed to fetch customer orders:", error);
