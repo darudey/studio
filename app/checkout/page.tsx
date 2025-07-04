@@ -51,6 +51,7 @@ export default function CheckoutPage() {
           name: item.product.name,
           quantity: item.quantity,
           price: getPrice(item.product),
+          note: item.note,
         }
     });
 
@@ -122,13 +123,18 @@ export default function CheckoutPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {cartDetails.map(({ product, quantity }) =>
+                            {cartDetails.map(({ product, quantity, note }) =>
                                 product ? (
                                 <TableRow key={product.id}>
                                     <TableCell>
                                         <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover"/>
                                     </TableCell>
-                                    <TableCell className="font-medium">{product.name}</TableCell>
+                                    <TableCell className="font-medium align-top">
+                                        {product.name}
+                                        {note && (
+                                            <p className="text-xs text-muted-foreground font-normal mt-1 italic">Note: {note}</p>
+                                        )}
+                                    </TableCell>
                                     <TableCell>{quantity}</TableCell>
                                     <TableCell>₹{getPrice(product).toFixed(2)}</TableCell>
                                     <TableCell className="text-right">₹{(getPrice(product) * quantity).toFixed(2)}</TableCell>

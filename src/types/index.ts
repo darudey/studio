@@ -37,6 +37,7 @@ export type User = {
 export type CartItem = {
   productId: string;
   quantity: number;
+  note?: string;
 };
 
 export type OrderItemStatus = 'Pending' | 'Fulfilled' | 'Cancelled';
@@ -47,6 +48,7 @@ export type OrderItem = {
   price: number;
   name: string;
   status: OrderItemStatus;
+  note?: string;
 };
 
 export type Order = {

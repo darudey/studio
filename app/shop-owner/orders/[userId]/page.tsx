@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -185,7 +186,12 @@ export default function UserOrdersPage() {
                                             <TableBody>
                                                 {order.items.map((item, index) => (
                                                     <TableRow key={index}>
-                                                        <TableCell className={cn("font-medium", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>{item.name}</TableCell>
+                                                        <TableCell className={cn("font-medium align-top", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>
+                                                            {item.name}
+                                                            {item.note && (
+                                                                <p className="text-xs text-muted-foreground font-normal mt-1 italic">Note: {item.note}</p>
+                                                            )}
+                                                        </TableCell>
                                                         <TableCell>{item.quantity}</TableCell>
                                                         <TableCell>₹{item.price.toFixed(2)}</TableCell>
                                                         <TableCell className={cn(item.status === 'Cancelled' && 'line-through text-muted-foreground')}>₹{(item.quantity * item.price).toFixed(2)}</TableCell>
