@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomerWithOrderInfo extends User {
   orderCount: number;
@@ -23,55 +24,78 @@ export default function CustomersWithOrdersPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<CustomerWithOrderInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (authLoading) {
-        return; // Wait for authentication to resolve
-    }
+    const checkAuthAndFetch = async () => {
+      // First, wait for the authentication status to be resolved.
+      if (authLoading) {
+        return;
+      }
 
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    if (!['developer', 'shop-owner'].includes(user.role)) {
-      router.push("/");
-      return;
-    }
+      // If auth is resolved and there is no user, redirect to login.
+      if (!user) {
+        router.push("/login");
+        return;
+      }
 
-    const fetchData = async () => {
+      // If there is a user, check their role for permission to view this page.
+      if (!['developer', 'shop-owner'].includes(user.role)) {
+        router.push("/");
+        return;
+      }
+
+      // Only after all authentication and permission checks pass, attempt to fetch data.
+      try {
         const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
         
-        const ordersByUser = allOrders.reduce((acc, order) => {
-            if (!acc[order.userId]) {
-                acc[order.userId] = [];
+        const usersById = new Map(allUsers.map(user => [user.id, user]));
+        const customerOrderInfo = new Map<string, { orderCount: number; lastOrderDate: string }>();
+
+        for (const order of allOrders) {
+            const info = customerOrderInfo.get(order.userId) || { orderCount: 0, lastOrderDate: '1970-01-01T00:00:00.000Z' };
+            info.orderCount++;
+            if (order.date > info.lastOrderDate) {
+                info.lastOrderDate = order.date;
             }
-            acc[order.userId].push(order);
-            return acc;
-            }, {} as Record<string, Order[]>);
+            customerOrderInfo.set(order.userId, info);
+        }
 
-        const customerList: CustomerWithOrderInfo[] = Object.keys(ordersByUser)
-            .map(userId => {
-                const customer = allUsers.find(u => u.id === userId);
+        const customerList: CustomerWithOrderInfo[] = Array.from(customerOrderInfo.entries())
+            .map(([userId, info]) => {
+                const customer = usersById.get(userId);
                 if (!customer) return null;
-
-                const userOrders = ordersByUser[userId];
-                const lastOrder = userOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                
-                return {
-                ...customer,
-                orderCount: userOrders.length,
-                lastOrderDate: lastOrder.date,
-                };
+                return { ...customer, ...info };
             })
             .filter((c): c is CustomerWithOrderInfo => c !== null)
             .sort((a, b) => new Date(b.lastOrderDate).getTime() - new Date(a.lastOrderDate).getTime());
             
         setCustomers(customerList);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+            console.error("Firestore Security Rules Error: The current user does not have permission to list all orders and users. Please update your firestore.rules to allow 'list' access for shop-owner and developer roles on the 'orders' and 'users' collections.", error);
+            toast({
+                title: "Permission Denied",
+                description: "You do not have permission to view all orders. Please contact an administrator.",
+                variant: "destructive"
+            });
+        } else {
+            console.error("Failed to fetch customer orders:", error);
+            toast({
+                title: "Error",
+                description: "Could not load customer orders.",
+                variant: "destructive"
+            });
+        }
+      } finally {
+        // Ensure the loading spinner is turned off, regardless of success or a permission error.
         setLoading(false);
-    }
-    fetchData();
+      }
+    };
 
-  }, [user, authLoading, router]);
+    checkAuthAndFetch();
+
+  }, [user, authLoading, router, toast]);
   
   if (loading || authLoading) {
     return (
@@ -103,25 +127,26 @@ export default function CustomersWithOrdersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-center">Total Orders</TableHead>
-                  <TableHead className="text-center">Last Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="text-center">Orders</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">Last Order</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {customers.map((customer) => (
                   <TableRow key={customer.id}>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
+                    <TableCell>
+                      <div className="font-medium truncate">{customer.name}</div>
+                      <div className="text-sm text-muted-foreground truncate">{customer.email}</div>
+                    </TableCell>
                     <TableCell className="text-center">{customer.orderCount}</TableCell>
-                    <TableCell className="text-center">{new Date(customer.lastOrderDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="hidden md:table-cell text-center">{new Date(customer.lastOrderDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/shop-owner/orders/${customer.id}`}>
-                          <Eye className="mr-2 h-4 w-4 text-blue-600" />
-                          View Orders
+                          <Eye className="h-4 w-4 text-blue-600 sm:mr-2" />
+                          <span className="hidden sm:inline">View Orders</span>
                         </Link>
                       </Button>
                     </TableCell>
