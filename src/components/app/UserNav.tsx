@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { LogOut, ReceiptText, User as UserIcon, Users, PlusCircle, ClipboardList, Ticket, Image as ImageIcon } from "lucide-react";
+import { LogOut, ReceiptText, User as UserIcon, Users, PlusCircle, ClipboardList, Ticket, Image as ImageIcon, Bell } from "lucide-react";
 import { Badge } from "../ui/badge";
 
-export default function UserNav() {
+export default function UserNav({ newOrdersCount }: { newOrdersCount?: number }) {
   const { user, logout } = useAuth();
 
   if (!user) return null;
@@ -40,6 +40,9 @@ export default function UserNav() {
             <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
             <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
           </Avatar>
+           {newOrdersCount && newOrdersCount > 0 && (
+             <Badge variant="destructive" className="absolute top-0 right-0 h-4 w-4 justify-center rounded-full p-0 text-[10px]">{newOrdersCount > 9 ? '9+' : newOrdersCount}</Badge>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -87,8 +90,9 @@ export default function UserNav() {
             <DropdownMenuGroup>
                <Link href="/shop-owner/orders">
                 <DropdownMenuItem>
-                  <ReceiptText className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>All Orders</span>
+                  <Bell className="mr-2 h-4 w-4 text-blue-600" />
+                  <span>Notifications</span>
+                  {newOrdersCount && newOrdersCount > 0 && <Badge variant="destructive" className="ml-auto">{newOrdersCount}</Badge>}
                 </DropdownMenuItem>
               </Link>
               <Link href="/developer/image-lab">
@@ -165,8 +169,9 @@ export default function UserNav() {
               </Link>
               <Link href="/shop-owner/orders">
                 <DropdownMenuItem>
-                  <ReceiptText className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>All Orders</span>
+                  <Bell className="mr-2 h-4 w-4 text-blue-600" />
+                  <span>Notifications</span>
+                  {newOrdersCount && newOrdersCount > 0 && <Badge variant="destructive" className="ml-auto">{newOrdersCount}</Badge>}
                 </DropdownMenuItem>
               </Link>
             </DropdownMenuGroup>

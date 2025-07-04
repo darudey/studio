@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingCart, Bell } from "lucide-react";
+import { Search, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import UserNav from "./UserNav";
@@ -148,18 +148,6 @@ export default function Header() {
         <div className="flex shrink-0 items-center justify-end space-x-2">
           {isMounted && (
             <>
-              {user && ['developer', 'shop-owner'].includes(user.role) && (
-                <Button asChild size="icon" className="relative rounded-full bg-white text-blue-600 hover:bg-white/90">
-                  <Link href="/shop-owner/orders">
-                    <Bell className="h-5 w-5" />
-                    {newOrdersCount > 0 && (
-                      <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{newOrdersCount}</Badge>
-                    )}
-                    <span className="sr-only">New Orders</span>
-                  </Link>
-                </Button>
-              )}
-            
               <ShoppingCartSheet>
                 <Button size="icon" className="relative rounded-full bg-white text-blue-600 hover:bg-white/90">
                   <ShoppingCart className="h-5 w-5" />
@@ -171,7 +159,7 @@ export default function Header() {
               </ShoppingCartSheet>
 
               {loading ? null : user ? (
-                <UserNav />
+                <UserNav newOrdersCount={newOrdersCount} />
               ) : (
                 <Button asChild className="bg-white text-blue-600 hover:bg-white/90">
                   <Link href="/login">Login</Link>
