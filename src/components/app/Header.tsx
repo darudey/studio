@@ -16,7 +16,7 @@ import { getProducts } from "@/lib/data";
 import { Product } from "@/types";
 import SearchSuggestions from "./SearchSuggestions";
 import AnimatedLogo from "./AnimatedLogo";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 
@@ -35,16 +35,21 @@ export default function Header() {
 
   useEffect(() => {
     if (user) {
+      // Query all notifications for the user, ordered by creation date.
+      // This is more robust and aligns with the query on the notifications page.
       const q = query(
-        collection(db, "notifications"), 
-        where("userId", "==", user.id), 
-        where("isRead", "==", false)
+        collection(db, "notifications"),
+        where("userId", "==", user.id),
+        orderBy("createdAt", "desc")
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        setUnreadCount(snapshot.size);
+        // Filter for unread notifications on the client side.
+        const unreadDocs = snapshot.docs.filter(doc => doc.data().isRead === false);
+        setUnreadCount(unreadDocs.length);
       }, (error) => {
         console.error("Error listening for new notifications:", error);
+        setUnreadCount(0); // Reset on error
       });
 
       return () => unsubscribe();
