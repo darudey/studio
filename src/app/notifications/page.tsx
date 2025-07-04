@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight, BellRing } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type OrderWithCustomer = Order & { customer?: User };
 
@@ -18,6 +20,7 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<OrderWithCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (authLoading) return;
@@ -48,6 +51,14 @@ export default function NotificationsPage() {
         setNotifications(ordersWithCustomerInfo);
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+            toast({
+                title: "Permission Denied",
+                description: "Could not load notifications due to Firestore Rules. Please update them to grant access.",
+                variant: "destructive",
+                duration: 10000,
+            });
+        }
       } finally {
         setLoading(false);
       }
@@ -55,7 +66,7 @@ export default function NotificationsPage() {
     
     fetchNotifications();
 
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, toast]);
 
   if (loading || authLoading) {
     return (

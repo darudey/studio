@@ -39,9 +39,6 @@ export default function CustomersWithOrdersPage() {
         return;
       }
 
-      // When this page is viewed, update the timestamp to 'clear' notifications.
-      localStorage.setItem('lastCheckedOrdersTimestamp', new Date().toISOString());
-
       try {
         setLoading(true);
         const [allOrders, allUsers] = await Promise.all([getAllOrders(), getUsers()]);
@@ -74,8 +71,9 @@ export default function CustomersWithOrdersPage() {
             console.error("Firestore Security Rules Error: The current user does not have permission to list all orders and users. Please update your firestore.rules to allow 'list' access for shop-owner and developer roles on the 'orders' and 'users' collections.", error);
             toast({
                 title: "Permission Denied",
-                description: "You do not have permission to view all orders. Please contact an administrator.",
-                variant: "destructive"
+                description: "Your Firestore Rules are preventing access. Please update them to allow 'list' access for your role on the 'orders' and 'users' collections.",
+                variant: "destructive",
+                duration: 10000,
             });
         } else {
             console.error("Failed to fetch customer orders:", error);
