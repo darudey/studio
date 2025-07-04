@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -218,7 +217,8 @@ export default function UserOrdersPage() {
                                             <CardContent className="text-sm text-muted-foreground space-y-1">
                                                 <p><strong className="text-foreground font-medium">Name:</strong> {customer.name}</p>
                                                 <p><strong className="text-foreground font-medium">Email:</strong> {customer.email}</p>
-                                                <p><strong className="text-foreground font-medium">Address:</strong> {order.shippingAddress}</p>
+                                                <p><strong className="text-foreground font-medium">Phone:</strong> {customer.phone}</p>
+                                                <p className="whitespace-pre-wrap"><strong className="text-foreground font-medium">Address:</strong> {order.shippingAddress}</p>
                                             </CardContent>
                                         </Card>
 
@@ -239,8 +239,8 @@ export default function UserOrdersPage() {
                                                                 <SelectValue placeholder="Update status" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                <SelectItem value="shipped">Shipped</SelectItem>
-                                                                <SelectItem value="delivered">Delivered</SelectItem>
+                                                                <SelectItem value="Shipped">Shipped</SelectItem>
+                                                                <SelectItem value="Delivered">Delivered</SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
@@ -251,7 +251,7 @@ export default function UserOrdersPage() {
                                             </CardContent>
                                         </Card>
                                     </div>
-                                </div>
+                                  </div>
                               </AccordionContent>
                           </AccordionItem>
                         ))}
