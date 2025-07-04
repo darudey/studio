@@ -57,7 +57,7 @@ export default function AddItemPage() {
   useEffect(() => {
     if (!user) {
       router.push("/login");
-    } else if (!['developer', 'shop-owner'].includes(user.role)) {
+    } else if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
       toast({ title: "Access Denied", description: "This page is for administrators only.", variant: "destructive" });
       router.push("/");
     } else {
@@ -290,7 +290,7 @@ export default function AddItemPage() {
   };
 
 
-  if (!user || !['developer', 'shop-owner'].includes(user.role)) {
+  if (!user || !['developer', 'shop-owner', 'imager'].includes(user.role)) {
     return <div className="container text-center py-10">Redirecting...</div>;
   }
 

@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ManageProductsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -89,11 +89,13 @@ export default function ManageProductsPage() {
   }, [fetchProducts, searchTerm]);
 
   useEffect(() => {
+    if (authLoading) return;
+    
     if (!user) {
       router.push('/login');
       return;
     }
-    if (!['developer', 'shop-owner'].includes(user.role)) {
+    if (!['developer', 'shop-owner', 'imager'].includes(user.role)) {
       router.push("/");
       return;
     }
@@ -105,7 +107,7 @@ export default function ManageProductsPage() {
     return () => {
       debouncedFetch.cancel();
     };
-  }, [user, router, searchTerm, debouncedFetch]);
+  }, [user, authLoading, router, searchTerm, debouncedFetch]);
 
   const loadMore = () => {
     if (!loading && hasMore) {
@@ -245,14 +247,17 @@ export default function ManageProductsPage() {
       </div>
   );
 
-  if (!user) {
+  if (authLoading || !user) {
     return <div className="container py-12 text-center">Redirecting...</div>;
   }
 
   return (
     <div className="container py-12">
-      <div className="sticky top-16 bg-background z-10 py-4 mb-6 flex justify-between items-center">
-        <ClipboardList className="h-6 w-6 text-blue-600" />
+      <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+            <ClipboardList className="h-6 w-6 text-blue-600" />
+            Product Catalog
+        </h1>
         <div className="flex items-center gap-2">
             <Input
               placeholder="Search products..."
