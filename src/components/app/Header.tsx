@@ -30,29 +30,26 @@ export default function Header() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
-    if (user && ['developer', 'shop-owner'].includes(user.role)) {
-      let lastChecked = localStorage.getItem('lastCheckedOrdersTimestamp');
-
-      if (!lastChecked) {
-        lastChecked = new Date().toISOString();
-        localStorage.setItem('lastCheckedOrdersTimestamp', lastChecked);
-      }
-
-      const q = query(collection(db, "orders"), where("date", ">", lastChecked));
+    if (user) {
+      const q = query(
+        collection(db, "notifications"), 
+        where("userId", "==", user.id), 
+        where("isRead", "==", false)
+      );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        setNewOrdersCount(snapshot.size);
+        setUnreadCount(snapshot.size);
       }, (error) => {
-        console.error("Error listening for new orders:", error);
+        console.error("Error listening for new notifications:", error);
       });
 
       return () => unsubscribe();
     } else {
-        setNewOrdersCount(0);
+        setUnreadCount(0);
     }
   }, [user]);
 
@@ -159,7 +156,7 @@ export default function Header() {
               </ShoppingCartSheet>
 
               {loading ? null : user ? (
-                <UserNav newOrdersCount={newOrdersCount} />
+                <UserNav newOrdersCount={unreadCount} />
               ) : (
                 <Button asChild className="bg-white text-blue-600 hover:bg-white/90">
                   <Link href="/login">Login</Link>

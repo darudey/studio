@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   itemCode: string;
@@ -73,4 +74,14 @@ export type Category = {
     name: string;
     imageUrl: string;
     createdAt: string;
+};
+
+export type Notification = {
+  id: string;
+  userId: string; // The ID of the user who should see this notification
+  message: string;
+  link: string; // The URL to navigate to when the notification is clicked
+  isRead: boolean;
+  createdAt: string;
+  orderId: string;
 };

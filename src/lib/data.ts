@@ -1,7 +1,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
-import type { Product, User, Order, OrderItem, Coupon } from "@/types";
+import type { Product, User, Order, OrderItem, Coupon, Notification } from "@/types";
 
 // USER FUNCTIONS
 const usersCollection = collection(db, 'users');
@@ -174,14 +174,65 @@ export const addOrder = async (orderData: Omit<Order, 'id' | 'date' | 'items'> &
         items: orderData.items.map(item => ({...item, status: 'Pending'}))
     }
     const docRef = await addDoc(ordersCollection, newOrderData);
+
+    // NOTIFICATION LOGIC
+    try {
+        const customer = await getUserById(orderData.userId);
+        const admins = (await getUsers()).filter(u => u.role === 'developer' || u.role === 'shop-owner');
+        
+        for (const admin of admins) {
+            await addNotification({
+                userId: admin.id,
+                orderId: docRef.id,
+                message: `New order #${docRef.id.substring(0,6)} placed by ${customer?.name || 'a customer'}.`,
+                link: `/shop-owner/orders/${orderData.userId}`
+            });
+        }
+    } catch (e) {
+        console.error("Failed to create new order notification:", e);
+    }
+    
     return { id: docRef.id, ...newOrderData } as Order;
 };
 
 export const updateOrder = async (order: Order): Promise<void> => {
     const orderRef = doc(db, 'orders', order.id);
+    
+    const existingOrderSnap = await getDoc(orderRef);
+    if (!existingOrderSnap.exists()) {
+        console.error("Order to update does not exist.");
+        return;
+    }
+    const existingOrder = existingOrderSnap.data() as Order;
+
     const { id, ...orderData } = order;
     await updateDoc(orderRef, orderData);
-}
+
+    // NOTIFICATION LOGIC
+    if (existingOrder.status !== order.status) {
+        let message = '';
+        if (order.status === 'Shipped') {
+            message = `Your order #${id.substring(0,6)} has been packed and is now on its way!`;
+        } else if (order.status === 'Delivered') {
+            message = `Your order #${id.substring(0,6)} has been delivered. Enjoy!`;
+        } else if (order.status === 'Cancelled') {
+            message = `Your order #${id.substring(0,6)} has been cancelled.`;
+        }
+        
+        if (message) {
+            try {
+                await addNotification({
+                    userId: order.userId,
+                    orderId: id,
+                    message: message,
+                    link: '/orders'
+                });
+            } catch(e) {
+                 console.error("Failed to create order status notification:", e);
+            }
+        }
+    }
+};
 
 // COUPON FUNCTIONS
 const couponsCollection = collection(db, 'coupons');
@@ -292,3 +343,33 @@ export const deleteCategory = async (categoryName: string): Promise<void> => {
 
     await batch.commit();
 }
+
+// NOTIFICATION FUNCTIONS
+const notificationsCollection = collection(db, 'notifications');
+
+export const addNotification = async (notificationData: Omit<Notification, 'id' | 'createdAt' | 'isRead'>): Promise<void> => {
+    await addDoc(notificationsCollection, {
+        ...notificationData,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
+    const q = query(notificationsCollection, where("userId", "==", userId), orderBy("createdAt", "desc"), firestoreLimit(50));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+};
+
+export const markUserNotificationsAsRead = async (userId: string): Promise<void> => {
+    const q = query(notificationsCollection, where("userId", "==", userId), where("isRead", "==", false));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) return;
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { isRead: true });
+    });
+    await batch.commit();
+};

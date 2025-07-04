@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -31,6 +32,8 @@ export default function UserNav({ newOrdersCount }: { newOrdersCount?: number })
     return initials.toUpperCase();
   };
 
+  const hasAdminMenu = ['developer', 'shop-owner', 'imager'].includes(user.role);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -59,6 +62,7 @@ export default function UserNav({ newOrdersCount }: { newOrdersCount?: number })
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        
         <DropdownMenuGroup>
           <Link href="/profile">
             <DropdownMenuItem>
@@ -72,111 +76,84 @@ export default function UserNav({ newOrdersCount }: { newOrdersCount?: number })
               <span>Order History</span>
             </DropdownMenuItem>
           </Link>
-          {user.role === 'basic' && (
-            <Link href="/redeem">
-              <DropdownMenuItem>
-                <Ticket className="mr-2 h-4 w-4 text-blue-600" />
-                <span>Redeem Coupon</span>
-              </DropdownMenuItem>
-            </Link>
-          )}
+          <Link href="/notifications">
+            <DropdownMenuItem>
+              <Bell className="mr-2 h-4 w-4 text-blue-600" />
+              <span>Notifications</span>
+              {newOrdersCount && newOrdersCount > 0 && <Badge variant="destructive" className="ml-auto">{newOrdersCount > 9 ? '9+' : newOrdersCount}</Badge>}
+            </DropdownMenuItem>
+          </Link>
         </DropdownMenuGroup>
 
-        {user.role === 'shop-owner' && (
-          <>
+        {user.role === 'basic' && (
+           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Shop Owner</DropdownMenuLabel>
             <DropdownMenuGroup>
-               <Link href="/notifications">
+                <Link href="/redeem">
                 <DropdownMenuItem>
-                  <Bell className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Notifications</span>
-                  {newOrdersCount && newOrdersCount > 0 && <Badge variant="destructive" className="ml-auto">{newOrdersCount}</Badge>}
+                    <Ticket className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>Redeem Coupon</span>
                 </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/image-lab">
-                <DropdownMenuItem>
-                  <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Image Lab</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/products">
-                <DropdownMenuItem>
-                  <ClipboardList className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Manage Products</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/add-item">
-                <DropdownMenuItem>
-                  <PlusCircle className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Add Product</span>
-                </DropdownMenuItem>
-              </Link>
+                </Link>
             </DropdownMenuGroup>
-          </>
-        )}
-        
-        {user.role === 'imager' && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Imager</DropdownMenuLabel>
-            <DropdownMenuGroup>
-              <Link href="/developer/image-lab">
-                <DropdownMenuItem>
-                  <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Image Lab</span>
-                </DropdownMenuItem>
-              </Link>
-            </DropdownMenuGroup>
-          </>
-        )}
-        
-        {user.role === 'developer' && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Developer</DropdownMenuLabel>
-            <DropdownMenuGroup>
-               <Link href="/developer/users">
-                <DropdownMenuItem>
-                  <Users className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Manage Users</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/coupons">
-                <DropdownMenuItem>
-                  <Ticket className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Manage Coupons</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/image-lab">
-                <DropdownMenuItem>
-                  <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Image Lab</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/products">
-                <DropdownMenuItem>
-                  <ClipboardList className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Manage Products</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/developer/add-item">
-                <DropdownMenuItem>
-                  <PlusCircle className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Add Product</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/notifications">
-                <DropdownMenuItem>
-                  <Bell className="mr-2 h-4 w-4 text-blue-600" />
-                  <span>Notifications</span>
-                  {newOrdersCount && newOrdersCount > 0 && <Badge variant="destructive" className="ml-auto">{newOrdersCount}</Badge>}
-                </DropdownMenuItem>
-              </Link>
-            </DropdownMenuGroup>
-          </>
+           </>
         )}
 
+        {hasAdminMenu && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Admin Tools</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              {['developer', 'shop-owner'].includes(user.role) && (
+                <Link href="/shop-owner/orders">
+                  <DropdownMenuItem>
+                    <Users className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>Manage Orders</span>
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              {user.role === 'developer' && (
+                <Link href="/developer/users">
+                  <DropdownMenuItem>
+                    <Users className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>Manage Users</span>
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              {user.role === 'developer' && (
+                <Link href="/developer/coupons">
+                  <DropdownMenuItem>
+                    <Ticket className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>Manage Coupons</span>
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              <Link href="/developer/image-lab">
+                <DropdownMenuItem>
+                  <ImageIcon className="mr-2 h-4 w-4 text-blue-600" />
+                  <span>Image Lab</span>
+                </DropdownMenuItem>
+              </Link>
+              {['developer', 'shop-owner'].includes(user.role) && (
+                <Link href="/developer/products">
+                  <DropdownMenuItem>
+                    <ClipboardList className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>Manage Products</span>
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              {['developer', 'shop-owner'].includes(user.role) && (
+                <Link href="/developer/add-item">
+                  <DropdownMenuItem>
+                    <PlusCircle className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>Add Product</span>
+                  </DropdownMenuItem>
+                </Link>
+              )}
+            </DropdownMenuGroup>
+          </>
+        )}
+        
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
           <LogOut className="mr-2 h-4 w-4 text-blue-600" />
