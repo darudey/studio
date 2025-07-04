@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getNotificationsForUser, getUsersByIds } from "@/lib/data";
-import type { User, Notification } from "@/types";
+import type { User } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +69,12 @@ export default function CustomersWithOrdersPage() {
                 customerInfoMap.set(customerId, info);
             }
         });
+        
+        if (customerIds.size === 0) {
+            setCustomers([]);
+            setLoading(false);
+            return;
+        }
 
         // 3. Fetch user profiles for the customers found
         const users = await getUsersByIds(Array.from(customerIds));

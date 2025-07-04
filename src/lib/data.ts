@@ -17,8 +17,10 @@ export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
     const userPromises: Promise<User[]>[] = [];
     for (let i = 0; i < ids.length; i += 30) {
         const chunk = ids.slice(i, i + 30);
-        const q = query(usersCollection, where(documentId(), 'in', chunk));
-        userPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User))));
+        if (chunk.length > 0) {
+            const q = query(usersCollection, where(documentId(), 'in', chunk));
+            userPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User))));
+        }
     }
     return (await Promise.all(userPromises)).flat();
 };
@@ -26,7 +28,7 @@ export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
 export const getUserById = async (id: string): Promise<User | null> => {
     const docRef = doc(db, 'users', id);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as User : null;
+    return docSnap.exists() ? { id: docSnap.id, ...doc.data() } as User : null;
 }
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
@@ -100,8 +102,10 @@ export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
     const productPromises: Promise<Product[]>[] = [];
     for (let i = 0; i < ids.length; i += 30) {
         const chunk = ids.slice(i, i + 30);
-        const q = query(productsCollection, where(documentId(), 'in', chunk));
-        productPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product))));
+        if (chunk.length > 0) {
+            const q = query(productsCollection, where(documentId(), 'in', chunk));
+            productPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product))));
+        }
     }
     return (await Promise.all(productPromises)).flat();
 };
@@ -109,7 +113,7 @@ export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
 export const getProductById = async (id: string): Promise<Product | null> => {
     const docRef = doc(db, 'products', id);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Product : null;
+    return docSnap.exists() ? { id: docSnap.id, ...doc.data() } as Product : null;
 }
 
 export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
@@ -179,11 +183,10 @@ export const getAllOrders = async (): Promise<Order[]> => {
 };
 
 
-export const addOrder = async (orderData: Omit<Order, 'id' | 'date' | 'items'> & { items: Omit<OrderItem, 'status'>[] }): Promise<Order> => {
+export const addOrder = async (orderData: Omit<Order, 'id' | 'date'>): Promise<Order> => {
     const newOrderData = {
         ...orderData,
         date: new Date().toISOString(),
-        items: orderData.items.map(item => ({...item, status: 'Pending'}))
     }
     const docRef = await addDoc(ordersCollection, newOrderData);
 
