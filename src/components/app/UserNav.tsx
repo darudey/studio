@@ -42,7 +42,7 @@ export default function UserNav({ newOrdersCount }: { newOrdersCount?: number })
             <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
             <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
           </Avatar>
-           {newOrdersCount && newOrdersCount > 0 && (
+           {newOrdersCount > 0 && (
              <Badge variant="destructive" className="absolute top-0 right-0 h-4 w-4 justify-center rounded-full p-0 text-[10px]">{newOrdersCount > 9 ? '9+' : newOrdersCount}</Badge>
           )}
         </Button>
@@ -80,7 +80,7 @@ export default function UserNav({ newOrdersCount }: { newOrdersCount?: number })
             <DropdownMenuItem>
               <Bell className="mr-2 h-4 w-4 text-blue-600" />
               <span>Notifications</span>
-              {newOrdersCount && newOrdersCount > 0 && <Badge variant="destructive" className="ml-auto">{newOrdersCount > 9 ? '9+' : newOrdersCount}</Badge>}
+              {newOrdersCount > 0 && <Badge variant="destructive" className="ml-auto">{newOrdersCount > 9 ? '9+' : newOrdersCount}</Badge>}
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
