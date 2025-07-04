@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -17,6 +18,7 @@ import SearchSuggestions from "./SearchSuggestions";
 import AnimatedLogo from "./AnimatedLogo";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { cn } from "@/lib/utils";
 
 export default function Header() {
   const { user, loading } = useAuth();
@@ -29,6 +31,7 @@ export default function Header() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
     if (user && ['developer', 'shop-owner'].includes(user.role)) {
@@ -113,7 +116,10 @@ export default function Header() {
           </Link>
         </div>
 
-        <div className="relative flex-1 max-w-4xl">
+        <div className={cn(
+            "relative flex-1 transition-all duration-300 ease-in-out",
+            isSearchFocused ? "max-w-2xl" : "max-w-md"
+        )}>
            <form onSubmit={handleSearchSubmit}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
@@ -122,8 +128,17 @@ export default function Header() {
                 className="w-full rounded-md bg-white text-black pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onFocus={() => {
+                  setShowSuggestions(true);
+                  setIsSearchFocused(true);
+                }}
+                onBlur={() => {
+                  // Delay to allow suggestion click
+                  setTimeout(() => {
+                    setShowSuggestions(false);
+                    setIsSearchFocused(false);
+                  }, 200);
+                }}
                 autoComplete="off"
               />
               {showSuggestions && <SearchSuggestions suggestions={filteredSuggestions} onSuggestionClick={handleSuggestionClick} />}
