@@ -35,7 +35,10 @@ const mapFirebaseError = (error: AuthError): string => {
       return 'An account with this email already exists.';
     case 'auth/weak-password':
       return 'Password should be at least 6 characters.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your internet connection and try again.';
     default:
+      console.error("Unhandled Firebase Auth Error:", error);
       return 'An unexpected error occurred. Please try again.';
   }
 }
@@ -47,11 +50,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (authUser) {
-        const userProfile = await getUserById(authUser.uid);
-        setUser(userProfile);
+        try {
+          const userProfile = await getUserById(authUser.uid);
+          setUser(userProfile);
+        } catch (dbError) {
+          console.error("Failed to fetch user profile:", dbError);
+          await signOut(auth);
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
+      setLoading(false);
+    },
+    // Error handler for onAuthStateChanged
+    (error) => {
+      console.error("Firebase Auth state error:", error);
+      setUser(null);
       setLoading(false);
     });
 
