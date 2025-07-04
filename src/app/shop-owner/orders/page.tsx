@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomerWithOrderInfo extends User {
   orderCount: number;
@@ -23,6 +24,7 @@ export default function CustomersWithOrdersPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<CustomerWithOrderInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkAuthAndFetch = async () => {
@@ -74,10 +76,21 @@ export default function CustomersWithOrdersPage() {
             
         setCustomers(customerList);
       } catch (error) {
-        // This block will catch the "Missing or insufficient permissions" error.
-        // It will log the error for debugging but will not crash the page.
-        // The 'customers' state will remain empty, showing the "No customers" message.
-        console.error("Firestore Error on All Orders page:", error);
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+            console.error("Firestore Security Rules Error: The current user does not have permission to list all orders and users. Please update your firestore.rules to allow 'list' access for shop-owner and developer roles on the 'orders' and 'users' collections.", error);
+            toast({
+                title: "Permission Denied",
+                description: "You do not have permission to view all orders. Please contact an administrator.",
+                variant: "destructive"
+            });
+        } else {
+            console.error("Failed to fetch customer orders:", error);
+            toast({
+                title: "Error",
+                description: "Could not load customer orders.",
+                variant: "destructive"
+            });
+        }
       } finally {
         // Ensure the loading spinner is turned off, regardless of success or a permission error.
         setLoading(false);
@@ -86,7 +99,7 @@ export default function CustomersWithOrdersPage() {
 
     checkAuthAndFetch();
 
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, toast]);
   
   if (loading || authLoading) {
     return (
