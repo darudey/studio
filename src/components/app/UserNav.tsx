@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -88,7 +87,7 @@ export default function UserNav({ newOrdersCount }: { newOrdersCount?: number })
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Shop Owner</DropdownMenuLabel>
             <DropdownMenuGroup>
-               <Link href="/shop-owner/orders">
+               <Link href="/notifications">
                 <DropdownMenuItem>
                   <Bell className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Notifications</span>
@@ -167,7 +166,7 @@ export default function UserNav({ newOrdersCount }: { newOrdersCount?: number })
                   <span>Add Product</span>
                 </DropdownMenuItem>
               </Link>
-              <Link href="/shop-owner/orders">
+              <Link href="/notifications">
                 <DropdownMenuItem>
                   <Bell className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Notifications</span>
