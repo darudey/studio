@@ -11,12 +11,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (authLoading) return;
@@ -34,10 +36,15 @@ export default function OrdersPage() {
       })
       .catch(err => {
         console.error("Failed to fetch orders:", err);
+        toast({
+            title: "Error Loading Orders",
+            description: "We couldn't load your order history. Please try again later.",
+            variant: "destructive",
+        });
         setLoading(false);
       });
 
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, toast]);
 
   if (loading || authLoading) {
     return (
