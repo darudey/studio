@@ -28,7 +28,7 @@ export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
 export const getUserById = async (id: string): Promise<User | null> => {
     const docRef = doc(db, 'users', id);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...doc.data() } as User : null;
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as User : null;
 }
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
@@ -113,7 +113,7 @@ export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
 export const getProductById = async (id: string): Promise<Product | null> => {
     const docRef = doc(db, 'products', id);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...doc.data() } as Product : null;
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Product : null;
 }
 
 export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
