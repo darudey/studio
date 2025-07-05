@@ -51,7 +51,8 @@ export default function CheckoutPage() {
           name: item.product.name,
           quantity: item.quantity,
           price: getPrice(item.product),
-          note: item.note,
+          status: 'Pending' as const,
+          ...(item.note && { note: item.note }), // Conditionally add note if it exists
         }
     });
 
