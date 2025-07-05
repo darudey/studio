@@ -13,16 +13,25 @@ export const getUsers = async (): Promise<User[]> => {
 
 export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
     if (ids.length === 0) return [];
-    // Firestore 'in' queries are limited to 30 items. We need to batch.
-    const userPromises: Promise<User[]>[] = [];
-    for (let i = 0; i < ids.length; i += 30) {
-        const chunk = ids.slice(i, i + 30);
-        if (chunk.length > 0) {
-            const q = query(usersCollection, where(documentId(), 'in', chunk));
-            userPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User))));
+    try {
+        const userPromises: Promise<User[]>[] = [];
+        // Firestore 'in' queries are limited to 30 items. We need to batch.
+        for (let i = 0; i < ids.length; i += 30) {
+            const chunk = ids.slice(i, i + 30);
+            if (chunk.length > 0) {
+                const q = query(usersCollection, where(documentId(), 'in', chunk));
+                userPromises.push(getDocs(q).then(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User))));
+            }
         }
+        return (await Promise.all(userPromises)).flat();
+    } catch (error) {
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+           console.error("Firestore Security Rules Error: Could not fetch user profiles. The current user (likely a shop-owner) does not have permission to read other user documents. Please update your firestore.rules to allow this access.", error);
+       } else {
+           console.error("Failed to fetch users by IDs:", error);
+       }
+       return []; // Return empty array to prevent crash
     }
-    return (await Promise.all(userPromises)).flat();
 };
 
 export const getUserById = async (id: string): Promise<User | null> => {
@@ -376,11 +385,20 @@ export const addNotification = async (notificationData: Omit<Notification, 'id' 
 };
 
 export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
-    const q = query(notificationsCollection, where("userId", "==", userId), firestoreLimit(50));
-    const snapshot = await getDocs(q);
-    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-    // client-side sort
-    return notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    try {
+        const q = query(notificationsCollection, where("userId", "==", userId), firestoreLimit(50));
+        const snapshot = await getDocs(q);
+        const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+        // client-side sort
+        return notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } catch (error) {
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+            console.error("Firestore Security Rules Error: Could not fetch notifications. Please ensure a logged-in user can 'list' documents from the 'notifications' collection where their UID matches the 'userId' field.", error);
+        } else {
+            console.error("Failed to fetch notifications for user:", error);
+        }
+        return [];
+    }
 };
 
 export const markUserNotificationsAsRead = async (userId: string): Promise<void> => {

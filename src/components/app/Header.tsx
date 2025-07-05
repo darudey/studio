@@ -35,20 +35,21 @@ export default function Header() {
 
   useEffect(() => {
     if (user) {
-      // Query notifications for the user.
-      // Ordering by date is removed to avoid needing a composite index in Firestore.
       const q = query(
         collection(db, "notifications"),
         where("userId", "==", user.id)
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        // Filter for unread notifications on the client side.
         const unreadDocs = snapshot.docs.filter(doc => doc.data().isRead === false);
         setUnreadCount(unreadDocs.length);
       }, (error) => {
-        console.error("Error listening for new notifications:", error);
-        setUnreadCount(0); // Reset on error
+        if (error.message.includes("Missing or insufficient permissions")) {
+            console.error("Firestore Security Rules Error: The real-time notification listener failed. This is likely because your rules for the 'notifications' collection are too restrictive. Please ensure a logged-in user has permission to 'list' documents where their UID matches the 'userId' field. This will not crash the app, but the notification badge will not update in real-time.");
+        } else {
+            console.error("Error listening for new notifications:", error);
+        }
+        setUnreadCount(0); // Reset on error to prevent a stale count
       });
 
       return () => unsubscribe();
