@@ -1,37 +1,104 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users can read any profile, update their own (but not their role), and create their own.
+  
+    // =============================================================
+    // Users Collection
+    // =============================================================
     match /users/{userId} {
-      allow read;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      // A user can update their own profile, but cannot change their role.
-      // The server-side redeemCoupon flow, using the Admin SDK, bypasses this rule to change the role.
-      allow update: if request.auth != null && request.auth.uid == userId
-                    && request.resource.data.role == resource.data.role;
-    }
+      // Anyone logged in can view user profiles. 
+      // This is needed for shop-owners to see customer details.
+      allow read: if request.auth != null;
+      
+      // A user can create their own document (on signup).
+      allow create: if request.auth.uid == userId;
 
-    // Products can be read by anyone, but only managed by developers/shop-owners.
+      // A user can update their own document.
+      // The coupon redemption logic that changes roles is handled by a secure
+      // API route using the Admin SDK, so it bypasses these client-side rules.
+      allow update: if request.auth.uid == userId;
+    }
+    
+    // =============================================================
+    // Products Collection
+    // =============================================================
     match /products/{productId} {
-      allow read;
-      allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      // Anyone can read products.
+      allow read: if true;
+      
+      // Only 'developer', 'shop-owner', or 'imager' roles can write products.
+      function isAdmin() {
+        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+        return request.auth != null && (userRole == 'developer' || userRole == 'shop-owner' || userRole == 'imager');
+      }
+      
+      allow write: if isAdmin();
     }
-
-    // Users can create/read their own orders. Admins can manage all orders.
+    
+    // =============================================================
+    // Orders Collection
+    // =============================================================
     match /orders/{orderId} {
-      allow read, create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow list, update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'];
+      function isOwner() {
+        return request.auth.uid == resource.data.userId;
+      }
+      
+      function isAdmin() {
+        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+        return request.auth != null && (userRole == 'developer' || userRole == 'shop-owner');
+      }
+
+      // A user can create their own order.
+      allow create: if request.auth.uid == request.resource.data.userId;
+      
+      // A user can read their own orders, and admins can read any order.
+      allow read: if isOwner() || isAdmin();
+      
+      // Only admins can update an order's status.
+      allow update: if isAdmin();
     }
 
-    // Coupons are managed entirely by the server.
-    // Clients cannot read or write them directly. This is secure because the redeemCoupon
-    // flow uses the Admin SDK, which bypasses these rules.
+    // =============================================================
+    // Notifications Collection
+    // =============================================================
+    match /notifications/{notificationId} {
+        function isAdmin() {
+            let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+            return request.auth != null && (userRole == 'developer' || userRole == 'shop-owner');
+        }
+
+        // A user can read their own notifications. This allows the real-time listener to work.
+        allow read: if request.auth.uid == resource.data.userId;
+        
+        // Admins can create notifications (e.g., when an order is shipped).
+        // IMPORTANT: With this rule, customers can NO LONGER create notifications for admins
+        // when they place an order. That logic should be moved to a secure backend function.
+        allow create: if isAdmin();
+        
+        // A user can only update the 'isRead' field of their own notification from false to true.
+        allow update: if request.auth.uid == resource.data.userId
+                      && "isRead" in request.resource.data
+                      && request.resource.data.keys().size() == 1
+                      && request.resource.data.isRead == true
+                      && resource.data.isRead == false;
+
+        // Nobody can delete notifications from the app.
+        allow delete: if false;
+    }
+
+    // =============================================================
+    // Coupons Collection
+    // =============================================================
     match /coupons/{couponId} {
-      allow read, update: if false;
-      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+        function isDeveloper() {
+            let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+            return request.auth != null && userRole == 'developer';
+        }
+        
+        // Only developers can manage coupons.
+        // The coupon redemption logic is handled by a secure API route using the Admin SDK,
+        // which bypasses these client-side rules.
+        allow read, write: if isDeveloper();
     }
   }
 }
