@@ -190,9 +190,11 @@ export const deleteMultipleProducts = async (productIds: string[]): Promise<void
 const ordersCollection = collection(db, 'orders');
 
 export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
-    const q = query(ordersCollection, where("userId", "==", userId), orderBy("date", "desc"));
+    const q = query(ordersCollection, where("userId", "==", userId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    // Sort on the client-side to avoid needing a composite index
+    return orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getAllOrders = async (): Promise<Order[]> => {
@@ -271,9 +273,11 @@ export const updateOrder = async (order: Order): Promise<void> => {
 const couponsCollection = collection(db, 'coupons');
 
 export const getUnusedCoupons = async (): Promise<Coupon[]> => {
-    const q = query(couponsCollection, where("isUsed", "==", false), orderBy("createdAt", "desc"));
+    const q = query(couponsCollection, where("isUsed", "==", false));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
+    const coupons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
+    // Sort on the client-side to avoid needing a composite index
+    return coupons.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
 export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon> => {
