@@ -35,8 +35,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     const q = query(usersCollection, where("email", "==", email.toLowerCase()));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as User;
+    const docSnap = snapshot.docs[0];
+    return { id: docSnap.id, ...docSnap.data() } as User;
 }
 
 export const createUserProfile = async (user: User): Promise<void> => {
@@ -57,8 +57,17 @@ export const updateUser = async (user: User): Promise<void> => {
 const productsCollection = collection(db, 'products');
 
 export const getProducts = async (): Promise<Product[]> => {
-    const snapshot = await getDocs(query(productsCollection, orderBy("createdAt", "desc")));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    try {
+        const snapshot = await getDocs(query(productsCollection, orderBy("createdAt", "desc")));
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    } catch (error) {
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+            console.error("Firestore Security Rules Error: The current user does not have permission to read the 'products' collection. Please update your firestore.rules to allow public read access for the home page, e.g., 'allow read: if true;'.", error);
+        } else {
+            console.error("Failed to fetch products:", error);
+        }
+        return []; // Return empty array to prevent crash
+    }
 };
 
 export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }: { search?: string; page?: number; limit?: number; }) => {
@@ -172,9 +181,9 @@ export const deleteMultipleProducts = async (productIds: string[]): Promise<void
 const ordersCollection = collection(db, 'orders');
 
 export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
-    const q = query(ordersCollection, where("userId", "==", userId));
+    const q = query(ordersCollection, where("userId", "==", userId), orderBy("date", "desc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
 };
 
 export const getAllOrders = async (): Promise<Order[]> => {
@@ -253,9 +262,9 @@ export const updateOrder = async (order: Order): Promise<void> => {
 const couponsCollection = collection(db, 'coupons');
 
 export const getUnusedCoupons = async (): Promise<Coupon[]> => {
-    const q = query(couponsCollection, where("isUsed", "==", false));
+    const q = query(couponsCollection, where("isUsed", "==", false), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
 };
 
 export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon> => {
@@ -265,9 +274,18 @@ export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon>
 
 // HOMEPAGE FUNCTIONS
 export const getRecommendedProducts = async (): Promise<Product[]> => {
-    const q = query(productsCollection, where("isRecommended", "==", true), firestoreLimit(10));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    try {
+        const q = query(productsCollection, where("isRecommended", "==", true), firestoreLimit(10));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    } catch (error) {
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+           console.error("Firestore Security Rules Error: The query for recommended products failed. This is likely due to either (1) your firestore.rules not allowing public reads on the 'products' collection, or (2) a missing Firestore index on the 'isRecommended' field. Please check your rules and look for an index creation link in your browser's developer console.", error);
+       } else {
+           console.error("Failed to fetch recommended products:", error);
+       }
+       return []; // Return empty array to prevent a crash
+    }
 }
 
 export const getNewestProducts = async (limitCount = 10): Promise<Product[]> => {
@@ -277,45 +295,32 @@ export const getNewestProducts = async (limitCount = 10): Promise<Product[]> => 
 }
 
 export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> => {
-    try {
-        const orders = await getAllOrders();
-        if (orders.length === 0) return [];
-
-        const productCounts = new Map<string, number>();
-        orders.forEach(order => {
-            order.items.forEach(item => {
-                productCounts.set(item.productId, (productCounts.get(item.productId) || 0) + item.quantity);
-            });
-        });
-
-        const sortedProductIds = Array.from(productCounts.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, limitCount)
-            .map(entry => entry[0]);
-        
-        if (sortedProductIds.length === 0) return [];
-
-        const trendingProducts = await getProductsByIds(sortedProductIds);
-
-        // Re-sort based on trending order
-        return trendingProducts.sort((a, b) => {
-            return sortedProductIds.indexOf(a.id) - sortedProductIds.indexOf(b.id);
-        });
-    } catch(err) {
-        console.warn("Could not calculate trending products, likely due to permissions.", err);
-        return [];
-    }
+    // This function is disabled by default because it requires insecure database rules
+    // (reading all orders). For a production app, this logic should be moved to a
+    // secure backend service (e.g., a Cloud Function) that aggregates data periodically.
+    console.warn("getTrendingProducts is disabled due to security constraints. Returning empty array.");
+    return [];
 }
 
 export const getSimilarProducts = async (category: string, excludeId: string): Promise<Product[]> => {
-    const q = query(
-        productsCollection,
-        where("category", "==", category),
-        where(documentId(), "!=", excludeId),
-        firestoreLimit(6)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    try {
+        const q = query(
+            productsCollection,
+            where("category", "==", category),
+            firestoreLimit(7) // Fetch one more to account for excluding the current product
+        );
+        const snapshot = await getDocs(q);
+        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        // Filter out the current product on the client side and limit to 6
+        return products.filter(p => p.id !== excludeId).slice(0, 6);
+    } catch (error) {
+        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+            console.error("Firestore Security Rules Error: Could not fetch similar products. This might be due to security rules or a missing index on 'category'. Please check your rules and Firestore indexes.", error);
+        } else {
+            console.error("Failed to fetch similar products:", error);
+        }
+        return [];
+    }
 }
 
 
@@ -374,6 +379,7 @@ export const getNotificationsForUser = async (userId: string): Promise<Notificat
     const q = query(notificationsCollection, where("userId", "==", userId), firestoreLimit(50));
     const snapshot = await getDocs(q);
     const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+    // client-side sort
     return notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
@@ -389,3 +395,5 @@ export const markUserNotificationsAsRead = async (userId: string): Promise<void>
     });
     await batch.commit();
 };
+
+    
