@@ -16,7 +16,7 @@ import { getProducts } from "@/lib/data";
 import { Product } from "@/types";
 import SearchSuggestions from "./SearchSuggestions";
 import AnimatedLogo from "./AnimatedLogo";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 
@@ -35,15 +35,15 @@ export default function Header() {
 
   useEffect(() => {
     if (user) {
-      // Query notifications for the user, ordered by creation date.
+      // Query notifications for the user.
+      // Ordering by date is removed to avoid needing a composite index in Firestore.
       const q = query(
         collection(db, "notifications"),
-        where("userId", "==", user.id),
-        orderBy("createdAt", "desc")
+        where("userId", "==", user.id)
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        // Filter for unread notifications on the client side to avoid needing a composite index.
+        // Filter for unread notifications on the client side.
         const unreadDocs = snapshot.docs.filter(doc => doc.data().isRead === false);
         setUnreadCount(unreadDocs.length);
       }, (error) => {

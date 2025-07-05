@@ -371,9 +371,10 @@ export const addNotification = async (notificationData: Omit<Notification, 'id' 
 };
 
 export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
-    const q = query(notificationsCollection, where("userId", "==", userId), orderBy("createdAt", "desc"), firestoreLimit(50));
+    const q = query(notificationsCollection, where("userId", "==", userId), firestoreLimit(50));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+    return notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
 export const markUserNotificationsAsRead = async (userId: string): Promise<void> => {
