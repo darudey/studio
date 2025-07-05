@@ -210,28 +210,29 @@ export const addOrder = async (orderData: Omit<Order, 'id' | 'date'>): Promise<O
     }
     const docRef = await addDoc(ordersCollection, newOrderData);
 
-    // NOTIFICATION LOGIC
-    // The following client-side notification logic is insecure because it requires the user
-    // placing the order to have permission to read all user documents to find admins.
-    // This is a security risk. In a production app, this should be handled by a
-    // secure backend service (like a Cloud Function) that triggers on new order creation.
-    /*
+    // NOTIFICATION LOGIC (Client-side implementation)
+    // WARNING: This implementation is not recommended for production as it requires
+    // insecure Firestore rules (allowing clients to list all users).
+    // A Cloud Function trigger is the recommended secure approach.
     try {
         const customer = await getUserById(orderData.userId);
-        const admins = (await getUsers()).filter(u => u.role === 'developer' || u.role === 'shop-owner');
+        const allUsers = await getUsers();
+        const admins = allUsers.filter(u => u.role === 'developer' || u.role === 'shop-owner');
         
-        for (const admin of admins) {
-            await addNotification({
+        const notificationPromises = admins.map(admin => {
+            return addNotification({
                 userId: admin.id,
                 orderId: docRef.id,
                 message: `New order #${docRef.id.substring(0,6)} placed by ${customer?.name || 'a customer'}.`,
                 link: `/shop-owner/orders/${orderData.userId}`
             });
-        }
+        });
+        await Promise.all(notificationPromises);
+
     } catch (e) {
-        console.error("Failed to create new order notification:", e);
+        // Log the error but don't let it block the user's order confirmation
+        console.error("Client-side notification creation failed. This is likely due to Firestore security rules.", e);
     }
-    */
     
     return { id: docRef.id, ...newOrderData } as Order;
 };

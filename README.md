@@ -25,39 +25,36 @@ service cloud.firestore {
     }
 
     // USERS:
-    // This rule is more secure. It explicitly separates broad 'read' (list)
-    // permissions for admins from specific 'get' permissions for users.
+    // WARNING: The `list` permission is insecure for production. It allows any
+    // logged-in user to see all other users, which is necessary for the current
+    // client-side notification logic. A secure backend function is recommended.
     match /users/{userId} {
-      // An admin can read any user document and list all users.
-      allow read: if request.auth != null && isAdmin(request.auth.uid);
-      
-      // A non-admin user can only get and update their OWN profile.
-      allow get, update: if request.auth != null && request.auth.uid == userId;
-      
-      // Only developers can create or delete user documents.
+      allow list, get: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid == userId;
       allow create, delete: if request.auth != null && isDeveloper(request.auth.uid);
     }
 
     // CARTS: This collection is not used on the backend. Cart is managed client-side in localStorage.
 
-    // ORDERS: Users can create orders for themselves. Users can read their own orders. Admins can read/update any order.
+    // ORDERS: Users can create orders for themselves. Admins and the user who owns the order can read/update it.
     match /orders/{orderId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update: if request.auth != null && (isAdmin(request.auth.uid) || request.auth.uid == resource.data.userId);
+      allow read, update: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'] || request.auth.uid == resource.data.userId);
     }
 
     // COUPONS: Only developers can create/read coupons. (Redemption is handled via a secure API endpoint).
     match /coupons/{couponId} {
         allow read, create: if request.auth != null && isDeveloper(request.auth.uid);
-        // Update is handled by the secure backend endpoint, not directly by clients.
         allow update, delete: if false;
     }
     
-    // NOTIFICATIONS: Users can read their own notifications. No one can create/update/delete notifications directly except the backend.
+    // NOTIFICATIONS:
+    // WARNING: The `create` permission is insecure for production. It allows any logged-in user
+    // to create notifications for any other user, which is needed for client-side notifications.
     match /notifications/{notificationId} {
         allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-        // Creation is handled by secure backend logic (e.g. cloud functions or app server) when an order is placed.
-        allow create, update, delete: if false;
+        allow create: if request.auth != null;
+        allow update, delete: if false;
     }
   }
 }
