@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -19,12 +18,14 @@ import AnimatedLogo from "./AnimatedLogo";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Header() {
   const { user, loading } = useAuth();
   const { cartCount } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -45,7 +46,14 @@ export default function Header() {
         setUnreadCount(unreadDocs.length);
       }, (error) => {
         if (error.message.includes("Missing or insufficient permissions")) {
-            console.error("Firestore Security Rules Error: The real-time notification listener failed. This is likely because your rules for the 'notifications' collection are too restrictive. Please ensure a logged-in user has permission to 'list' documents where their UID matches the 'userId' field. This will not crash the app, but the notification badge will not update in real-time.");
+            const errorMessage = "Firestore Security Rules Error: The real-time notification listener failed. This is likely because your rules for the 'notifications' collection are too restrictive. Please ensure a logged-in user has permission to 'list' documents where their UID matches the 'userId' field. This will not crash the app, but the notification badge will not update in real-time.";
+            console.error(errorMessage, error);
+            toast({
+              title: "Permission Error",
+              description: "Failed to listen for notifications. Check the developer console for details on how to fix your Firestore security rules.",
+              variant: "destructive",
+              duration: 120000, // Show for 2 minutes
+            });
         } else {
             console.error("Error listening for new notifications:", error);
         }
@@ -56,7 +64,7 @@ export default function Header() {
     } else {
         setUnreadCount(0);
     }
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     setIsMounted(true);
