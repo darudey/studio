@@ -211,6 +211,11 @@ export const addOrder = async (orderData: Omit<Order, 'id' | 'date'>): Promise<O
     const docRef = await addDoc(ordersCollection, newOrderData);
 
     // NOTIFICATION LOGIC
+    // The following client-side notification logic is insecure because it requires the user
+    // placing the order to have permission to read all user documents to find admins.
+    // This is a security risk. In a production app, this should be handled by a
+    // secure backend service (like a Cloud Function) that triggers on new order creation.
+    /*
     try {
         const customer = await getUserById(orderData.userId);
         const admins = (await getUsers()).filter(u => u.role === 'developer' || u.role === 'shop-owner');
@@ -226,6 +231,7 @@ export const addOrder = async (orderData: Omit<Order, 'id' | 'date'>): Promise<O
     } catch (e) {
         console.error("Failed to create new order notification:", e);
     }
+    */
     
     return { id: docRef.id, ...newOrderData } as Order;
 };

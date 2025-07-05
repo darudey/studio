@@ -24,10 +24,17 @@ service cloud.firestore {
       allow write: if request.auth != null && isAdmin(request.auth.uid);
     }
 
-    // USERS: Users can read/update their own profile. Admins can read any profile. Developers can create/delete users.
+    // USERS:
+    // This rule is more secure. It explicitly separates broad 'read' (list)
+    // permissions for admins from specific 'get' permissions for users.
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin(request.auth.uid));
-      allow update: if request.auth != null && request.auth.uid == userId;
+      // An admin can read any user document and list all users.
+      allow read: if request.auth != null && isAdmin(request.auth.uid);
+      
+      // A non-admin user can only get and update their OWN profile.
+      allow get, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Only developers can create or delete user documents.
       allow create, delete: if request.auth != null && isDeveloper(request.auth.uid);
     }
 
@@ -36,7 +43,7 @@ service cloud.firestore {
     // ORDERS: Users can create orders for themselves. Users can read their own orders. Admins can read/update any order.
     match /orders/{orderId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'] || request.auth.uid == resource.data.userId);
+      allow read, update: if request.auth != null && (isAdmin(request.auth.uid) || request.auth.uid == resource.data.userId);
     }
 
     // COUPONS: Only developers can create/read coupons. (Redemption is handled via a secure API endpoint).
