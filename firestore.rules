@@ -1,104 +1,84 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // =============================================================
-    // Users Collection
-    // =============================================================
+
+    // Helper functions to make rules reusable and readable
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isUserId(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    function getUserRole(userId) {
+      // Use .get() to read another document's data within your rules
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+    
+    function isAdmin() {
+      return isAuth() && getUserRole(request.auth.uid) in ['developer', 'shop-owner'];
+    }
+    
+    function isDeveloper() {
+        return isAuth() && getUserRole(request.auth.uid) == 'developer';
+    }
+    
+    // An 'imager' is a role that can manage products (including images)
+    function isImager() {
+        return isAuth() && getUserRole(request.auth.uid) in ['developer', 'shop-owner', 'imager'];
+    }
+
+    // --- Collection Rules ---
+
+    // USERS Collection
+    // Users can read and update their own profile.
+    // Developers can view any user's profile for administrative purposes.
+    // Any authenticated user can create their own user document upon registration.
     match /users/{userId} {
-      // Anyone logged in can view user profiles. 
-      // This is needed for shop-owners to see customer details.
-      allow read: if request.auth != null;
-      
-      // A user can create their own document (on signup).
-      allow create: if request.auth.uid == userId;
-
-      // A user can update their own document.
-      // The coupon redemption logic that changes roles is handled by a secure
-      // API route using the Admin SDK, so it bypasses these client-side rules.
-      allow update: if request.auth.uid == userId;
+      allow read: if isUserId(userId) || isDeveloper();
+      allow update: if isUserId(userId) || isDeveloper();
+      allow create: if isUserId(userId);
+      allow list: if isDeveloper(); // Only developers can list all users.
     }
-    
-    // =============================================================
-    // Products Collection
-    // =============================================================
+
+    // PRODUCTS Collection
+    // Anyone, including unauthenticated visitors, can read product information.
+    // Users with 'imager', 'shop-owner', or 'developer' roles can create, update, and delete products.
     match /products/{productId} {
-      // Anyone can read products.
       allow read: if true;
-      
-      // Only 'developer', 'shop-owner', or 'imager' roles can write products.
-      function isAdmin() {
-        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-        return request.auth != null && (userRole == 'developer' || userRole == 'shop-owner' || userRole == 'imager');
-      }
-      
-      allow write: if isAdmin();
+      allow create, update, delete: if isImager();
+    }
+
+    // ORDERS Collection
+    // Users can only read their own orders.
+    // Admins (shop-owners/developers) can read any order to manage them.
+    // Users can only create orders for themselves.
+    // Admins can update orders (e.g., to change status from 'Pending' to 'Shipped').
+    match /orders/{orderId} {
+      allow read: if isUserId(resource.data.userId) || isAdmin();
+      allow create: if isUserId(request.resource.data.userId);
+      allow update: if isAdmin();
+      allow list: if isAdmin(); // Allows admins to query and list all orders for their dashboards.
     }
     
-    // =============================================================
-    // Orders Collection
-    // =============================================================
-    match /orders/{orderId} {
-      function isOwner() {
-        return request.auth.uid == resource.data.userId;
-      }
-      
-      function isAdmin() {
-        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-        return request.auth != null && (userRole == 'developer' || userRole == 'shop-owner');
-      }
-
-      // A user can create their own order.
-      allow create: if request.auth.uid == request.resource.data.userId;
-      
-      // A user can read their own orders, and admins can read any order.
-      allow read: if isOwner() || isAdmin();
-      
-      // Only admins can update an order's status.
-      allow update: if isAdmin();
-    }
-
-    // =============================================================
-    // Notifications Collection
-    // =============================================================
-    match /notifications/{notificationId} {
-        function isAdmin() {
-            let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-            return request.auth != null && (userRole == 'developer' || userRole == 'shop-owner');
-        }
-
-        // A user can read their own notifications. This allows the real-time listener to work.
-        allow read: if request.auth.uid == resource.data.userId;
-        
-        // Admins can create notifications (e.g., when an order is shipped).
-        // IMPORTANT: With this rule, customers can NO LONGER create notifications for admins
-        // when they place an order. That logic should be moved to a secure backend function.
-        allow create: if isAdmin();
-        
-        // A user can only update the 'isRead' field of their own notification from false to true.
-        allow update: if request.auth.uid == resource.data.userId
-                      && "isRead" in request.resource.data
-                      && request.resource.data.keys().size() == 1
-                      && request.resource.data.isRead == true
-                      && resource.data.isRead == false;
-
-        // Nobody can delete notifications from the app.
-        allow delete: if false;
-    }
-
-    // =============================================================
-    // Coupons Collection
-    // =============================================================
+    // COUPONS Collection
+    // Creating, reading, and updating coupons is restricted to developers only.
+    // This is a highly sensitive administrative operation.
     match /coupons/{couponId} {
-        function isDeveloper() {
-            let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-            return request.auth != null && userRole == 'developer';
-        }
-        
-        // Only developers can manage coupons.
-        // The coupon redemption logic is handled by a secure API route using the Admin SDK,
-        // which bypasses these client-side rules.
-        allow read, write: if isDeveloper();
+        allow read, create, update: if isDeveloper();
+    }
+
+    // NOTIFICATIONS Collection
+    // A user can read or update their own notifications (e.g., to mark them as read).
+    // An admin can create a notification (e.g., for order status updates).
+    // The 'list' rule is crucial for allowing a user to query for all of their notifications.
+    match /notifications/{notificationId} {
+        allow read, update: if isUserId(resource.data.userId);
+        allow create: if isAdmin();
+        allow list: if isAuth() && request.query.where[0] == ["userId", "==", request.auth.uid];
     }
   }
 }
