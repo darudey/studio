@@ -162,60 +162,109 @@ export default function UserOrdersPage() {
                         {orders.map(order => (
                           <AccordionItem value={order.id} key={order.id}>
                               <AccordionTrigger>
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-left md:items-center w-full pr-4 text-sm">
-                                      <span className="font-medium text-left">Order #{order.id.substring(0,6)}...</span>
-                                      <span className="text-left md:text-center">{new Date(order.date).toLocaleDateString()}</span>
-                                      <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="w-fit md:justify-self-center">{order.status}</Badge>
-                                      <span className="font-semibold text-left md:text-right">₹{order.total.toFixed(2)}</span>
+                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full text-left text-sm gap-1 md:gap-4 pr-4">
+                                      <div className="flex w-full justify-between items-center">
+                                          <span className="font-medium text-foreground">Order #{order.id.substring(0,6)}...</span>
+                                          <span className="md:hidden font-semibold text-foreground">₹{order.total.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex w-full md:w-auto justify-between md:justify-end items-center gap-4 text-muted-foreground">
+                                          <span>{new Date(order.date).toLocaleDateString()}</span>
+                                          <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="w-fit justify-self-end">{order.status}</Badge>
+                                          <span className="hidden md:block font-semibold text-foreground">₹{order.total.toFixed(2)}</span>
+                                      </div>
                                   </div>
                               </AccordionTrigger>
                               <AccordionContent>
                                   <div className="grid lg:grid-cols-3 gap-6 pt-4">
                                     <div className="lg:col-span-2">
                                         <h4 className="font-semibold mb-2">Order Items</h4>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Product</TableHead>
-                                                    <TableHead>Qty</TableHead>
-                                                    <TableHead>Price</TableHead>
-                                                    <TableHead>Subtotal</TableHead>
-                                                    <TableHead className="text-right">Action</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {order.items.map((item, index) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell className={cn("font-medium align-top", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>
-                                                            {item.name}
+
+                                        {/* Mobile View: Card List */}
+                                        <div className="space-y-3 md:hidden">
+                                            {order.items.map((item, index) => (
+                                                <div key={`${item.productId}-${index}-mobile`} className="border rounded-lg p-3 space-y-3 bg-muted/20">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <p className={cn("font-medium leading-tight", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>
+                                                                {item.name}
+                                                            </p>
                                                             {item.note && (
                                                                 <p className="text-xs text-muted-foreground font-normal mt-1 italic">Note: {item.note}</p>
                                                             )}
-                                                        </TableCell>
-                                                        <TableCell>{item.quantity}</TableCell>
-                                                        <TableCell>₹{item.price.toFixed(2)}</TableCell>
-                                                        <TableCell className={cn(item.status === 'Cancelled' && 'line-through text-muted-foreground')}>₹{(item.quantity * item.price).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-right">
-                                                            <RadioGroup
-                                                                value={item.status}
-                                                                onValueChange={(value: OrderItemStatus) => handleItemStatusChange(order.id, item.productId, value)}
-                                                                disabled={order.status !== 'Pending'}
-                                                                className="flex gap-4 justify-end"
-                                                            >
-                                                                <div className="flex items-center space-x-2">
-                                                                    <RadioGroupItem value="Fulfilled" id={`fulfilled-${order.id}-${item.productId}`} />
-                                                                    <Label htmlFor={`fulfilled-${order.id}-${item.productId}`}>Done</Label>
-                                                                </div>
-                                                                <div className="flex items-center space-x-2">
-                                                                    <RadioGroupItem value="Cancelled" id={`cancelled-${order.id}-${item.productId}`} />
-                                                                    <Label htmlFor={`cancelled-${order.id}-${item.productId}`}>Cancel</Label>
-                                                                </div>
-                                                            </RadioGroup>
-                                                        </TableCell>
+                                                        </div>
+                                                        <p className={cn("font-semibold text-right pl-2", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>
+                                                            ₹{(item.quantity * item.price).toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <p className="text-muted-foreground">Qty: {item.quantity} @ ₹{item.price.toFixed(2)}</p>
+                                                        <RadioGroup
+                                                            value={item.status}
+                                                            onValueChange={(value: OrderItemStatus) => handleItemStatusChange(order.id, item.productId, value)}
+                                                            disabled={order.status !== 'Pending'}
+                                                            className="flex gap-4 justify-end"
+                                                        >
+                                                            <div className="flex items-center space-x-1.5">
+                                                                <RadioGroupItem value="Fulfilled" id={`mobile-fulfilled-${order.id}-${item.productId}`} />
+                                                                <Label htmlFor={`mobile-fulfilled-${order.id}-${item.productId}`}>Done</Label>
+                                                            </div>
+                                                            <div className="flex items-center space-x-1.5">
+                                                                <RadioGroupItem value="Cancelled" id={`mobile-cancelled-${order.id}-${item.productId}`} />
+                                                                <Label htmlFor={`mobile-cancelled-${order.id}-${item.productId}`}>Cancel</Label>
+                                                            </div>
+                                                        </RadioGroup>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Desktop View: Table */}
+                                        <div className="hidden md:block border rounded-md">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Product</TableHead>
+                                                        <TableHead>Qty</TableHead>
+                                                        <TableHead>Price</TableHead>
+                                                        <TableHead>Subtotal</TableHead>
+                                                        <TableHead className="text-right">Action</TableHead>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {order.items.map((item, index) => (
+                                                        <TableRow key={`${item.productId}-${index}-desktop`}>
+                                                            <TableCell className={cn("font-medium align-top", item.status === 'Cancelled' && 'line-through text-muted-foreground')}>
+                                                                {item.name}
+                                                                {item.note && (
+                                                                    <p className="text-xs text-muted-foreground font-normal mt-1 italic">Note: {item.note}</p>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>{item.quantity}</TableCell>
+                                                            <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                                                            <TableCell className={cn(item.status === 'Cancelled' && 'line-through text-muted-foreground')}>₹{(item.quantity * item.price).toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <RadioGroup
+                                                                    value={item.status}
+                                                                    onValueChange={(value: OrderItemStatus) => handleItemStatusChange(order.id, item.productId, value)}
+                                                                    disabled={order.status !== 'Pending'}
+                                                                    className="flex gap-4 justify-end"
+                                                                >
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="Fulfilled" id={`fulfilled-${order.id}-${item.productId}`} />
+                                                                        <Label htmlFor={`fulfilled-${order.id}-${item.productId}`}>Done</Label>
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="Cancelled" id={`cancelled-${order.id}-${item.productId}`} />
+                                                                        <Label htmlFor={`cancelled-${order.id}-${item.productId}`}>Cancel</Label>
+                                                                    </div>
+                                                                </RadioGroup>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </div>
                                     <div className="space-y-4">
                                         <Card>
@@ -272,3 +321,5 @@ export default function UserOrdersPage() {
     </div>
   );
 }
+
+    
