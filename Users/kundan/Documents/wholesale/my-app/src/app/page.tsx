@@ -14,5 +14,9 @@ export default async function Home() {
   ]);
 
   // Pass the server-fetched data as props to the client component.
-  return <ProductPage allProducts={allProducts} recommendedProducts={recommendedProducts} />;
+  return (
+    <Suspense fallback={<LoadingAnimation />}>
+      <ProductPage allProducts={allProducts} recommendedProducts={recommendedProducts} />
+    </Suspense>
+  );
 }

@@ -62,8 +62,8 @@ export function useNotifications(userId?: string) {
 
 // Products
 export function useAllProducts() {
-    const { data, error, isLoading } = useSWR('products', getProducts);
-    return { products: data, error, isLoading };
+    const { data, error, isLoading, mutate } = useSWR('products', getProducts);
+    return { products: data, error, isLoading, mutate };
 }
 
 export function useRecommendedProducts() {
