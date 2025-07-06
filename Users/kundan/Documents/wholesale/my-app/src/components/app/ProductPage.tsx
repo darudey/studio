@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { getProducts } from '@/lib/data';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
@@ -24,50 +23,28 @@ const CategoryCarouselSkeleton = () => (
 );
 
 
-export default function ProductPage({ initialRecommended }: { initialRecommended: Product[] }) {
-  // State for all products fetched on the client
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  // Loading state specifically for the client-side fetch
-  const [isLoading, setIsLoading] = useState(true);
+export default function ProductPage({ allProducts: serverProducts, initialRecommended }: { allProducts: Product[], initialRecommended: Product[] }) {
+  // State for all products, initialized with server data
+  const [allProducts, setAllProducts] = useState<Product[]>(serverProducts);
+  // Loading state specifically for the client-side fetch, now defaults to false
+  const [isLoading, setIsLoading] = useState(serverProducts.length === 0);
   
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
-
-  // Fetch all other products on the client side after the initial render
-  useEffect(() => {
-    const fetchRemainingProducts = async () => {
-        setIsLoading(true);
-        try {
-            const products = await getProducts();
-            // Filter out the recommended products to avoid duplication, in case they are also in the main list
-            const nonRecommendedProducts = products.filter(p => !initialRecommended.find(rec => rec.id === p.id));
-            setAllProducts(nonRecommendedProducts);
-        } catch (e) {
-            console.error("Failed to fetch all products:", e);
-        } finally {
-            setIsLoading(false);
-        }
-    }
-    fetchRemainingProducts();
-  }, [initialRecommended]);
   
   const allCategories = useMemo(() => {
-    // Combine categories from both initial and loaded products
-    const combinedProducts = [...initialRecommended, ...allProducts];
-    const categories = [...new Set(combinedProducts.map(p => p.category))].sort();
+    // Categories are derived from the full product list
+    const categories = [...new Set(allProducts.map(p => p.category))].sort();
     return categories;
-  }, [allProducts, initialRecommended]);
+  }, [allProducts]);
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "All" && !searchTerm.trim()) {
         return [];
     }
     
-    // Search across all products when a filter or search is active
-    const searchableProducts = [...initialRecommended, ...allProducts];
-
-    let productsToFilter = searchableProducts;
+    let productsToFilter = allProducts;
     
     if (selectedCategory !== "All") {
       productsToFilter = productsToFilter.filter(p => p.category === selectedCategory);
@@ -99,7 +76,7 @@ export default function ProductPage({ initialRecommended }: { initialRecommended
 
       return false;
     });
-  }, [allProducts, initialRecommended, selectedCategory, searchTerm]);
+  }, [allProducts, selectedCategory, searchTerm]);
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
@@ -152,7 +129,6 @@ export default function ProductPage({ initialRecommended }: { initialRecommended
              </>
           ) : (
             allCategories.map((category, index) => {
-                if (category === "Uncategorized" && !allProducts.some(p => p.category === "Uncategorized")) return null;
                 const categoryProducts = allProducts.filter(p => p.category === category);
                 if (categoryProducts.length === 0) return null;
                 // Alternate background colors for visual separation
