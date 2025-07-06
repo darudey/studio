@@ -1,51 +1,19 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { getProducts } from '@/lib/data'; // No longer need getRecommendedProducts here
+import React, { useState, useMemo } from 'react';
+// Data fetching is no longer needed here, as it's handled by the server component.
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
-import { Skeleton } from '../ui/skeleton';
 
-// A more targeted skeleton for the parts that load on the client
-function CategoriesSkeleton() {
-  return (
-    <>
-      {[...Array(2)].map((_, i) => (
-        <div key={i} className={`py-6 ${i % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]'}`}>
-            <div className="container">
-              <Skeleton className="h-8 w-48 mb-4" />
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {[...Array(4)].map((_, j) => <Skeleton key={j} className="h-72 w-full" />)}
-              </div>
-            </div>
-        </div>
-      ))}
-    </>
-  );
-}
-
-// The component now accepts initial data fetched on the server
-export default function ProductPage({ initialRecommendedProducts }: { initialRecommendedProducts: Product[] }) {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true); // This now tracks client-side fetching
+// The component now accepts all its data via props, removing the need for client-side fetching and loading states.
+export default function ProductPage({ allProducts, recommendedProducts }: { allProducts: Product[], recommendedProducts: Product[] }) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
-
-  // Fetch the rest of the products on the client-side
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const productsData = await getProducts();
-      setAllProducts(productsData);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
 
   const allCategories = useMemo(() => {
     if (!allProducts) return [];
@@ -90,6 +58,8 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
+  // Since data is pre-fetched on the server, we no longer need a loading skeleton here.
+  // The Suspense boundary on the page level handles the initial server load time.
   return (
     <div className="bg-background min-h-screen">
       <CategoryNav 
@@ -104,11 +74,7 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
              <h2 className="text-2xl font-bold tracking-tight mb-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
-            {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
-              </div>
-            ) : filteredProducts.length > 0 ? (
+            {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map((product, index) => (
                         <ProductCard key={product.id} product={product} animationIndex={index} />
@@ -125,32 +91,28 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
         // Default View
         <>
           {/* Render the "Recommended" section immediately with server-fetched data */}
-          {initialRecommendedProducts && initialRecommendedProducts.length > 0 && (
+          {recommendedProducts && recommendedProducts.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <ProductCarousel title="Daily Essentials" products={initialRecommendedProducts} />
+                      <ProductCarousel title="Daily Essentials" products={recommendedProducts} />
                   </div>
               </div>
           )}
 
-          {/* Render other categories after client-side fetch */}
-          {loading ? (
-            <CategoriesSkeleton />
-          ) : (
-            allCategories.map((category, index) => {
-                const categoryProducts = allProducts.filter(p => p.category === category);
-                if (categoryProducts.length === 0) return null;
-                // Alternate background color, ensuring "Daily Essentials" background doesn't affect the pattern
-                const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
-                return (
-                    <div key={category} className={`py-6 ${bgColor}`}>
-                        <div className="container">
-                             <ProductCarousel title={category} products={categoryProducts} />
-                        </div>
-                    </div>
-                )
-            })
-          )}
+          {/* Render other categories */}
+          {allCategories.map((category, index) => {
+              const categoryProducts = allProducts.filter(p => p.category === category);
+              if (categoryProducts.length === 0) return null;
+              // Alternate background colors for visual separation
+              const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
+              return (
+                  <div key={category} className={`py-6 ${bgColor}`}>
+                      <div className="container">
+                           <ProductCarousel title={category} products={categoryProducts} />
+                      </div>
+                  </div>
+              )
+          })}
         </>
       )}
     </div>
