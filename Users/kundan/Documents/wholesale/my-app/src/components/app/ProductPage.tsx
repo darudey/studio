@@ -1,29 +1,49 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
-// Data fetching is no longer needed here, as it's handled by the server component.
+import React, { useState, useMemo, useEffect } from 'react';
+import { getProducts } from '@/lib/data';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// The component now accepts all its data via props, removing the need for client-side fetching and loading states.
-export default function ProductPage({ allProducts, recommendedProducts }: { allProducts: Product[], recommendedProducts: Product[] }) {
+interface ProductPageProps {
+  recommendedProducts: Product[];
+  newestProducts: Product[];
+  allCategories: string[];
+}
+
+export default function ProductPage({ recommendedProducts, newestProducts, allCategories }: ProductPageProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
 
-  const allCategories = useMemo(() => {
-    if (!allProducts) return [];
-    return [...new Set(allProducts.map(p => p.category))].sort();
-  }, [allProducts]);
+  const [fullProductList, setFullProductList] = useState<Product[]>([]);
+  const [isLoadingFullList, setIsLoadingFullList] = useState(false);
+
+  const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
+
+  useEffect(() => {
+    // Lazy-load the full product list only when the user enters a filtered view
+    // and the list hasn't been loaded yet.
+    if (isFilteredView && fullProductList.length === 0 && !isLoadingFullList) {
+      setIsLoadingFullList(true);
+      getProducts().then(products => {
+        setFullProductList(products);
+        setIsLoadingFullList(false);
+      });
+    }
+  }, [isFilteredView, fullProductList.length, isLoadingFullList]);
 
   const filteredProducts = useMemo(() => {
-    if (!allProducts) return [];
+    if (!isFilteredView) return []; // Don't filter unless needed
+    if (fullProductList.length === 0) return []; // Wait for the full list to be loaded
 
-    let productsToFilter = [...allProducts];
+    let productsToFilter = [...fullProductList];
+    
     if (selectedCategory !== "All") {
       productsToFilter = productsToFilter.filter(p => p.category === selectedCategory);
     }
@@ -54,12 +74,9 @@ export default function ProductPage({ allProducts, recommendedProducts }: { allP
 
       return false;
     });
-  }, [allProducts, selectedCategory, searchTerm]);
+  }, [fullProductList, selectedCategory, searchTerm, isFilteredView]);
 
-  const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
-  // Since data is pre-fetched on the server, we no longer need a loading skeleton here.
-  // The Suspense boundary on the page level handles the initial server load time.
   return (
     <div className="bg-background min-h-screen">
       <CategoryNav 
@@ -74,7 +91,13 @@ export default function ProductPage({ allProducts, recommendedProducts }: { allP
              <h2 className="text-2xl font-bold tracking-tight mb-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
-            {filteredProducts.length > 0 ? (
+            {isLoadingFullList ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {[...Array(12)].map((_, index) => (
+                        <Skeleton key={index} className="h-72 w-full" />
+                    ))}
+                </div>
+            ) : filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map((product, index) => (
                         <ProductCard key={product.id} product={product} animationIndex={index} />
@@ -90,7 +113,6 @@ export default function ProductPage({ allProducts, recommendedProducts }: { allP
       ) : (
         // Default View
         <>
-          {/* Render the "Recommended" section immediately with server-fetched data */}
           {recommendedProducts && recommendedProducts.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
@@ -98,21 +120,14 @@ export default function ProductPage({ allProducts, recommendedProducts }: { allP
                   </div>
               </div>
           )}
-
-          {/* Render other categories */}
-          {allCategories.map((category, index) => {
-              const categoryProducts = allProducts.filter(p => p.category === category);
-              if (categoryProducts.length === 0) return null;
-              // Alternate background colors for visual separation
-              const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
-              return (
-                  <div key={category} className={`py-6 ${bgColor}`}>
-                      <div className="container">
-                           <ProductCarousel title={category} products={categoryProducts} />
-                      </div>
+          
+          {newestProducts && newestProducts.length > 0 && (
+              <div className="py-6 bg-background">
+                  <div className="container">
+                      <ProductCarousel title="New Arrivals" products={newestProducts} />
                   </div>
-              )
-          })}
+              </div>
+          )}
         </>
       )}
     </div>

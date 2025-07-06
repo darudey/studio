@@ -254,6 +254,23 @@ export const getRecommendedProducts = async (): Promise<Product[]> => {
     }
 }
 
+export const getNewestProducts = async (limitCount = 20): Promise<Product[]> => {
+    try {
+        const q = query(productsCollection, orderBy("createdAt", "desc"), firestoreLimit(limitCount));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    } catch (error) {
+        console.error("Failed to fetch newest products:", error);
+        return [];
+    }
+}
+
+export const getCategories = async (): Promise<string[]> => {
+    const products = await getProducts();
+    const categories = [...new Set(products.map(p => p.category))].sort();
+    return categories;
+}
+
 export const getSimilarProducts = async (category: string, excludeId: string): Promise<Product[]> => {
     try {
         const q = query(
