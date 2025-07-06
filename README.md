@@ -49,12 +49,14 @@ service cloud.firestore {
     }
     
     // NOTIFICATIONS:
-    // WARNING: The `create` permission is insecure for production. It allows any logged-in user
-    // to create notifications for any other user, which is needed for client-side notifications.
+    // WARNING: `create` and `list` permissions are insecure for production. They allow any logged-in user
+    // to create notifications for any other user and to query the notifications collection,
+    // which is needed for client-side notifications.
     match /notifications/{notificationId} {
-        allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow get, update: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow list: if request.auth != null;
         allow create: if request.auth != null;
-        allow update, delete: if false;
+        allow delete: if false;
     }
   }
 }
