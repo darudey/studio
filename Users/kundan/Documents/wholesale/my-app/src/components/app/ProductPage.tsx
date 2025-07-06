@@ -9,6 +9,7 @@ import CategoryNav from './CategoryNav';
 import { Skeleton } from '../ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 import { useAllProducts, useRecommendedProducts } from '@/hooks/use-swr-data';
+import { Progress } from '../ui/progress';
 
 export default function ProductPage() {
   const { products: allProducts, isLoading: productsLoading } = useAllProducts();
@@ -18,6 +19,14 @@ export default function ProductPage() {
   const searchTerm = searchParams.get('search') || '';
   
   const loading = productsLoading || recommendedLoading;
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   const allCategories = useMemo(() => {
     if (!allProducts) return [];
@@ -65,6 +74,7 @@ export default function ProductPage() {
   if (loading) {
       return (
           <div className="container py-8">
+              <Progress value={progress} className="w-[60%] mx-auto mb-8" />
               <Skeleton className="h-24 w-full" />
               <div className="py-6">
                 <Skeleton className="h-8 w-48 mb-4" />

@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUnusedCoupons } from "@/hooks/use-swr-data";
 import type { Coupon } from "@/types";
+import { Progress } from "@/components/ui/progress";
 
 export default function ManageCouponsPage() {
   const { user } = useAuth();
@@ -23,6 +24,14 @@ export default function ManageCouponsPage() {
   const { coupons, isLoading, mutate } = useUnusedCoupons();
   const [roleToGenerate, setRoleToGenerate] = useState<'shop-owner' | 'wholesaler' | 'imager'>('wholesaler');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     if (!user) {
@@ -74,6 +83,7 @@ export default function ManageCouponsPage() {
   if (isLoading) {
     return (
         <div className="container py-12">
+          <Progress value={progress} className="w-full mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="md:col-span-1">
                   <Card>

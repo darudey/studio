@@ -20,6 +20,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCustomerDetails } from "@/hooks/use-swr-data";
+import { Progress } from "@/components/ui/progress";
 
 export default function UserOrdersPage() {
   const { user: authUser } = useAuth();
@@ -29,6 +30,14 @@ export default function UserOrdersPage() {
   
   const userId = params.userId as string;
   const { customer, orders, setOrders, isLoading } = useCustomerDetails(userId);
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
   
   useEffect(() => {
     if (!authUser) {
@@ -101,6 +110,7 @@ export default function UserOrdersPage() {
   if (isLoading) {
     return (
         <div className="container py-12">
+            <Progress value={progress} className="w-[60%] mx-auto mb-8" />
             <div className="flex items-center mb-6">
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <Skeleton className="h-8 w-48 ml-4" />

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,11 +11,20 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserOrders } from "@/hooks/use-swr-data";
 import { AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { userOrders, error, isLoading } = useUserOrders(user?.id);
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (isLoading || authLoading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, authLoading]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -26,6 +35,7 @@ export default function OrdersPage() {
   if (isLoading || authLoading) {
     return (
         <div className="container py-12">
+            <Progress value={progress} className="w-[60%] mx-auto mb-8" />
             <Card>
                 <CardHeader>
                     <Skeleton className="h-8 w-48" />

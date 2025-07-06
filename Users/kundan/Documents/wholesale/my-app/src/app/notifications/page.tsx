@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,12 +12,21 @@ import { ArrowRight, BellRing, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-swr-data";
+import { Progress } from "@/components/ui/progress";
 
 export default function NotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { notifications, error, isLoading } = useNotifications(user?.id);
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (isLoading || authLoading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, authLoading]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -46,6 +55,7 @@ export default function NotificationsPage() {
       <div className="container py-12">
         <Card className="max-w-4xl mx-auto">
           <CardHeader>
+            <Progress value={progress} className="w-[60%] mx-auto mb-4" />
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-64 mt-2" />
           </CardHeader>

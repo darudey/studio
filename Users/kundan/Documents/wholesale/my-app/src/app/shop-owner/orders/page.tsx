@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,12 +9,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useCustomerOrderInfo } from "@/hooks/use-swr-data";
+import { Progress } from "@/components/ui/progress";
 
 export default function CustomersWithOrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { customers, isLoading, error } = useCustomerOrderInfo();
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (isLoading || authLoading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, authLoading]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -51,6 +60,7 @@ export default function CustomersWithOrdersPage() {
   if (isLoading || authLoading) {
     return (
         <div className="container py-12">
+          <Progress value={progress} className="w-[60%] mx-auto mb-8" />
           <Card>
             <CardHeader>
               <Skeleton className="h-8 w-48" />

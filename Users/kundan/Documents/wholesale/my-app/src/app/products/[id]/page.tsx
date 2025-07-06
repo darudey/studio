@@ -4,7 +4,7 @@
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ProductCarousel from "@/components/app/ProductCarousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useProduct, useSimilarProducts } from "@/hooks/use-swr-data";
+import { Progress } from "@/components/ui/progress";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -26,6 +27,14 @@ export default function ProductDetailPage() {
   const { similarProducts, isLoading: similarLoading } = useSimilarProducts(product?.category, product?.id);
 
   const loading = productLoading || similarLoading;
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   if (product === null && !productLoading) {
     notFound();
@@ -54,6 +63,7 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <div className="container py-8">
+        <Progress value={progress} className="w-[60%] mx-auto mb-8" />
         <Skeleton className="w-full aspect-square max-w-md mx-auto" />
         <div className="mt-6 space-y-4">
           <Skeleton className="h-8 w-3/4" />

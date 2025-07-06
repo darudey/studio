@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -10,12 +10,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAllUsers } from "@/hooks/use-swr-data";
+import { Progress } from "@/components/ui/progress";
 
 export default function ManageUsersPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { users, isLoading } = useAllUsers();
+  const [progress, setProgress] = useState(13);
+
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => setProgress(66), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     if (!user) {
@@ -33,6 +42,7 @@ export default function ManageUsersPage() {
         <div className="container py-12">
           <Card>
             <CardHeader>
+              <Progress value={progress} className="w-[60%] mx-auto mb-4" />
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-4 w-64 mt-2" />
             </CardHeader>
