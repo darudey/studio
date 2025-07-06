@@ -51,28 +51,44 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setCartItems([]);
     }
-    setLoading(false);
+    // setLoading is handled in the next effect after products are fetched.
   }, [cartStorageKey]);
 
-  // Effect to save to localStorage and fetch product details
+  // Effect to fetch product details for items in cart.
+  // This is optimized to only fetch details for new items.
   useEffect(() => {
     if (cartStorageKey) {
       localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
     }
-    
+
     const fetchProductDetails = async () => {
       setLoading(true);
-      const productIds = cartItems.map(item => item.productId);
-      if (productIds.length > 0) {
-        const products = await getProductsByIds(productIds);
-        setProductsInCart(products);
-      } else {
-        setProductsInCart([]);
+      const productIdsInCart = cartItems.map(item => item.productId);
+
+      // 1. Identify which product details are missing from our state
+      const existingProductIds = new Set(productsInCart.map(p => p.id));
+      const idsToFetch = productIdsInCart.filter(id => !existingProductIds.has(id));
+
+      // 2. Fetch only the missing details
+      let newProducts: Product[] = [];
+      if (idsToFetch.length > 0) {
+        newProducts = await getProductsByIds(idsToFetch);
       }
+
+      // 3. Combine and clean up the product list
+      // Remove products that are no longer in the cart and add the newly fetched ones
+      const finalProducts = productsInCart
+        .filter(p => productIdsInCart.includes(p.id))
+        .concat(newProducts);
+      
+      setProductsInCart(finalProducts);
       setLoading(false);
     };
 
-    fetchProductDetails();
+    if (cartStorageKey) {
+      fetchProductDetails();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItems, cartStorageKey]);
 
   const addToCart = (productId: string, quantity: number, stock: number) => {
@@ -94,7 +110,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           toast({ title: "Stock limit reached", description: `You cannot add more than ${stock} items.`, variant: "destructive" });
           return;
       }
-      const newCartItems = [...cartItems, { productId, quantity }];
+      const newCartItems = [...cartItems, { productId, quantity, note: '' }];
       setCartItems(newCartItems);
       toast({ title: "Item added to cart" });
     }
