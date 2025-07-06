@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -36,25 +37,30 @@ export default function Header() {
 
   useEffect(() => {
     if (user) {
+      // Optimized query: Fetches only unread notifications directly from Firestore.
+      // This requires a composite index on (userId, isRead).
       const q = query(
         collection(db, "notifications"),
-        where("userId", "==", user.id)
+        where("userId", "==", user.id),
+        where("isRead", "==", false)
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const unreadDocs = snapshot.docs.filter(doc => doc.data().isRead === false);
-        setUnreadCount(unreadDocs.length);
+        setUnreadCount(snapshot.size);
       }, (error) => {
         if (error.message.includes("Missing or insufficient permissions")) {
             const errorMessage = "Firestore Security Rules Error: The real-time notification listener failed. This is likely because your rules for the 'notifications' collection are too restrictive. Please ensure a logged-in user has permission to 'list' documents where their UID matches the 'userId' field. This will not crash the app, but the notification badge will not update in real-time.";
             console.error(errorMessage, error);
+        } else if (error.message.includes("The query requires an index")) {
+            console.error("Firestore Index Error: The real-time notification query failed because it needs a composite index. Please create it using the link provided in the full error message in your browser's console.", error);
             toast({
-              title: "Permission Error",
-              description: "Failed to listen for notifications. Check the developer console for details on how to fix your Firestore security rules.",
-              variant: "destructive",
-              duration: 120000, // Show for 2 minutes
+                title: "Database Index Required",
+                description: "Real-time notifications are paused. A database index is needed. Check the browser console for a link to create it.",
+                variant: "destructive",
+                duration: 120000,
             });
-        } else {
+        }
+        else {
             console.error("Error listening for new notifications:", error);
         }
         setUnreadCount(0); // Reset on error to prevent a stale count
