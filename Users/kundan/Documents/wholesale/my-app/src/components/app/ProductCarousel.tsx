@@ -26,10 +26,10 @@ export default function ProductCarousel({ title, products }: ProductCarouselProp
                 className="w-full"
             >
                 <CarouselContent className="-ml-4">
-                    {products.map((product, index) => (
+                    {products.map((product) => (
                         <CarouselItem key={product.id} className="basis-1/2 sm:basis-1/3 pl-4">
                             <div className="h-full">
-                                <ProductCard product={product} animationIndex={index} />
+                                <ProductCard product={product} />
                             </div>
                         </CarouselItem>
                     ))}

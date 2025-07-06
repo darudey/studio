@@ -10,10 +10,9 @@ import { Clock } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
-  animationIndex?: number;
 }
 
-export default function ProductCard({ product, animationIndex }: ProductCardProps) {
+export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
@@ -29,14 +28,11 @@ export default function ProductCard({ product, animationIndex }: ProductCardProp
     e.stopPropagation();
     addToCart(product.id, 1, product.stock);
   };
-  
-  const animationStyle = animationIndex !== undefined ? { animationDelay: `${animationIndex * 50}ms` } : {};
 
   return (
     <Link href={`/products/${product.id}`} className="block w-full h-full">
       <div 
-        className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80 opacity-0 animate-fade-in-up"
-        style={animationStyle}
+        className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80"
       >
         <div className="relative">
             <div className="aspect-square relative">
