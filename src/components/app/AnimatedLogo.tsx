@@ -61,7 +61,7 @@ const AnimatedLogo = () => {
 
     return (
         <div 
-            className="h-10 flex items-center justify-center cursor-pointer"
+            className="h-10 flex items-center justify-center cursor-pointer bg-white rounded-lg shadow-sm"
             style={{ width: '50px' }} // Fixed width to prevent layout shift
         >
             {isTextVisible ? (
