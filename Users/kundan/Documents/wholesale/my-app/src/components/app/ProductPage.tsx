@@ -106,7 +106,7 @@ export default function ProductPage() {
                 </div>
             )}
             
-            {allProducts && allCategories.map((category, index) => {
+            {allCategories.map((category, index) => {
                 const categoryProducts = allProducts.filter(p => p.category === category);
                 if (categoryProducts.length === 0) return null;
                 // Alternate background colors for visual separation
