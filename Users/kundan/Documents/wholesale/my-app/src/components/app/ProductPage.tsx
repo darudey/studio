@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { getProducts, getRecommendedProducts, getNewestProducts } from '@/lib/data';
+import { getProducts } from '@/lib/data';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
@@ -10,59 +10,64 @@ import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const HomePageSkeleton = () => (
-    <div className="container py-8">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-48 w-full mt-4" />
-        <Skeleton className="h-8 w-48 my-6" />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 mt-6">
-          {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+const CategoryCarouselSkeleton = () => (
+    <div className="py-6">
+        <div className="container">
+            <Skeleton className="h-8 w-48 mb-4" />
+            <div className="flex gap-4 overflow-hidden">
+                <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
+                <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
+                <Skeleton className="h-72 hidden sm:block sm:min-w-[30%]" />
+            </div>
         </div>
     </div>
 );
 
-export default function ProductPage() {
-  const [loading, setLoading] = useState(true);
+
+export default function ProductPage({ initialRecommended }: { initialRecommended: Product[] }) {
+  // State for all products fetched on the client
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
-  const [newestProducts, setNewestProducts] = useState<Product[]>([]);
+  // Loading state specifically for the client-side fetch
+  const [isLoading, setIsLoading] = useState(true);
   
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
 
+  // Fetch all other products on the client side after the initial render
   useEffect(() => {
-    const fetchHomepageData = async () => {
-        setLoading(true);
+    const fetchRemainingProducts = async () => {
+        setIsLoading(true);
         try {
-            const [products, recommended, newest] = await Promise.all([
-                getProducts(),
-                getRecommendedProducts(),
-                getNewestProducts(40)
-            ]);
-            setAllProducts(products);
-            setRecommendedProducts(recommended);
-            setNewestProducts(newest);
+            const products = await getProducts();
+            // Filter out the recommended products to avoid duplication, in case they are also in the main list
+            const nonRecommendedProducts = products.filter(p => !initialRecommended.find(rec => rec.id === p.id));
+            setAllProducts(nonRecommendedProducts);
         } catch (e) {
-            console.error("Failed to fetch homepage data:", e);
+            console.error("Failed to fetch all products:", e);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     }
-    fetchHomepageData();
-  }, []);
+    fetchRemainingProducts();
+  }, [initialRecommended]);
   
   const allCategories = useMemo(() => {
-    const categories = [...new Set(newestProducts.map(p => p.category))].sort();
+    // Combine categories from both initial and loaded products
+    const combinedProducts = [...initialRecommended, ...allProducts];
+    const categories = [...new Set(combinedProducts.map(p => p.category))].sort();
     return categories;
-  }, [newestProducts]);
+  }, [allProducts, initialRecommended]);
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "All" && !searchTerm.trim()) {
         return [];
     }
+    
+    // Search across all products when a filter or search is active
+    const searchableProducts = [...initialRecommended, ...allProducts];
 
-    let productsToFilter = [...allProducts];
+    let productsToFilter = searchableProducts;
     
     if (selectedCategory !== "All") {
       productsToFilter = productsToFilter.filter(p => p.category === selectedCategory);
@@ -94,13 +99,9 @@ export default function ProductPage() {
 
       return false;
     });
-  }, [allProducts, selectedCategory, searchTerm]);
+  }, [allProducts, initialRecommended, selectedCategory, searchTerm]);
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
-
-  if (loading) {
-      return <HomePageSkeleton />;
-  }
 
   return (
     <div className="bg-background min-h-screen">
@@ -116,7 +117,11 @@ export default function ProductPage() {
              <h2 className="text-2xl font-bold tracking-tight mb-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
-            {filteredProducts.length > 0 ? (
+            {isLoading ? (
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                </div>
+            ) : filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map((product, index) => (
                         <ProductCard key={product.id} product={product} animationIndex={index} />
@@ -132,20 +137,34 @@ export default function ProductPage() {
       ) : (
         // Default View
         <>
-          {recommendedProducts && recommendedProducts.length > 0 && (
+          {initialRecommended && initialRecommended.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <ProductCarousel title="Recommended for You" products={recommendedProducts} />
+                      <ProductCarousel title="Recommended for You" products={initialRecommended} />
                   </div>
               </div>
           )}
           
-          {newestProducts && newestProducts.length > 0 && (
-              <div className="py-6 bg-background">
-                  <div className="container">
-                      <ProductCarousel title="New Arrivals" products={newestProducts} />
-                  </div>
-              </div>
+          {isLoading ? (
+             <>
+                <CategoryCarouselSkeleton />
+                <CategoryCarouselSkeleton />
+             </>
+          ) : (
+            allCategories.map((category, index) => {
+                if (category === "Uncategorized" && !allProducts.some(p => p.category === "Uncategorized")) return null;
+                const categoryProducts = allProducts.filter(p => p.category === category);
+                if (categoryProducts.length === 0) return null;
+                // Alternate background colors for visual separation
+                const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
+                return (
+                    <div key={category} className={`py-6 ${bgColor}`}>
+                        <div className="container">
+                             <ProductCarousel title={category} products={categoryProducts} />
+                        </div>
+                    </div>
+                )
+            })
           )}
         </>
       )}
