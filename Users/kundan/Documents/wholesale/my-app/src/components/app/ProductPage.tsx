@@ -100,8 +100,8 @@ export default function ProductPage({ allProducts, recommendedProducts }: Produc
             </h2>
             {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {filteredProducts.map(product => (
-                        <ProductCard key={product.id} product={product} />
+                    {filteredProducts.map((product, index) => (
+                        <ProductCard key={product.id} product={product} animationIndex={index} />
                     ))}
                 </div>
             ) : (
