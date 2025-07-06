@@ -116,7 +116,7 @@ export default function ProductPage({ recommendedProducts, newestProducts, allCa
           {recommendedProducts && recommendedProducts.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <ProductCarousel title="Daily Essentials" products={recommendedProducts} />
+                      <ProductCarousel title="Recommended for You" products={recommendedProducts} />
                   </div>
               </div>
           )}
