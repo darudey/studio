@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { getProducts, getRecommendedProducts } from '@/lib/data';
+import { getProducts } from '@/lib/data'; // No longer need getRecommendedProducts here
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
@@ -10,43 +10,38 @@ import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
 
-function ProductsSkeleton() {
+// A more targeted skeleton for the parts that load on the client
+function CategoriesSkeleton() {
   return (
-    <div className="container py-8">
-      <Skeleton className="h-24 w-full" />
-      <div className="py-6">
-        <Skeleton className="h-8 w-48 mb-4" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+    <>
+      {[...Array(2)].map((_, i) => (
+        <div key={i} className={`py-6 ${i % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]'}`}>
+            <div className="container">
+              <Skeleton className="h-8 w-48 mb-4" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, j) => <Skeleton key={j} className="h-72 w-full" />)}
+              </div>
+            </div>
         </div>
-      </div>
-      <div className="py-6">
-        <Skeleton className="h-8 w-48 mb-4" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
-        </div>
-      </div>
-    </div>
+      ))}
+    </>
   );
 }
 
-export default function ProductPage() {
+// The component now accepts initial data fetched on the server
+export default function ProductPage({ initialRecommendedProducts }: { initialRecommendedProducts: Product[] }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // This now tracks client-side fetching
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
 
+  // Fetch the rest of the products on the client-side
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [productsData, recommendedData] = await Promise.all([
-        getProducts(),
-        getRecommendedProducts(),
-      ]);
+      const productsData = await getProducts();
       setAllProducts(productsData);
-      setRecommendedProducts(recommendedData);
       setLoading(false);
     };
     fetchData();
@@ -95,10 +90,6 @@ export default function ProductPage() {
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
-  if (loading) {
-    return <ProductsSkeleton />;
-  }
-
   return (
     <div className="bg-background min-h-screen">
       <CategoryNav 
@@ -107,35 +98,17 @@ export default function ProductPage() {
         onCategorySelect={setSelectedCategory}
       />
 
-      {!isFilteredView ? (
-        <>
-            {recommendedProducts && recommendedProducts.length > 0 && (
-                <div className="py-6 bg-[hsl(var(--section-background))]">
-                    <div className="container">
-                        <ProductCarousel title="Daily Essentials" products={recommendedProducts} />
-                    </div>
-                </div>
-            )}
-            
-            {allCategories.map((category, index) => {
-                const categoryProducts = allProducts.filter(p => p.category === category);
-                if (categoryProducts.length === 0) return null;
-                const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
-                return (
-                    <div key={category} className={`py-6 ${bgColor}`}>
-                        <div className="container">
-                             <ProductCarousel title={category} products={categoryProducts} />
-                        </div>
-                    </div>
-                )
-            })}
-        </>
-      ) : (
+      {isFilteredView ? (
+        // Filtered/Search View
         <div className="container p-4">
              <h2 className="text-2xl font-bold tracking-tight mb-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+              </div>
+            ) : filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map((product, index) => (
                         <ProductCard key={product.id} product={product} animationIndex={index} />
@@ -148,6 +121,37 @@ export default function ProductPage() {
                 </div>
             )}
         </div>
+      ) : (
+        // Default View
+        <>
+          {/* Render the "Recommended" section immediately with server-fetched data */}
+          {initialRecommendedProducts && initialRecommendedProducts.length > 0 && (
+              <div className="py-6 bg-[hsl(var(--section-background))]">
+                  <div className="container">
+                      <ProductCarousel title="Daily Essentials" products={initialRecommendedProducts} />
+                  </div>
+              </div>
+          )}
+
+          {/* Render other categories after client-side fetch */}
+          {loading ? (
+            <CategoriesSkeleton />
+          ) : (
+            allCategories.map((category, index) => {
+                const categoryProducts = allProducts.filter(p => p.category === category);
+                if (categoryProducts.length === 0) return null;
+                // Alternate background color, ensuring "Daily Essentials" background doesn't affect the pattern
+                const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
+                return (
+                    <div key={category} className={`py-6 ${bgColor}`}>
+                        <div className="container">
+                             <ProductCarousel title={category} products={categoryProducts} />
+                        </div>
+                    </div>
+                )
+            })
+          )}
+        </>
       )}
     </div>
   );
