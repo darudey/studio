@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { getProducts } from '@/lib/data';
+import { getProducts, getRecommendedProducts, getNewestProducts } from '@/lib/data';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
@@ -10,39 +10,59 @@ import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface ProductPageProps {
-  recommendedProducts: Product[];
-  newestProducts: Product[];
-  allCategories: string[];
-}
+const HomePageSkeleton = () => (
+    <div className="container py-8">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-48 w-full mt-4" />
+        <Skeleton className="h-8 w-48 my-6" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 mt-6">
+          {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+        </div>
+    </div>
+);
 
-export default function ProductPage({ recommendedProducts, newestProducts, allCategories }: ProductPageProps) {
+export default function ProductPage() {
+  const [loading, setLoading] = useState(true);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [newestProducts, setNewestProducts] = useState<Product[]>([]);
+  
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
 
-  const [fullProductList, setFullProductList] = useState<Product[]>([]);
-  const [isLoadingFullList, setIsLoadingFullList] = useState(false);
-
-  const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
-
   useEffect(() => {
-    // Lazy-load the full product list only when the user enters a filtered view
-    // and the list hasn't been loaded yet.
-    if (isFilteredView && fullProductList.length === 0 && !isLoadingFullList) {
-      setIsLoadingFullList(true);
-      getProducts().then(products => {
-        setFullProductList(products);
-        setIsLoadingFullList(false);
-      });
+    const fetchHomepageData = async () => {
+        setLoading(true);
+        try {
+            const [products, recommended, newest] = await Promise.all([
+                getProducts(),
+                getRecommendedProducts(),
+                getNewestProducts(40)
+            ]);
+            setAllProducts(products);
+            setRecommendedProducts(recommended);
+            setNewestProducts(newest);
+        } catch (e) {
+            console.error("Failed to fetch homepage data:", e);
+        } finally {
+            setLoading(false);
+        }
     }
-  }, [isFilteredView, fullProductList.length, isLoadingFullList]);
+    fetchHomepageData();
+  }, []);
+  
+  const allCategories = useMemo(() => {
+    const categories = [...new Set(newestProducts.map(p => p.category))].sort();
+    return categories;
+  }, [newestProducts]);
 
   const filteredProducts = useMemo(() => {
-    if (!isFilteredView) return []; // Don't filter unless needed
-    if (fullProductList.length === 0) return []; // Wait for the full list to be loaded
+    if (selectedCategory === "All" && !searchTerm.trim()) {
+        return [];
+    }
 
-    let productsToFilter = [...fullProductList];
+    let productsToFilter = [...allProducts];
     
     if (selectedCategory !== "All") {
       productsToFilter = productsToFilter.filter(p => p.category === selectedCategory);
@@ -74,8 +94,13 @@ export default function ProductPage({ recommendedProducts, newestProducts, allCa
 
       return false;
     });
-  }, [fullProductList, selectedCategory, searchTerm, isFilteredView]);
+  }, [allProducts, selectedCategory, searchTerm]);
 
+  const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
+
+  if (loading) {
+      return <HomePageSkeleton />;
+  }
 
   return (
     <div className="bg-background min-h-screen">
@@ -91,13 +116,7 @@ export default function ProductPage({ recommendedProducts, newestProducts, allCa
              <h2 className="text-2xl font-bold tracking-tight mb-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
-            {isLoadingFullList ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {[...Array(12)].map((_, index) => (
-                        <Skeleton key={index} className="h-72 w-full" />
-                    ))}
-                </div>
-            ) : filteredProducts.length > 0 ? (
+            {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map((product, index) => (
                         <ProductCard key={product.id} product={product} animationIndex={index} />
