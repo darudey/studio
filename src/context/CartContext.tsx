@@ -55,38 +55,35 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cartStorageKey]);
 
   // Effect to fetch product details for items in cart.
-  // This is optimized to only fetch details for new items.
   useEffect(() => {
     if (cartStorageKey) {
       localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
     }
 
-    const fetchProductDetails = async () => {
-      setLoading(true);
-      const productIdsInCart = cartItems.map(item => item.productId);
-
-      // 1. Identify which product details are missing from our state
-      const existingProductIds = new Set(productsInCart.map(p => p.id));
-      const idsToFetch = productIdsInCart.filter(id => !existingProductIds.has(id));
-
-      // 2. Fetch only the missing details
-      let newProducts: Product[] = [];
-      if (idsToFetch.length > 0) {
-        newProducts = await getProductsByIds(idsToFetch);
-      }
-
-      // 3. Combine and clean up the product list
-      // Remove products that are no longer in the cart and add the newly fetched ones
-      const finalProducts = productsInCart
-        .filter(p => productIdsInCart.includes(p.id))
-        .concat(newProducts);
-      
-      setProductsInCart(finalProducts);
-      setLoading(false);
+    const syncProducts = async () => {
+        setLoading(true);
+        const productIdsInCart = new Set(cartItems.map(item => item.productId));
+        
+        // Remove products from state that are no longer in the cart
+        const updatedProducts = productsInCart.filter(p => productIdsInCart.has(p.id));
+        
+        // Find which product details we still need to fetch
+        const existingProductIds = new Set(updatedProducts.map(p => p.id));
+        const idsToFetch = cartItems
+            .map(item => item.productId)
+            .filter(id => !existingProductIds.has(id));
+            
+        if (idsToFetch.length > 0) {
+            const newProducts = await getProductsByIds(idsToFetch);
+            setProductsInCart([...updatedProducts, ...newProducts]);
+        } else {
+            setProductsInCart(updatedProducts);
+        }
+        setLoading(false);
     };
-
+    
     if (cartStorageKey) {
-      fetchProductDetails();
+        syncProducts();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItems, cartStorageKey]);

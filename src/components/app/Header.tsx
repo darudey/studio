@@ -20,6 +20,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useDebounce } from "use-debounce";
 
 export default function Header() {
   const { user, loading } = useAuth();
@@ -29,6 +30,7 @@ export default function Header() {
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -95,13 +97,13 @@ export default function Header() {
   }
 
   const filteredSuggestions = useMemo(() => {
-    if (!searchTerm.trim() || !showSuggestions) {
+    if (!debouncedSearchTerm.trim() || !showSuggestions) {
       return [];
     }
 
-    const lowercasedFilter = searchTerm.toLowerCase();
+    const lowercasedFilter = debouncedSearchTerm.toLowerCase();
     const getConsonants = (str: string) => str.toLowerCase().replace(/[^bcdfghjklmnpqrstvwxyz]/gi, '');
-    const consonantFilter = getConsonants(searchTerm);
+    const consonantFilter = getConsonants(debouncedSearchTerm);
 
     return allProducts
       .filter(product => {
@@ -120,7 +122,7 @@ export default function Header() {
         return false;
       })
       .slice(0, 10);
-  }, [searchTerm, allProducts, showSuggestions]);
+  }, [debouncedSearchTerm, allProducts, showSuggestions]);
 
 
   return (
