@@ -1,22 +1,56 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { getProducts, getRecommendedProducts } from '@/lib/data';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
+import { Skeleton } from '../ui/skeleton';
 
-interface ProductPageProps {
-  allProducts: Product[];
-  recommendedProducts: Product[];
+function ProductsSkeleton() {
+  return (
+    <div className="container py-8">
+      <Skeleton className="h-24 w-full" />
+      <div className="py-6">
+        <Skeleton className="h-8 w-48 mb-4" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+        </div>
+      </div>
+      <div className="py-6">
+        <Skeleton className="h-8 w-48 mb-4" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default function ProductPage({ allProducts, recommendedProducts }: ProductPageProps) {
+export default function ProductPage() {
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const [productsData, recommendedData] = await Promise.all([
+        getProducts(),
+        getRecommendedProducts(),
+      ]);
+      setAllProducts(productsData);
+      setRecommendedProducts(recommendedData);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   const allCategories = useMemo(() => {
     if (!allProducts) return [];
@@ -61,6 +95,10 @@ export default function ProductPage({ allProducts, recommendedProducts }: Produc
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
+  if (loading) {
+    return <ProductsSkeleton />;
+  }
+
   return (
     <div className="bg-background min-h-screen">
       <CategoryNav 
@@ -82,7 +120,6 @@ export default function ProductPage({ allProducts, recommendedProducts }: Produc
             {allCategories.map((category, index) => {
                 const categoryProducts = allProducts.filter(p => p.category === category);
                 if (categoryProducts.length === 0) return null;
-                // Alternate background colors for visual separation
                 const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
                 return (
                     <div key={category} className={`py-6 ${bgColor}`}>
