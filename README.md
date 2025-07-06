@@ -39,7 +39,7 @@ service cloud.firestore {
     // ORDERS: Users can create orders for themselves. Admins and the user who owns the order can read/update it.
     match /orders/{orderId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['developer', 'shop-owner'] || request.auth.uid == resource.data.userId);
+      allow read, update: if request.auth != null && (isAdmin(request.auth.uid) || request.auth.uid == resource.data.userId);
     }
 
     // COUPONS: Only developers can create/read coupons. (Redemption is handled via a secure API endpoint).
