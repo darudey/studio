@@ -148,7 +148,7 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
             categories
             .filter(category => category !== 'Daily Essentials')
             .map((category, index) => {
-              // Get products for this category, EXCLUDING newest ones to avoid duplicates.
+              // Get products for this category, EXCLUDING the ones we already loaded.
               const categoryProducts = allProducts.filter(p => p.category === category && !initialProductIds.has(p.id));
               if (categoryProducts.length === 0) return null;
               
