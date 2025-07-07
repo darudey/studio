@@ -23,7 +23,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
-        <h1 style={{ color: 'red', backgroundColor: 'yellow', padding: '1rem', textAlign: 'center', fontSize: '2rem', fontWeight: 'bold' }}>HELLO FROM SRC/APP/LAYOUT.TSX</h1>
         <AuthProvider>
           <CartProvider>
             <div className="relative flex min-h-screen flex-col">
