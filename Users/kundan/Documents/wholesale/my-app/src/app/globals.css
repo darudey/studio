@@ -4,11 +4,8 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    background-color: red !important;
-  }
   :root {
-    --background: 48 100% 98%;
+    --background: 240 100% 50%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -63,5 +60,14 @@
     --chart-5: 340 75% 55%;
     --header-background: 45 100% 50%;
     --section-background: 222.2 84% 10%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

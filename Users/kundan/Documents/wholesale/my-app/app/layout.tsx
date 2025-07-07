@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Wholesale Hub",
+  title: "ROOT APP LAYOUT IS KING",
   description: "Your one-stop shop for everything.",
 };
 

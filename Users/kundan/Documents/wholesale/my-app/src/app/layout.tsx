@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Kundan Mart",
+  title: "SRC APP LAYOUT IS THE BOSS",
   description: "Your one-stop shop for everything.",
 };
 
