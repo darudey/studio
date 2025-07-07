@@ -12,5 +12,3 @@ export default async function Home() {
   // will be fetched on the client side after this initial view has loaded.
   return <ProductPage initialDailyEssentials={initialDailyEssentials} />;
 }
-
-    
