@@ -8,30 +8,24 @@ import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getProducts, getRecommendedProducts } from '@/lib/data';
+import { getProducts } from '@/lib/data';
 
-const ProductPageSkeleton = () => (
-    <div className="container py-8">
-        <Skeleton className="h-24 w-full mb-4" /> {/* CategoryNav skeleton */}
-        <Skeleton className="h-8 w-48 mb-4" /> {/* Carousel Title skeleton */}
-        <div className="flex gap-4 overflow-hidden mb-8">
-            <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
-            <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
-            <Skeleton className="h-72 hidden sm:block sm:min-w-[30%]" />
-        </div>
-        <Skeleton className="h-8 w-48 mb-4" /> {/* Carousel Title skeleton */}
-        <div className="flex gap-4 overflow-hidden">
-            <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
-            <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
-            <Skeleton className="h-72 hidden sm:block sm:min-w-[30%]" />
+const ProductCarouselSkeleton = () => (
+    <div className="py-6">
+        <div className="container">
+            <Skeleton className="h-8 w-48 mb-4" /> {/* Carousel Title skeleton */}
+            <div className="flex gap-4 overflow-hidden">
+                <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
+                <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
+                <Skeleton className="h-72 hidden sm:block sm:min-w-[30%]" />
+            </div>
         </div>
     </div>
 );
 
 
-export default function ProductPage() {
+export default function ProductPage({ initialRecommendedProducts }: { initialRecommendedProducts: Product[] }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -39,27 +33,23 @@ export default function ProductPage() {
   const searchTerm = searchParams.get('search') || '';
   
   useEffect(() => {
-    const fetchAllData = async () => {
-        setIsLoading(true);
+    // This effect runs on the client after the initial render to fetch the full catalog.
+    const fetchAllProducts = async () => {
+        setIsLoading(true); // Set loading state for the main catalog fetch
         try {
-            const [products, recommended] = await Promise.all([
-                getProducts(),
-                getRecommendedProducts(),
-            ]);
+            const products = await getProducts();
             setAllProducts(products);
-            setRecommendedProducts(recommended);
         } catch (error) {
-            console.error("Failed to fetch products:", error);
+            console.error("Failed to fetch all products:", error);
         } finally {
             setIsLoading(false);
         }
     };
-    fetchAllData();
+    fetchAllProducts();
   }, []);
   
-  const allCategories = useMemo(() => {
-    const categories = [...new Set(allProducts.map(p => p.category))].sort();
-    return categories;
+  const categories = useMemo(() => {
+    return [...new Set(allProducts.map(p => p.category))].sort();
   }, [allProducts]);
 
   const filteredProducts = useMemo(() => {
@@ -103,14 +93,10 @@ export default function ProductPage() {
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
-  if (isLoading) {
-    return <ProductPageSkeleton />;
-  }
-
   return (
     <div className="bg-background min-h-screen">
       <CategoryNav 
-        categories={allCategories}
+        categories={categories}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
       />
@@ -120,7 +106,11 @@ export default function ProductPage() {
              <h2 className="text-2xl font-bold tracking-tight mb-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
-            {filteredProducts.length > 0 ? (
+            {isLoading ? (
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                </div>
+            ) : filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map((product) => (
                         <ProductCard key={product.id} product={product} />
@@ -135,18 +125,31 @@ export default function ProductPage() {
         </div>
       ) : (
         <>
-          {recommendedProducts && recommendedProducts.length > 0 && (
+          {/* SECTION 1: Recommended Products (loads instantly from server props) */}
+          {initialRecommendedProducts && initialRecommendedProducts.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <ProductCarousel title="Recommended for You" products={recommendedProducts} />
+                      <ProductCarousel title="Recommended for You" products={initialRecommendedProducts} />
                   </div>
               </div>
           )}
           
-          {allCategories.map((category, index) => {
-              const categoryProducts = allProducts.filter(p => p.category === category);
+          {/* SECTION 2: Other Categories (loads from client-side fetch) */}
+          {isLoading ? (
+            // Show skeletons while the main catalog is loading.
+            <>
+                <ProductCarouselSkeleton />
+                <ProductCarouselSkeleton />
+            </>
+          ) : (
+            // Once loaded, render the remaining categories.
+            categories.map((category, index) => {
+              // Get products for this category, EXCLUDING recommended ones to avoid duplicates.
+              const categoryProducts = allProducts.filter(p => p.category === category && !p.isRecommended);
               if (categoryProducts.length === 0) return null;
+              
               const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
+              
               return (
                   <div key={category} className={`py-6 ${bgColor}`}>
                       <div className="container">
@@ -154,9 +157,11 @@ export default function ProductPage() {
                       </div>
                   </div>
               )
-          })}
+            })
+          )}
         </>
       )}
     </div>
   );
 }
+

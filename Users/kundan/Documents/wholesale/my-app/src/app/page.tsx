@@ -1,9 +1,13 @@
 
 import ProductPage from "@/components/app/ProductPage";
+import { getRecommendedProducts } from "@/lib/data";
 
 // This is a Server Component. It fetches only the essential data on the server.
-export default function Home() {
+export default async function Home() {
+  // Pre-fetch only the recommended products for the initial, fast load.
+  const recommendedProducts = await getRecommendedProducts();
+  
   // Pass this initial data to the client component. The rest of the data
   // will be fetched on the client side after this initial view has loaded.
-  return <ProductPage />;
+  return <ProductPage initialRecommendedProducts={recommendedProducts} />;
 }
