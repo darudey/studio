@@ -241,9 +241,11 @@ export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon>
 // HOMEPAGE FUNCTIONS
 export const getProductsByCategoryName = async (categoryName: string, limitCount = 10): Promise<Product[]> => {
     try {
+        // This query now perfectly matches the composite index for maximum performance.
         const q = query(
             productsCollection,
             where("category", "==", categoryName),
+            orderBy("createdAt", "desc"),
             firestoreLimit(limitCount)
         );
         const snapshot = await getDocs(q);
@@ -252,7 +254,7 @@ export const getProductsByCategoryName = async (categoryName: string, limitCount
        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
            console.error(`Firestore Security Rules Error: The query for category "${categoryName}" failed. Please check your Firestore rules.`, error);
        } else if (error instanceof Error && error.message.includes("The query requires an index")) {
-            console.error(`Firestore Index Required: The query for category "${categoryName}" failed. Please create a composite index for the 'products' collection on 'category'. The link should be in your browser console.`, error);
+            console.error(`Firestore Index Required: The query for category "${categoryName}" failed because a composite index is missing. Please create it in your Firebase console. The link should be in your browser's developer console error logs.`, error);
        } else {
            console.error(`Failed to fetch products for category "${categoryName}":`, error);
        }
