@@ -144,7 +144,12 @@ export default function ProductPage({
           {initialDailyEssentials && initialDailyEssentials.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <ProductCarousel title="Daily Essentials" products={initialDailyEssentials} />
+                      <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {initialDailyEssentials.map((product) => (
+                              <ProductCard key={product.id} product={product} />
+                          ))}
+                      </div>
                   </div>
               </div>
           )}
@@ -165,7 +170,7 @@ export default function ProductPage({
               const categoryProducts = allProducts.filter(p => p.category === category && !initialProductIds.has(p.id));
               if (categoryProducts.length === 0) return null;
               
-              const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
+              const bgColor = index % 2 !== 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
               
               return (
                   <div key={category} className={`py-6 ${bgColor}`}>
@@ -181,3 +186,5 @@ export default function ProductPage({
     </div>
   );
 }
+
+    
