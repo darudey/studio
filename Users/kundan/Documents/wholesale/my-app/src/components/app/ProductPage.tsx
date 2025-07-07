@@ -24,7 +24,14 @@ export default function ProductPage({
   const searchTerm = searchParams.get('search') || '';
   
   const categories = useMemo(() => {
-    return ["All", ...new Set(allProducts.map(p => p.category))].sort();
+    // Start with "All", then add all unique categories from the fetched products
+    const uniqueCategories = ["All", ...new Set(allProducts.map(p => p.category))];
+    // Custom sort to ensure "All" is first, then alphabetical
+    return uniqueCategories.sort((a, b) => {
+      if (a === 'All') return -1;
+      if (b === 'All') return 1;
+      return a.localeCompare(b);
+    });
   }, [allProducts]);
 
   useEffect(() => {
@@ -48,6 +55,7 @@ export default function ProductPage({
   
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "All" && !searchTerm.trim()) {
+        // This case is handled by the main view, not the filtered view.
         return [];
     }
     
@@ -87,12 +95,11 @@ export default function ProductPage({
 
   const allOtherProducts = useMemo(() => {
     if (isLoading) return [];
-    const dailyEssentialsCategoryName = "daily essentials";
-    // Get all products that are NOT in the "daily essentials" category
-    return allProducts.filter(p => 
-        p.category.toLowerCase() !== dailyEssentialsCategoryName
-    );
-  }, [isLoading, allProducts]);
+    // The initialDailyEssentials are pre-fetched, so we create a Set of their IDs for efficient filtering.
+    const dailyEssentialsIds = new Set(initialDailyEssentials.map(p => p.id));
+    // Get all products that are NOT in the initial "daily essentials" list
+    return allProducts.filter(p => !dailyEssentialsIds.has(p.id));
+  }, [isLoading, allProducts, initialDailyEssentials]);
 
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
@@ -172,5 +179,3 @@ export default function ProductPage({
     </div>
   );
 }
-
-    

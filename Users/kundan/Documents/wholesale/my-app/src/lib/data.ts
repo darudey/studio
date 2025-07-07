@@ -403,5 +403,3 @@ export const markUserNotificationsAsRead = async (userId: string): Promise<void>
         }
     }
 };
-
-    
