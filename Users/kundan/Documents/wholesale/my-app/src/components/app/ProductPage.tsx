@@ -11,10 +11,10 @@ import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
 export default function ProductPage({ 
-  initialRecommendedProducts,
+  initialDailyEssentials,
   initialCategories,
 }: { 
-  initialRecommendedProducts: Product[],
+  initialDailyEssentials: Product[],
   initialCategories: string[],
 }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -25,7 +25,7 @@ export default function ProductPage({
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
   
-  // The category list is now initialized with server-fetched data for a fast first paint.
+  // The category list is now initialized with server-fetched data.
   // It will be dynamically updated if client-side fetches reveal new categories.
   const categories = useMemo(() => {
     const combinedCategories = new Set(['All', ...initialCategories, ...allProducts.map(p => p.category)]);
@@ -37,7 +37,7 @@ export default function ProductPage({
   }, [allProducts, initialCategories]);
 
   useEffect(() => {
-    // This effect runs on the client after the initial render to fetch the full product catalog.
+    // This effect runs on the client to fetch the full product catalog.
     const fetchAllProducts = async () => {
         setIsLoading(true);
         const timer = setTimeout(() => setProgress(66), 500);
@@ -97,11 +97,11 @@ export default function ProductPage({
 
   const allOtherProducts = useMemo(() => {
     if (isLoading) return [];
-    // The initialRecommendedProducts are pre-fetched, so we create a Set of their IDs for efficient filtering.
-    const recommendedIds = new Set(initialRecommendedProducts.map(p => p.id));
-    // Get all products that are NOT in the initial "recommended" list
-    return allProducts.filter(p => !recommendedIds.has(p.id));
-  }, [isLoading, allProducts, initialRecommendedProducts]);
+    // The initialDailyEssentials are pre-fetched, so we create a Set of their IDs for efficient filtering.
+    const dailyEssentialsIds = new Set(initialDailyEssentials.map(p => p.id));
+    // Get all products that are NOT in the initial "Daily Essentials" list
+    return allProducts.filter(p => !dailyEssentialsIds.has(p.id));
+  }, [isLoading, allProducts, initialDailyEssentials]);
 
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
@@ -139,13 +139,13 @@ export default function ProductPage({
         </div>
       ) : (
         <>
-          {/* SECTION 1: Recommended Products (loads instantly from server props) */}
-          {initialRecommendedProducts && initialRecommendedProducts.length > 0 && (
+          {/* SECTION 1: Daily Essentials (loads instantly from server props) */}
+          {initialDailyEssentials && initialDailyEssentials.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <h2 className="text-2xl font-bold tracking-tight mb-4">Recommended For You</h2>
+                      <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {initialRecommendedProducts.map((product) => (
+                          {initialDailyEssentials.map((product) => (
                               <ProductCard key={product.id} product={product} />
                           ))}
                       </div>

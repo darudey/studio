@@ -1,12 +1,12 @@
 
 import ProductPage from "@/components/app/ProductPage";
-import { getRecommendedProducts, getCategories } from "@/lib/data";
+import { getProductsByCategoryName, getCategories } from "@/lib/data";
 
 // This is a Server Component. It fetches only the essential data on the server.
 export default async function Home() {
-  // Pre-fetch recommended products and the category list for a fast initial load.
-  const [initialRecommendedProducts, initialCategories] = await Promise.all([
-    getRecommendedProducts(),
+  // Pre-fetch "Daily Essentials" products and the category list for a fast initial load.
+  const [initialDailyEssentials, initialCategories] = await Promise.all([
+    getProductsByCategoryName("Daily Essentials", 10),
     getCategories(),
   ]);
   
@@ -14,7 +14,7 @@ export default async function Home() {
   // will be fetched on the client side after this initial view has loaded.
   return (
     <ProductPage 
-      initialRecommendedProducts={initialRecommendedProducts}
+      initialDailyEssentials={initialDailyEssentials}
       initialCategories={initialCategories}
     />
   );
