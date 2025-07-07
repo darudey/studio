@@ -60,7 +60,7 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
     let productsToFilter = allProducts;
     
     if (selectedCategory !== "All") {
-      productsToFilter = productsToFilter.filter(p => p.category === selectedCategory);
+      productsToFilter = productsToFilter.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
     }
 
     if (!searchTerm.trim()) {
@@ -146,7 +146,7 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
           ) : (
             // Once loaded, render the remaining categories.
             categories
-            .filter(category => category !== 'Daily Essentials')
+            .filter(category => category.toLowerCase() !== 'daily essentials')
             .map((category, index) => {
               // Get products for this category, EXCLUDING the ones we already loaded.
               const categoryProducts = allProducts.filter(p => p.category === category && !initialProductIds.has(p.id));
