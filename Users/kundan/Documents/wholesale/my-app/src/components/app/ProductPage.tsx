@@ -4,25 +4,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
-import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
-
-const ProductCarouselSkeleton = () => (
-    <div className="py-6">
-        <div className="container">
-            <Skeleton className="h-8 w-48 mb-4" /> {/* Carousel Title skeleton */}
-            <div className="flex gap-4 overflow-hidden">
-                <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
-                <Skeleton className="h-72 min-w-[45%] sm:min-w-[30%]" />
-                <Skeleton className="h-72 hidden sm:block sm:min-w-[30%]" />
-            </div>
-        </div>
-    </div>
-);
 
 export default function ProductPage({ 
   initialDailyEssentials, 
@@ -103,9 +89,17 @@ export default function ProductPage({
     });
   }, [allProducts, selectedCategory, searchTerm]);
 
+  const allOtherProducts = useMemo(() => {
+    if (isLoading) return [];
+    const dailyEssentialsCategoryName = "daily essentials";
+    // Get all products that are NOT in the "daily essentials" category
+    return allProducts.filter(p => 
+        p.category.toLowerCase() !== dailyEssentialsCategoryName
+    );
+  }, [isLoading, allProducts]);
+
+
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
-  
-  const initialProductIds = useMemo(() => new Set(initialDailyEssentials.map(p => p.id)), [initialDailyEssentials]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -122,11 +116,11 @@ export default function ProductPage({
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
             {isLoading ? (
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
                 </div>
             ) : filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {filteredProducts.map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
@@ -154,37 +148,32 @@ export default function ProductPage({
               </div>
           )}
           
-          {/* SECTION 2: Other Categories (loads from client-side fetch) */}
-          {isLoading ? (
-            // Show skeletons while the main catalog is loading.
-            <>
-                <ProductCarouselSkeleton />
-                <ProductCarouselSkeleton />
-            </>
-          ) : (
-            // Once loaded, render the remaining categories.
-            categories
-            .filter(category => category.toLowerCase() !== 'daily essentials')
-            .map((category, index) => {
-              // Get products for this category, EXCLUDING the ones we already loaded.
-              const categoryProducts = allProducts.filter(p => p.category === category && !initialProductIds.has(p.id));
-              if (categoryProducts.length === 0) return null;
-              
-              const bgColor = index % 2 !== 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
-              
-              return (
-                  <div key={category} className={`py-6 ${bgColor}`}>
-                      <div className="container">
-                           <ProductCarousel title={category} products={categoryProducts} />
-                      </div>
+          {/* SECTION 2: All Other Products */}
+          <div className="py-6">
+            <div className="container">
+              <h2 className="text-2xl font-bold tracking-tight mb-4">All Products</h2>
+              {isLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
                   </div>
-              )
-            })
-          )}
+              ) : (
+                allOtherProducts.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {allOtherProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10">
+                      <p className="text-muted-foreground">No other products to display.</p>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
         </>
       )}
     </div>
   );
 }
 
-    
