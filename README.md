@@ -10,7 +10,7 @@ service cloud.firestore {
 
     // Helper function to check if a user is an admin
     function isAdmin(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role in ['developer', 'shop-owner', 'imager'];
+      return get(/databases/$(database)/documents/users/$(userId)).data.role in ['d/home/user/studio/Users/kundan/Documents/wholesale/my-app/appeveloper', 'shop-owner', 'imager'];
     }
 
     // Helper function to check if a user is a developer
