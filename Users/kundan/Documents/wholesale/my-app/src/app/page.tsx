@@ -1,14 +1,12 @@
-
-import ProductPage from "@/components/app/ProductPage";
-import { getProductsByCategoryName } from "@/lib/data";
-
-// This is a Server Component. It fetches only the essential data on the server.
-export default async function Home() {
-  // Pre-fetch only the "Daily Essentials" products for the initial, fast load.
-  // This query is now fast because of the composite index on (category, createdAt).
-  const initialDailyEssentials = await getProductsByCategoryName("Daily Essentials", 10);
-  
-  // Pass this initial data to the client component. The rest of the data
-  // will be fetched on the client side after this initial view has loaded.
-  return <ProductPage initialDailyEssentials={initialDailyEssentials} />;
+export default function Home() {
+  return (
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <div className="text-center p-8 bg-yellow-200 border-4 border-dashed border-red-500 rounded-lg">
+        <h1 className="text-4xl font-bold text-red-600">-- HOME PAGE TEST --</h1>
+        <p className="mt-4 text-lg text-black">
+          If you are seeing this, <strong className="font-bold">src/app/page.tsx</strong> is the correct homepage file.
+        </p>
+      </div>
+    </div>
+  );
 }
