@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
-export default function ProductPage() {
+export default function ProductPage({ initialDailyEssentials }: { initialDailyEssentials: Product[] }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(13);
@@ -20,11 +20,12 @@ export default function ProductPage() {
   const searchTerm = searchParams.get('search') || '';
   
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(allProducts.map(p => p.category))];
+    const combinedProducts = isLoading ? initialDailyEssentials : allProducts;
+    const uniqueCategories = [...new Set(combinedProducts.map(p => p.category))];
     const essentialsFirst = uniqueCategories.includes("Daily Essentials") ? ["Daily Essentials"] : [];
     const otherCats = uniqueCategories.filter(c => c !== "Daily Essentials").sort();
     return ['All', ...essentialsFirst, ...otherCats];
-  }, [allProducts]);
+  }, [allProducts, initialDailyEssentials, isLoading]);
 
   useEffect(() => {
     const fetchAllProducts = async () => {
@@ -45,9 +46,9 @@ export default function ProductPage() {
   }, []);
 
   const dailyEssentials = useMemo(() => {
-    if (isLoading) return [];
+    if (isLoading) return initialDailyEssentials;
     return allProducts.filter(p => p.category === "Daily Essentials");
-  }, [isLoading, allProducts]);
+  }, [isLoading, allProducts, initialDailyEssentials]);
 
   const allOtherProducts = useMemo(() => {
     if (isLoading) return [];
@@ -55,7 +56,8 @@ export default function ProductPage() {
   }, [isLoading, allProducts]);
 
   const filteredProducts = useMemo(() => {
-    let productsToFilter = allProducts;
+    const productsToUse = isLoading ? initialDailyEssentials : allProducts;
+    let productsToFilter = productsToUse;
     
     if (selectedCategory !== "All") {
       productsToFilter = productsToFilter.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
@@ -87,16 +89,12 @@ export default function ProductPage() {
 
       return false;
     });
-  }, [allProducts, selectedCategory, searchTerm]);
+  }, [allProducts, initialDailyEssentials, isLoading, selectedCategory, searchTerm]);
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
   return (
     <div className="bg-background min-h-screen">
-      <h1 className="text-center text-xl font-bold bg-yellow-300 text-black p-2">
-        --- VISIBLE CHANGE TEST ---
-      </h1>
-      
       <CategoryNav 
         categories={categories}
         selectedCategory={selectedCategory}
@@ -109,11 +107,7 @@ export default function ProductPage() {
              <h2 className="text-2xl font-bold tracking-tight my-4">
                 {searchTerm.trim() ? `Search Results for "${searchTerm}"` : `${selectedCategory}`}
             </h2>
-            {isLoading ? (
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
-                </div>
-            ) : filteredProducts.length > 0 ? (
+            {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {filteredProducts.map((product) => (
                         <ProductCard key={product.id} product={product} />
@@ -131,18 +125,14 @@ export default function ProductPage() {
           <div className="py-6 bg-[hsl(var(--section-background))]">
               <div className="container">
                   <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
-                  {isLoading ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
-                      </div>
-                  ) : dailyEssentials.length > 0 ? (
+                  {dailyEssentials.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                           {dailyEssentials.map((product) => (
                               <ProductCard key={product.id} product={product} />
                           ))}
                       </div>
                   ) : (
-                      <p className="text-muted-foreground">No "Daily Essentials" products found at the moment.</p>
+                      !isLoading && <p className="text-muted-foreground">No "Daily Essentials" products found at the moment.</p>
                   )}
               </div>
           </div>
