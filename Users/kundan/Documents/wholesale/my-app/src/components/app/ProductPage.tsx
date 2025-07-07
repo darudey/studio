@@ -10,13 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
-export default function ProductPage({ 
-  initialDailyEssentials,
-  initialCategories,
-}: { 
-  initialDailyEssentials: Product[],
-  initialCategories: string[],
-}) {
+export default function ProductPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(13);
@@ -25,16 +19,10 @@ export default function ProductPage({
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
   
-  // The category list is now initialized with server-fetched data.
-  // It will be dynamically updated if client-side fetches reveal new categories.
   const categories = useMemo(() => {
-    const combinedCategories = new Set(['All', ...initialCategories, ...allProducts.map(p => p.category)]);
-    return Array.from(combinedCategories).sort((a, b) => {
-      if (a === 'All') return -1;
-      if (b === 'All') return 1;
-      return a.localeCompare(b);
-    });
-  }, [allProducts, initialCategories]);
+    const uniqueCategories = [...new Set(allProducts.map(p => p.category))];
+    return ['All', ...uniqueCategories.sort()];
+  }, [allProducts]);
 
   useEffect(() => {
     // This effect runs on the client to fetch the full product catalog.
@@ -55,6 +43,17 @@ export default function ProductPage({
     fetchAllProducts();
   }, []);
   
+  const dailyEssentials = useMemo(() => {
+    if (isLoading) return [];
+    return allProducts.filter(p => p.category === "Daily Essentials").slice(0, 10);
+  }, [isLoading, allProducts]);
+
+  const allOtherProducts = useMemo(() => {
+    if (isLoading) return [];
+    const dailyEssentialsIds = new Set(dailyEssentials.map(p => p.id));
+    return allProducts.filter(p => !dailyEssentialsIds.has(p.id));
+  }, [isLoading, allProducts, dailyEssentials]);
+
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "All" && !searchTerm.trim()) {
         // This case is handled by the main view, not the filtered view.
@@ -95,15 +94,6 @@ export default function ProductPage({
     });
   }, [allProducts, selectedCategory, searchTerm]);
 
-  const allOtherProducts = useMemo(() => {
-    if (isLoading) return [];
-    // The initialDailyEssentials are pre-fetched, so we create a Set of their IDs for efficient filtering.
-    const dailyEssentialsIds = new Set(initialDailyEssentials.map(p => p.id));
-    // Get all products that are NOT in the initial "Daily Essentials" list
-    return allProducts.filter(p => !dailyEssentialsIds.has(p.id));
-  }, [isLoading, allProducts, initialDailyEssentials]);
-
-
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
   return (
@@ -117,7 +107,7 @@ export default function ProductPage({
 
       {isFilteredView ? (
         <div className="container p-4">
-             <h2 className="text-2xl font-bold tracking-tight mb-4">
+             <h2 className="text-2xl font-bold tracking-tight my-4">
                 {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
             </h2>
             {isLoading ? (
@@ -139,19 +129,25 @@ export default function ProductPage({
         </div>
       ) : (
         <>
-          {/* SECTION 1: Daily Essentials (loads instantly from server props) */}
-          {initialDailyEssentials && initialDailyEssentials.length > 0 && (
-              <div className="py-6 bg-[hsl(var(--section-background))]">
-                  <div className="container">
-                      <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
+          {/* SECTION 1: Daily Essentials */}
+          <div className="py-6 bg-[hsl(var(--section-background))]">
+              <div className="container">
+                  <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
+                  {isLoading ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {initialDailyEssentials.map((product) => (
+                          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                      </div>
+                  ) : dailyEssentials.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {dailyEssentials.map((product) => (
                               <ProductCard key={product.id} product={product} />
                           ))}
                       </div>
-                  </div>
+                  ) : (
+                      <p className="text-muted-foreground">No "Daily Essentials" products found at the moment.</p>
+                  )}
               </div>
-          )}
+          </div>
           
           {/* SECTION 2: All Other Products */}
           <div className="py-6">
@@ -169,8 +165,8 @@ export default function ProductPage({
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-10">
-                      <p className="text-muted-foreground">No other products to display.</p>
+                   dailyEssentials.length === 0 && <div className="text-center py-10">
+                      <p className="text-muted-foreground">No products have been added to the store yet.</p>
                   </div>
                 )
               )}
