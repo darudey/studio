@@ -24,7 +24,7 @@ export default function ProductPage({
   const searchTerm = searchParams.get('search') || '';
   
   const categories = useMemo(() => {
-    return [...new Set(allProducts.map(p => p.category))].sort();
+    return ["All", ...new Set(allProducts.map(p => p.category))].sort();
   }, [allProducts]);
 
   useEffect(() => {
@@ -172,3 +172,5 @@ export default function ProductPage({
     </div>
   );
 }
+
+    
