@@ -11,9 +11,9 @@ import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
 export default function ProductPage({ 
-  initialDailyEssentials, 
+  initialRecommendedProducts, 
 }: { 
-  initialDailyEssentials: Product[], 
+  initialRecommendedProducts: Product[], 
 }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,11 +95,11 @@ export default function ProductPage({
 
   const allOtherProducts = useMemo(() => {
     if (isLoading) return [];
-    // The initialDailyEssentials are pre-fetched, so we create a Set of their IDs for efficient filtering.
-    const dailyEssentialsIds = new Set(initialDailyEssentials.map(p => p.id));
-    // Get all products that are NOT in the initial "daily essentials" list
-    return allProducts.filter(p => !dailyEssentialsIds.has(p.id));
-  }, [isLoading, allProducts, initialDailyEssentials]);
+    // The initialRecommendedProducts are pre-fetched, so we create a Set of their IDs for efficient filtering.
+    const recommendedIds = new Set(initialRecommendedProducts.map(p => p.id));
+    // Get all products that are NOT in the initial "recommended" list
+    return allProducts.filter(p => !recommendedIds.has(p.id));
+  }, [isLoading, allProducts, initialRecommendedProducts]);
 
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
@@ -137,13 +137,13 @@ export default function ProductPage({
         </div>
       ) : (
         <>
-          {/* SECTION 1: Daily Essentials (loads instantly from server props) */}
-          {initialDailyEssentials && initialDailyEssentials.length > 0 && (
+          {/* SECTION 1: Recommended Products (loads instantly from server props) */}
+          {initialRecommendedProducts && initialRecommendedProducts.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
+                      <h2 className="text-2xl font-bold tracking-tight mb-4">Recommended For You</h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {initialDailyEssentials.map((product) => (
+                          {initialRecommendedProducts.map((product) => (
                               <ProductCard key={product.id} product={product} />
                           ))}
                       </div>
