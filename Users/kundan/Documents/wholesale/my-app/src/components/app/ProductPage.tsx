@@ -24,7 +24,7 @@ const ProductCarouselSkeleton = () => (
 );
 
 
-export default function ProductPage({ initialRecommendedProducts }: { initialRecommendedProducts: Product[] }) {
+export default function ProductPage({ initialNewestProducts }: { initialNewestProducts: Product[] }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -35,7 +35,7 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
   useEffect(() => {
     // This effect runs on the client after the initial render to fetch the full catalog.
     const fetchAllProducts = async () => {
-        setIsLoading(true); // Set loading state for the main catalog fetch
+        setIsLoading(true);
         try {
             const products = await getProducts();
             setAllProducts(products);
@@ -92,6 +92,8 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
   }, [allProducts, selectedCategory, searchTerm]);
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
+  
+  const initialProductIds = useMemo(() => new Set(initialNewestProducts.map(p => p.id)), [initialNewestProducts]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -125,11 +127,11 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
         </div>
       ) : (
         <>
-          {/* SECTION 1: Recommended Products (loads instantly from server props) */}
-          {initialRecommendedProducts && initialRecommendedProducts.length > 0 && (
+          {/* SECTION 1: Newest Products (loads instantly from server props) */}
+          {initialNewestProducts && initialNewestProducts.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <ProductCarousel title="Recommended for You" products={initialRecommendedProducts} />
+                      <ProductCarousel title="New Arrivals" products={initialNewestProducts} />
                   </div>
               </div>
           )}
@@ -144,8 +146,8 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
           ) : (
             // Once loaded, render the remaining categories.
             categories.map((category, index) => {
-              // Get products for this category, EXCLUDING recommended ones to avoid duplicates.
-              const categoryProducts = allProducts.filter(p => p.category === category && !p.isRecommended);
+              // Get products for this category, EXCLUDING newest ones to avoid duplicates.
+              const categoryProducts = allProducts.filter(p => p.category === category && !initialProductIds.has(p.id));
               if (categoryProducts.length === 0) return null;
               
               const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
@@ -164,4 +166,3 @@ export default function ProductPage({ initialRecommendedProducts }: { initialRec
     </div>
   );
 }
-
