@@ -239,18 +239,24 @@ export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon>
 };
 
 // HOMEPAGE FUNCTIONS
-export const getRecommendedProducts = async (): Promise<Product[]> => {
+export const getProductsByCategoryName = async (categoryName: string, limitCount = 10): Promise<Product[]> => {
     try {
-        const q = query(productsCollection, where("isRecommended", "==", true), firestoreLimit(10));
+        const q = query(
+            productsCollection,
+            where("category", "==", categoryName),
+            firestoreLimit(limitCount)
+        );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
     } catch (error) {
-        if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
-           console.error("Firestore Security Rules Error: The query for recommended products failed. This is likely due to either (1) your firestore.rules not allowing public reads on the 'products' collection, or (2) a missing Firestore index on the 'isRecommended' field. Please check your rules and look for an index creation link in your browser's developer console.", error);
+       if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+           console.error(`Firestore Security Rules Error: The query for category "${categoryName}" failed. Please check your Firestore rules.`, error);
+       } else if (error instanceof Error && error.message.includes("The query requires an index")) {
+            console.error(`Firestore Index Required: The query for category "${categoryName}" failed. Please create a composite index for the 'products' collection on 'category'. The link should be in your browser console.`, error);
        } else {
-           console.error("Failed to fetch recommended products:", error);
+           console.error(`Failed to fetch products for category "${categoryName}":`, error);
        }
-       return []; // Return empty array to prevent a crash
+       return [];
     }
 }
 

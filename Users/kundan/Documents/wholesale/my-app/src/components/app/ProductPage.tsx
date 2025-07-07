@@ -24,7 +24,7 @@ const ProductCarouselSkeleton = () => (
 );
 
 
-export default function ProductPage({ initialNewestProducts }: { initialNewestProducts: Product[] }) {
+export default function ProductPage({ initialDailyEssentials }: { initialDailyEssentials: Product[] }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -93,7 +93,7 @@ export default function ProductPage({ initialNewestProducts }: { initialNewestPr
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
   
-  const initialProductIds = useMemo(() => new Set(initialNewestProducts.map(p => p.id)), [initialNewestProducts]);
+  const initialProductIds = useMemo(() => new Set(initialDailyEssentials.map(p => p.id)), [initialDailyEssentials]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -127,11 +127,11 @@ export default function ProductPage({ initialNewestProducts }: { initialNewestPr
         </div>
       ) : (
         <>
-          {/* SECTION 1: Newest Products (loads instantly from server props) */}
-          {initialNewestProducts && initialNewestProducts.length > 0 && (
+          {/* SECTION 1: Daily Essentials (loads instantly from server props) */}
+          {initialDailyEssentials && initialDailyEssentials.length > 0 && (
               <div className="py-6 bg-[hsl(var(--section-background))]">
                   <div className="container">
-                      <ProductCarousel title="New Arrivals" products={initialNewestProducts} />
+                      <ProductCarousel title="Daily Essentials" products={initialDailyEssentials} />
                   </div>
               </div>
           )}
@@ -145,7 +145,9 @@ export default function ProductPage({ initialNewestProducts }: { initialNewestPr
             </>
           ) : (
             // Once loaded, render the remaining categories.
-            categories.map((category, index) => {
+            categories
+            .filter(category => category !== 'Daily Essentials')
+            .map((category, index) => {
               // Get products for this category, EXCLUDING newest ones to avoid duplicates.
               const categoryProducts = allProducts.filter(p => p.category === category && !initialProductIds.has(p.id));
               if (categoryProducts.length === 0) return null;
