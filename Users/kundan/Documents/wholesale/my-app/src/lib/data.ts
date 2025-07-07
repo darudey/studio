@@ -79,6 +79,41 @@ export const getProducts = async (): Promise<Product[]> => {
     }
 };
 
+export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }: { search?: string; page?: number; limit?: number; }) => {
+    // This is a client-side implementation for demonstration.
+    // For production, this logic should be on a server/cloud function with proper indexing.
+    const allProducts = await getProducts();
+
+    const lowercasedSearch = search.toLowerCase();
+    
+    const getConsonants = (str: string) => str.toLowerCase().replace(/[aeiou\s\W\d_]/gi, '');
+    const consonantFilter = getConsonants(lowercasedSearch);
+
+    const filtered = lowercasedSearch
+        ? allProducts.filter(product => {
+            const nameMatch = product.name.toLowerCase().includes(lowercasedSearch);
+            const categoryMatch = product.category.toLowerCase().includes(lowercasedSearch);
+            const itemCodeMatch = product.itemCode.toLowerCase().includes(lowercasedSearch);
+
+            if (nameMatch || categoryMatch || itemCodeMatch) return true;
+
+            if (consonantFilter.length > 1) {
+                if (getConsonants(product.name).includes(consonantFilter)) return true;
+            }
+            return false;
+          })
+        : allProducts;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedProducts = filtered.slice(startIndex, endIndex);
+
+    return {
+        products: paginatedProducts,
+        more: endIndex < filtered.length,
+    };
+};
+
 export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
     if (ids.length === 0) return [];
     // Firestore 'in' queries are limited to 30 items. We need to batch.
@@ -126,9 +161,28 @@ export const updateProduct = async (product: Product): Promise<void> => {
     await updateDoc(productRef, productData);
 };
 
+export const updateProductsCategory = async (productIds: string[], newCategory: string): Promise<void> => {
+    const batch = writeBatch(db);
+    productIds.forEach(id => {
+        const productRef = doc(db, 'products', id);
+        batch.update(productRef, { category: newCategory });
+    });
+    await batch.commit();
+}
+
 export const deleteProduct = async (productId: string): Promise<void> => {
     const productRef = doc(db, 'products', productId);
     await deleteDoc(productRef);
+};
+
+export const deleteMultipleProducts = async (productIds: string[]): Promise<void> => {
+    if (productIds.length === 0) return;
+    const batch = writeBatch(db);
+    productIds.forEach(id => {
+        const productRef = doc(db, 'products', id);
+        batch.delete(productRef);
+    });
+    await batch.commit();
 };
 
 // CATEGORY FUNCTIONS
@@ -349,3 +403,5 @@ export const markUserNotificationsAsRead = async (userId: string): Promise<void>
         }
     }
 };
+
+    
