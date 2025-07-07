@@ -11,9 +11,11 @@ import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
 export default function ProductPage({ 
-  initialRecommendedProducts, 
+  initialRecommendedProducts,
+  initialCategories,
 }: { 
-  initialRecommendedProducts: Product[], 
+  initialRecommendedProducts: Product[],
+  initialCategories: string[],
 }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,16 +25,16 @@ export default function ProductPage({
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
   
+  // The category list is now initialized with server-fetched data for a fast first paint.
+  // It will be dynamically updated if client-side fetches reveal new categories.
   const categories = useMemo(() => {
-    // Start with "All", then add all unique categories from the fetched products
-    const uniqueCategories = ["All", ...new Set(allProducts.map(p => p.category))];
-    // Custom sort to ensure "All" is first, then alphabetical
-    return uniqueCategories.sort((a, b) => {
+    const combinedCategories = new Set(['All', ...initialCategories, ...allProducts.map(p => p.category)]);
+    return Array.from(combinedCategories).sort((a, b) => {
       if (a === 'All') return -1;
       if (b === 'All') return 1;
       return a.localeCompare(b);
     });
-  }, [allProducts]);
+  }, [allProducts, initialCategories]);
 
   useEffect(() => {
     // This effect runs on the client after the initial render to fetch the full product catalog.
