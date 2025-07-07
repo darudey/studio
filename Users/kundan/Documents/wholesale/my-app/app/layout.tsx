@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Kundan Mart",
+  title: "Wholesale Hub",
   description: "Your one-stop shop for everything.",
 };
 
@@ -22,26 +22,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)} suppressHydrationWarning={true}>
-        <div style={{
-          position: 'absolute',
-          top: '0',
-          left: '0',
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'yellow',
-          color: 'black',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          zIndex: 9999,
-          padding: '2rem',
-          textAlign: 'center'
-        }}>
-          If you see this, app/layout.tsx is the correct file.
-        </div>
+      <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
+        <AuthProvider>
+          <CartProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+            </div>
+            <Toaster />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
