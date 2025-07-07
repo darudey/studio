@@ -9,6 +9,7 @@ import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getProducts } from '@/lib/data';
+import { Progress } from '@/components/ui/progress';
 
 const ProductCarouselSkeleton = () => (
     <div className="py-6">
@@ -27,7 +28,8 @@ const ProductCarouselSkeleton = () => (
 export default function ProductPage({ initialDailyEssentials }: { initialDailyEssentials: Product[] }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [progress, setProgress] = useState(13);
+
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
@@ -36,12 +38,15 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
     // This effect runs on the client after the initial render to fetch the full catalog.
     const fetchAllProducts = async () => {
         setIsLoading(true);
+        const timer = setTimeout(() => setProgress(66), 500);
         try {
             const products = await getProducts();
             setAllProducts(products);
         } catch (error) {
             console.error("Failed to fetch all products:", error);
         } finally {
+            clearTimeout(timer);
+            setProgress(100);
             setIsLoading(false);
         }
     };
@@ -49,8 +54,9 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
   }, []);
   
   const categories = useMemo(() => {
-    return [...new Set(allProducts.map(p => p.category))].sort();
-  }, [allProducts]);
+    const productList = allProducts.length > 0 ? allProducts : initialDailyEssentials;
+    return [...new Set(productList.map(p => p.category))].sort();
+  }, [allProducts, initialDailyEssentials]);
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "All" && !searchTerm.trim()) {
@@ -102,6 +108,7 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
       />
+      {isLoading && <Progress value={progress} className="w-full h-1 rounded-none" />}
 
       {isFilteredView ? (
         <div className="container p-4">
