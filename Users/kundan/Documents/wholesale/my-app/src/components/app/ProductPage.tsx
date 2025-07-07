@@ -12,10 +12,8 @@ import { Progress } from '@/components/ui/progress';
 
 export default function ProductPage({ 
   initialDailyEssentials, 
-  initialCategories 
 }: { 
   initialDailyEssentials: Product[], 
-  initialCategories: string[] 
 }) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,8 +23,9 @@ export default function ProductPage({
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
   
-  // Initialize categories state with server-fetched data for instant display.
-  const [categories, setCategories] = useState(initialCategories);
+  const categories = useMemo(() => {
+    return [...new Set(allProducts.map(p => p.category))].sort();
+  }, [allProducts]);
 
   useEffect(() => {
     // This effect runs on the client after the initial render to fetch the full product catalog.
@@ -36,9 +35,6 @@ export default function ProductPage({
         try {
             const products = await getProducts();
             setAllProducts(products);
-            // Reconcile categories with the full product list to ensure it's complete
-            const allFetchedCategories = [...new Set(products.map(p => p.category))].sort();
-            setCategories(allFetchedCategories);
         } catch (error) {
             console.error("Failed to fetch all products:", error);
         } finally {
@@ -176,4 +172,3 @@ export default function ProductPage({
     </div>
   );
 }
-
