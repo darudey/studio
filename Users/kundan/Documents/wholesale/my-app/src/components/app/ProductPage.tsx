@@ -10,7 +10,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
-export default function ProductPage() {
+interface ProductPageProps {
+  initialDailyEssentials: Product[];
+}
+
+export default function ProductPage({ initialDailyEssentials }: ProductPageProps) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(13);
@@ -21,7 +25,7 @@ export default function ProductPage() {
   
   const categories = useMemo(() => {
     const uniqueCategories = [...new Set(allProducts.map(p => p.category))];
-    return ['All', ...uniqueCategories.sort()];
+    return ['All', 'Daily Essentials', ...uniqueCategories.filter(c => c !== 'Daily Essentials').sort()];
   }, [allProducts]);
 
   useEffect(() => {
@@ -42,24 +46,14 @@ export default function ProductPage() {
     };
     fetchAllProducts();
   }, []);
-  
-  const dailyEssentials = useMemo(() => {
-    if (isLoading) return [];
-    return allProducts.filter(p => p.category === "Daily Essentials").slice(0, 10);
-  }, [isLoading, allProducts]);
 
   const allOtherProducts = useMemo(() => {
     if (isLoading) return [];
-    const dailyEssentialsIds = new Set(dailyEssentials.map(p => p.id));
+    const dailyEssentialsIds = new Set(initialDailyEssentials.map(p => p.id));
     return allProducts.filter(p => !dailyEssentialsIds.has(p.id));
-  }, [isLoading, allProducts, dailyEssentials]);
+  }, [isLoading, allProducts, initialDailyEssentials]);
 
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === "All" && !searchTerm.trim()) {
-        // This case is handled by the main view, not the filtered view.
-        return [];
-    }
-    
     let productsToFilter = allProducts;
     
     if (selectedCategory !== "All") {
@@ -108,7 +102,7 @@ export default function ProductPage() {
       {isFilteredView ? (
         <div className="container p-4">
              <h2 className="text-2xl font-bold tracking-tight my-4">
-                {searchTerm.trim() ? "Search Results" : `All in ${selectedCategory}`}
+                {searchTerm.trim() ? `Search Results for "${searchTerm}"` : `${selectedCategory}`}
             </h2>
             {isLoading ? (
                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -129,27 +123,23 @@ export default function ProductPage() {
         </div>
       ) : (
         <>
-          {/* SECTION 1: Daily Essentials */}
+          {/* SECTION 1: Daily Essentials (pre-fetched and instant) */}
           <div className="py-6 bg-[hsl(var(--section-background))]">
               <div className="container">
                   <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
-                  {isLoading ? (
+                  {initialDailyEssentials.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
-                      </div>
-                  ) : dailyEssentials.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {dailyEssentials.map((product) => (
+                          {initialDailyEssentials.map((product) => (
                               <ProductCard key={product.id} product={product} />
                           ))}
                       </div>
                   ) : (
-                      <p className="text-muted-foreground">No "Daily Essentials" products found at the moment.</p>
+                      !isLoading && <p className="text-muted-foreground">No "Daily Essentials" products found at the moment.</p>
                   )}
               </div>
           </div>
           
-          {/* SECTION 2: All Other Products */}
+          {/* SECTION 2: All Other Products (client-fetched) */}
           <div className="py-6">
             <div className="container">
               <h2 className="text-2xl font-bold tracking-tight mb-4">All Products</h2>
@@ -165,7 +155,7 @@ export default function ProductPage() {
                     ))}
                   </div>
                 ) : (
-                   dailyEssentials.length === 0 && <div className="text-center py-10">
+                   initialDailyEssentials.length === 0 && <div className="text-center py-10">
                       <p className="text-muted-foreground">No products have been added to the store yet.</p>
                   </div>
                 )
