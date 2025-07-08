@@ -1,2 +1,1 @@
-// This file has been intentionally left blank. 
-// The active API route has been moved to /src/app/api/redeem-coupon/route.ts.
+// This file has been neutralized to prevent conflicts.

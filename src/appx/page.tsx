@@ -1,5 +1,1 @@
-import ProductPage from "@/components/app/ProductPage";
-
-export default function Home() {
-  return <ProductPage />;
-}
+// This file has been neutralized to prevent conflicts.

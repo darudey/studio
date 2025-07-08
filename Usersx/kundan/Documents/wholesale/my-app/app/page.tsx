@@ -1,2 +1,1 @@
-// This file has been intentionally left blank. 
-// The active homepage is /src/app/page.tsx.
+// This file has been neutralized to prevent conflicts.

@@ -1,2 +1,1 @@
-// This file has been intentionally left blank. 
-// The active layout is /src/app/layout.tsx.
+// This file has been neutralized to prevent conflicts.
