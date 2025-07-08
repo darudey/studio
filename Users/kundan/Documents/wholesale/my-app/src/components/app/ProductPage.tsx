@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getProducts } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
-export default function ProductPage({ initialDailyEssentials }: { initialDailyEssentials: Product[] }) {
+export default function ProductPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(13);
@@ -18,18 +18,19 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
-  
+
   const categories = useMemo(() => {
-    const combinedProducts = isLoading ? initialDailyEssentials : allProducts;
-    const uniqueCategories = [...new Set(combinedProducts.map(p => p.category))];
+    const uniqueCategories = [...new Set(allProducts.map(p => p.category))];
+    // Ensure "Daily Essentials" is always first if it exists
     const essentialsFirst = uniqueCategories.includes("Daily Essentials") ? ["Daily Essentials"] : [];
     const otherCats = uniqueCategories.filter(c => c !== "Daily Essentials").sort();
     return ['All', ...essentialsFirst, ...otherCats];
-  }, [allProducts, initialDailyEssentials, isLoading]);
+  }, [allProducts]);
 
   useEffect(() => {
     const fetchAllProducts = async () => {
         setIsLoading(true);
+        // Start a progress bar animation
         const timer = setTimeout(() => setProgress(66), 500);
         try {
             const products = await getProducts();
@@ -45,19 +46,18 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
     fetchAllProducts();
   }, []);
 
+  // Separate products into "Daily Essentials" and "All Others"
   const dailyEssentials = useMemo(() => {
-    if (isLoading) return initialDailyEssentials;
     return allProducts.filter(p => p.category === "Daily Essentials");
-  }, [isLoading, allProducts, initialDailyEssentials]);
+  }, [allProducts]);
 
   const allOtherProducts = useMemo(() => {
-    if (isLoading) return [];
     return allProducts.filter(p => p.category !== "Daily Essentials");
-  }, [isLoading, allProducts]);
+  }, [allProducts]);
 
+  // Handle filtering for search and category selection
   const filteredProducts = useMemo(() => {
-    const productsToUse = isLoading ? initialDailyEssentials : allProducts;
-    let productsToFilter = productsToUse;
+    let productsToFilter = allProducts;
     
     if (selectedCategory !== "All") {
       productsToFilter = productsToFilter.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
@@ -89,7 +89,7 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
 
       return false;
     });
-  }, [allProducts, initialDailyEssentials, isLoading, selectedCategory, searchTerm]);
+  }, [allProducts, selectedCategory, searchTerm]);
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
 
@@ -103,6 +103,7 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
       {isLoading && <Progress value={progress} className="w-full h-1 rounded-none" />}
 
       {isFilteredView ? (
+        // Render a simple grid when filtering
         <div className="container p-4">
              <h2 className="text-2xl font-bold tracking-tight my-4">
                 {searchTerm.trim() ? `Search Results for "${searchTerm}"` : `${selectedCategory}`}
@@ -121,13 +122,18 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
             )}
         </div>
       ) : (
+        // Render the default view with "Daily Essentials" on top
         <>
           <div className="py-6 bg-[hsl(var(--section-background))]">
               <div className="container">
                   <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
-                  {initialDailyEssentials.length > 0 ? (
+                  {isLoading ? (
+                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                     </div>
+                  ) : dailyEssentials.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {initialDailyEssentials.map((product) => (
+                          {dailyEssentials.map((product) => (
                               <ProductCard key={product.id} product={product} />
                           ))}
                       </div>
