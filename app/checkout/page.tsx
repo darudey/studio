@@ -13,12 +13,15 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function CheckoutPage() {
   const { user } = useAuth();
   const { cartDetails, clearCart, loading: cartLoading } = useCart();
   const router = useRouter();
   const { toast } = useToast();
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const getPrice = (product: Product) => {
     if (user?.role === 'wholesaler' || user?.role === 'developer') {
@@ -44,29 +47,41 @@ export default function CheckoutPage() {
       return;
     }
 
-    const orderItems = cartDetails.map(item => {
-        if (!item.product) throw new Error("Product details missing in cart");
-        return {
-          productId: item.productId,
-          name: item.product.name,
-          quantity: item.quantity,
-          price: getPrice(item.product),
-          status: 'Pending' as const,
-          ...(item.note && { note: item.note }), // Conditionally add note if it exists
-        }
-    });
+    setIsPlacingOrder(true);
+    try {
+        const orderItems = cartDetails.map(item => {
+            if (!item.product) throw new Error("Product details missing in cart");
+            return {
+              productId: item.productId,
+              name: item.product.name,
+              quantity: item.quantity,
+              price: getPrice(item.product),
+              status: 'Pending' as const,
+              ...(item.note && { note: item.note }), // Conditionally add note if it exists
+            }
+        });
 
-    await addOrder({
-      userId: user.id,
-      items: orderItems,
-      total: total,
-      status: 'Pending',
-      shippingAddress: user.address,
-    });
+        await addOrder({
+          userId: user.id,
+          items: orderItems,
+          total: total,
+          status: 'Pending',
+          shippingAddress: user.address,
+        });
 
-    clearCart();
-    toast({ title: "Order Placed!", description: "Thank you for your purchase." });
-    router.push("/orders");
+        clearCart();
+        toast({ title: "Order Placed!", description: "Thank you for your purchase." });
+        router.push("/orders");
+    } catch (error) {
+        console.error("Failed to place order:", error);
+        toast({
+            title: "Order Failed",
+            description: "An unexpected error occurred while placing your order. Please try again.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsPlacingOrder(false);
+    }
   };
 
   if (cartLoading) {
@@ -160,7 +175,8 @@ export default function CheckoutPage() {
                      <p className="text-sm text-muted-foreground">Shipping and taxes will be calculated at the next step.</p>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
+                    <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                        {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Place Order
                     </Button>
                 </CardFooter>
