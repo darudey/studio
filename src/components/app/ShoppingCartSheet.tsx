@@ -22,10 +22,12 @@ import { useAuth } from "@/context/AuthContext";
 import type { Product } from "@/types";
 import { Skeleton } from "../ui/skeleton";
 import { Textarea } from "../ui/textarea";
+import { useRouter } from "next/navigation";
 
 export default function ShoppingCartSheet({ children }: { children: React.ReactNode }) {
   const { cartDetails, updateQuantity, removeFromCart, loading: cartLoading, cartCount, updateItemNote } = useCart();
   const { user } = useAuth();
+  const router = useRouter();
 
   const getPrice = (product: Product) => {
       if (user?.role === 'wholesaler' || user?.role === 'developer') {
@@ -39,9 +41,15 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
     return acc + getPrice(item.product) * item.quantity;
   }, 0);
 
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      router.prefetch('/checkout');
+    }
+  };
+
 
   return (
-    <Sheet>
+    <Sheet onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
         <SheetHeader className="px-6">
