@@ -1,5 +1,5 @@
 import ProductPage from "@/components/app/ProductPage";
-import { getNewestProducts, getCategories, getProducts } from '@/lib/data';
+import { getRecentlyUpdatedProducts, getCategories, getProducts } from '@/lib/data';
 import { Product } from "@/types";
 
 export default async function Home() {
@@ -10,7 +10,7 @@ export default async function Home() {
   try {
     // Fetch critical data in parallel on the server before rendering the page.
     [dailyEssentialsProducts, categories, allProducts] = await Promise.all([
-      getNewestProducts(10),
+      getRecentlyUpdatedProducts(10),
       getCategories(),
       getProducts()
     ]);

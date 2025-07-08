@@ -330,6 +330,27 @@ export const getNewestProducts = async (limitCount = 10): Promise<Product[]> => 
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 }
 
+export const getRecentlyUpdatedProducts = async (limitCount = 10): Promise<Product[]> => {
+    try {
+        const q = query(productsCollection, orderBy("updatedAt", "desc"), firestoreLimit(limitCount));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            // This can happen if the 'updatedAt' field is not yet on any documents.
+            console.warn("No products found when sorting by 'updatedAt'. Falling back to newest products.");
+            return getNewestProducts(limitCount);
+        }
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    } catch (error) {
+        if (error instanceof Error && (error.message.includes("requires an index") || error.message.includes("FAILED_PRECONDITION"))) {
+            console.error("Firestore Index Error: The query for recently updated products failed. A composite index on 'updatedAt' is required. Please create one using the link in the full error message in your browser's console. Falling back to newest products.", error);
+            // Fallback to newest products if index is missing.
+            return getNewestProducts(limitCount);
+        }
+        console.error("Failed to fetch recently updated products, falling back to newest:", error);
+        return getNewestProducts(limitCount);
+    }
+}
+
 export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> => {
     // This function is disabled by default because it requires insecure database rules
     // (reading all orders). For a production app, this logic should be moved to a
