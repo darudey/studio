@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { Clock, Minus, Plus } from "lucide-react";
+import { Clock, Loader2, Minus, Plus } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
+  isLoading: boolean;
+  onClick: () => void;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, isLoading, onClick }: ProductCardProps) {
   const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
 
@@ -40,8 +42,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link href={`/products/${product.id}`} className="block w-full h-full">
-      <div className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80">
+    <Link href={`/products/${product.id}`} onClick={onClick} className="block w-full h-full">
+      <div className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80 relative">
+        {isLoading && (
+            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+        )}
         <div className="relative">
             <div className="aspect-square relative">
                 <Image

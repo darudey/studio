@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Product } from "@/types";
@@ -8,9 +7,11 @@ import ProductCard from "./ProductCard";
 interface ProductCarouselProps {
     title: string;
     products: Product[];
+    loadingProductId: string | null;
+    onProductClick: (productId: string) => void;
 }
 
-export default function ProductCarousel({ title, products }: ProductCarouselProps) {
+export default function ProductCarousel({ title, products, loadingProductId, onProductClick }: ProductCarouselProps) {
     if (!products || products.length === 0) {
         return null;
     }
@@ -29,7 +30,11 @@ export default function ProductCarousel({ title, products }: ProductCarouselProp
                     {products.map((product) => (
                         <CarouselItem key={product.id} className="basis-1/2 sm:basis-1/3 pl-4">
                             <div className="h-full">
-                                <ProductCard product={product} />
+                                <ProductCard 
+                                    product={product} 
+                                    isLoading={loadingProductId === product.id}
+                                    onClick={() => onProductClick(product.id)}
+                                />
                             </div>
                         </CarouselItem>
                     ))}

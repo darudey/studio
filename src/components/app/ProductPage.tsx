@@ -15,8 +15,13 @@ interface ProductPageProps {
 
 export default function ProductPage({ serverRecommendedProducts, serverCategories, serverAllProducts }: ProductPageProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
+
+  const handleProductClick = (productId: string) => {
+    setLoadingProductId(productId);
+  };
 
   const filteredProducts = useMemo(() => {
     let productsToFilter = [...serverAllProducts];
@@ -59,7 +64,10 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
       <CategoryNav 
         categories={serverCategories}
         selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
+        onCategorySelect={(category) => {
+            setSelectedCategory(category);
+            setLoadingProductId(null);
+        }}
       />
 
       {!isFilteredView ? (
@@ -67,7 +75,12 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
             {serverRecommendedProducts.length > 0 && (
                 <div className="py-6 bg-[hsl(var(--section-background))]">
                     <div className="container">
-                        <ProductCarousel title="Daily Essentials" products={serverRecommendedProducts} />
+                        <ProductCarousel 
+                            title="Daily Essentials" 
+                            products={serverRecommendedProducts} 
+                            loadingProductId={loadingProductId}
+                            onProductClick={handleProductClick}
+                        />
                     </div>
                 </div>
             )}
@@ -80,7 +93,12 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
                 return (
                     <div key={category} className={`py-6 ${bgColor}`}>
                         <div className="container">
-                             <ProductCarousel title={category} products={categoryProducts} />
+                             <ProductCarousel 
+                                title={category} 
+                                products={categoryProducts} 
+                                loadingProductId={loadingProductId}
+                                onProductClick={handleProductClick}
+                             />
                         </div>
                     </div>
                 )
@@ -94,7 +112,12 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
             {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map(product => (
-                        <ProductCard key={product.id} product={product} />
+                        <ProductCard 
+                            key={product.id} 
+                            product={product} 
+                            isLoading={loadingProductId === product.id}
+                            onClick={() => handleProductClick(product.id)}
+                        />
                     ))}
                 </div>
             ) : (
