@@ -1,16 +1,18 @@
 import ProductPage from "@/components/app/ProductPage";
-import { getNewestProducts, getCategories } from '@/lib/data';
+import { getNewestProducts, getCategories, getProducts } from '@/lib/data';
 import { Product } from "@/types";
 
 export default async function Home() {
   let dailyEssentialsProducts: Product[] = [];
+  let allProducts: Product[] = [];
   let categories: string[] = [];
   
   try {
     // Fetch critical data in parallel on the server before rendering the page.
-    [dailyEssentialsProducts, categories] = await Promise.all([
+    [dailyEssentialsProducts, categories, allProducts] = await Promise.all([
       getNewestProducts(10),
-      getCategories()
+      getCategories(),
+      getProducts()
     ]);
   } catch (error) {
     console.error("Failed to fetch server-side data for homepage:", error);
@@ -21,5 +23,6 @@ export default async function Home() {
   return <ProductPage 
             serverRecommendedProducts={dailyEssentialsProducts} 
             serverCategories={categories}
+            serverAllProducts={allProducts}
          />;
 }

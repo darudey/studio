@@ -1,55 +1,25 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { getProducts, getNewestProducts, getRecommendedProducts, getTrendingProducts } from '@/lib/data';
+import React, { useState, useMemo } from 'react';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
-import { useAuth } from '@/context/AuthContext';
-import { Skeleton } from '../ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 
-export default function ProductPage() {
-  const { user } = useAuth();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  
+interface ProductPageProps {
+  serverRecommendedProducts: Product[];
+  serverCategories: string[];
+  serverAllProducts: Product[];
+}
+
+export default function ProductPage({ serverRecommendedProducts, serverCategories, serverAllProducts }: ProductPageProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
-  
-  const allCategories = useMemo(() => {
-    return [...new Set(allProducts.map(p => p.category))].sort();
-  }, [allProducts]);
-
-  useEffect(() => {
-    const fetchHomepageData = async () => {
-        setLoading(true);
-        try {
-            const [
-                products,
-                recommended
-            ] = await Promise.all([
-                getProducts(),
-                getRecommendedProducts()
-            ]);
-
-            setAllProducts(products);
-            setRecommendedProducts(recommended);
-
-        } catch (e) {
-            console.error("Failed to fetch main product data:", e);
-        } finally {
-            setLoading(false);
-        }
-    }
-    fetchHomepageData();
-  }, []);
 
   const filteredProducts = useMemo(() => {
-    let productsToFilter = [...allProducts];
+    let productsToFilter = [...serverAllProducts];
     if (selectedCategory !== "All") {
       productsToFilter = productsToFilter.filter(p => p.category === selectedCategory);
     }
@@ -80,43 +50,30 @@ export default function ProductPage() {
 
       return false;
     });
-  }, [allProducts, selectedCategory, searchTerm]);
+  }, [serverAllProducts, selectedCategory, searchTerm]);
 
   const isFilteredView = selectedCategory !== "All" || searchTerm.trim() !== '';
-
-  if (loading) {
-      return (
-          <div className="container py-8">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-48 w-full mt-4" />
-              <Skeleton className="h-8 w-48 my-6" />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 mt-6">
-                {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
-              </div>
-          </div>
-      )
-  }
 
   return (
     <div className="bg-background min-h-screen">
       <CategoryNav 
-        categories={allCategories}
+        categories={serverCategories}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
       />
 
       {!isFilteredView ? (
         <>
-            {recommendedProducts.length > 0 && (
+            {serverRecommendedProducts.length > 0 && (
                 <div className="py-6 bg-[hsl(var(--section-background))]">
                     <div className="container">
-                        <ProductCarousel title="Daily Essentials" products={recommendedProducts} />
+                        <ProductCarousel title="Daily Essentials" products={serverRecommendedProducts} />
                     </div>
                 </div>
             )}
             
-            {allCategories.map((category, index) => {
-                const categoryProducts = allProducts.filter(p => p.category === category);
+            {serverCategories.map((category, index) => {
+                const categoryProducts = serverAllProducts.filter(p => p.category === category);
                 if (categoryProducts.length === 0) return null;
                 // Alternate background colors for visual separation
                 const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';

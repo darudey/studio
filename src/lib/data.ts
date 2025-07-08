@@ -135,8 +135,14 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 }
 
 export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
-    const docRef = await addDoc(productsCollection, productData);
-    return { id: docRef.id, ...productData };
+    const now = new Date().toISOString();
+    const fullProductData = {
+        ...productData,
+        createdAt: now,
+        updatedAt: now,
+    };
+    const docRef = await addDoc(productsCollection, fullProductData);
+    return { id: docRef.id, ...fullProductData };
 };
 
 export const addMultipleProducts = async (productsData: Omit<Product, 'id'>[]): Promise<void> => {
@@ -147,7 +153,13 @@ export const addMultipleProducts = async (productsData: Omit<Product, 'id'>[]): 
     productsData.forEach(product => {
         if (!existingProductNames.has(product.name.toLowerCase())) {
             const docRef = doc(productsCollection);
-            batch.set(docRef, product);
+            const now = new Date().toISOString();
+            const fullProductData = {
+                ...product,
+                createdAt: now,
+                updatedAt: now,
+            };
+            batch.set(docRef, fullProductData);
             existingProductNames.add(product.name.toLowerCase());
         }
     });
@@ -158,14 +170,18 @@ export const addMultipleProducts = async (productsData: Omit<Product, 'id'>[]): 
 export const updateProduct = async (product: Product): Promise<void> => {
     const productRef = doc(db, 'products', product.id);
     const { id, ...productData } = product;
-    await updateDoc(productRef, productData);
+    const fullProductData = {
+        ...productData,
+        updatedAt: new Date().toISOString(),
+    };
+    await updateDoc(productRef, fullProductData);
 };
 
 export const updateProductsCategory = async (productIds: string[], newCategory: string): Promise<void> => {
     const batch = writeBatch(db);
     productIds.forEach(id => {
         const productRef = doc(db, 'products', id);
-        batch.update(productRef, { category: newCategory });
+        batch.update(productRef, { category: newCategory, updatedAt: new Date().toISOString() });
     });
     await batch.commit();
 }
@@ -424,5 +440,3 @@ export const markUserNotificationsAsRead = async (userId: string): Promise<void>
     });
     await batch.commit();
 };
-
-    
