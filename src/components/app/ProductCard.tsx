@@ -84,7 +84,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
         
         <div className="mt-4 flex-grow flex flex-col">
-            <p className="text-xs text-blue-600">{product.unit}</p>
+            <div className="flex justify-between items-center text-xs">
+                <span className="text-blue-600">{product.unit}</span>
+                <span className="text-muted-foreground">Stock: <span className="font-bold text-foreground">{product.stock}</span></span>
+            </div>
             <h3 className="font-medium text-sm leading-tight mt-1 flex-grow h-10 line-clamp-2">
                 {product.name}
             </h3>
