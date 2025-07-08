@@ -1,4 +1,3 @@
-
 "use client"
 import Image from "next/image";
 import Link from "next/link";
@@ -63,14 +62,14 @@ export default function ProductCard({ product }: ProductCardProps) {
                 {quantityInCart === 0 ? (
                     <Button
                         size="sm"
-                        className="bg-green-100 text-green-800 font-bold hover:bg-green-200 border-2 border-green-600 h-8 rounded-lg shadow-md px-5"
+                        className="bg-green-100 text-green-800 font-bold hover:bg-green-200 border border-green-600 h-8 rounded-lg shadow-md px-5"
                         onClick={handleIncrease}
                         aria-label="Add to Cart"
                     >
                         ADD
                     </Button>
                 ) : (
-                    <div className="flex items-center gap-1 rounded-lg border-2 border-green-600 bg-green-100 text-green-800 p-0 shadow-md h-8">
+                    <div className="flex items-center gap-1 rounded-lg border border-green-600 bg-green-100 text-green-800 p-0 shadow-md h-8">
                         <Button size="icon" variant="ghost" className="h-full w-8 hover:bg-green-200 rounded-r-none" onClick={handleDecrease}>
                             <Minus className="h-4 w-4" />
                         </Button>
