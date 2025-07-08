@@ -56,48 +56,51 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
         ) : cartDetails.length > 0 ? (
           <>
             <ScrollArea className="flex-1">
-              <div className="flex flex-col gap-6 p-6">
+              <div className="flex flex-col gap-4 p-6">
                 {cartDetails.map(({ product, quantity, note }) =>
                   product ? (
-                    <div key={product.id}>
-                      <div className="flex items-center space-x-4">
+                    <div key={product.id} className="grid grid-cols-[auto_1fr] gap-4 items-start border-b pb-4">
                         <div className="relative h-20 w-20 overflow-hidden rounded-md">
-                          <Image
-                            src={product.images[0]}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                            data-ai-hint={product.dataAiHint}
-                          />
+                            <Image
+                                src={product.images[0]}
+                                alt={product.name}
+                                fill
+                                className="object-cover"
+                                data-ai-hint={product.dataAiHint}
+                                sizes="80px"
+                            />
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <h3 className="font-medium">{product.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            ₹{getPrice(product).toFixed(2)}
-                          </p>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                                type="number"
-                                value={quantity}
-                                onChange={(e) => updateQuantity(product.id, parseInt(e.target.value), product.stock)}
-                                className="h-8 w-16"
-                                min="1"
-                                max={product.stock}
-                              />
-                              <Button variant="ghost" size="icon" onClick={() => removeFromCart(product.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                              </Button>
-                          </div>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-start">
+                                <h3 className="font-medium pr-2 leading-tight">{product.name}</h3>
+                                <p className="font-semibold shrink-0">₹{(getPrice(product) * quantity).toFixed(2)}</p>
+                            </div>
+                            <p className="text-sm text-muted-foreground -mt-1">
+                                Price: ₹{getPrice(product).toFixed(2)}
+                            </p>
+                            <div className="flex items-center space-x-2">
+                                <label htmlFor={`quantity-${product.id}`} className="text-sm font-medium">Qty:</label>
+                                <Input
+                                    id={`quantity-${product.id}`}
+                                    type="number"
+                                    value={quantity}
+                                    onChange={(e) => updateQuantity(product.id, parseInt(e.target.value) || 0, product.stock)}
+                                    className="h-8 w-16"
+                                    min="0"
+                                    max={product.stock}
+                                />
+                                <Button variant="ghost" size="icon" onClick={() => removeFromCart(product.id)} aria-label="Remove item">
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                            </div>
+                            <Textarea
+                                placeholder="Add a note..."
+                                value={note || ""}
+                                onChange={(e) => updateItemNote(product.id, e.target.value)}
+                                className="h-16 text-xs"
+                                rows={2}
+                            />
                         </div>
-                        <p className="font-medium">₹{(getPrice(product) * quantity).toFixed(2)}</p>
-                      </div>
-                      <Textarea
-                        placeholder="Add a note for the seller..."
-                        value={note || ""}
-                        onChange={(e) => updateItemNote(product.id, e.target.value)}
-                        className="mt-2 h-16 text-xs"
-                        rows={2}
-                      />
                     </div>
                   ) : null
                 )}
