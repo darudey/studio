@@ -125,14 +125,14 @@ export default function ProductPage({ initialDailyEssentials }: { initialDailyEs
           <div className="py-6 bg-[hsl(var(--section-background))]">
               <div className="container">
                   <h2 className="text-2xl font-bold tracking-tight mb-4">Daily Essentials</h2>
-                  {dailyEssentials.length > 0 ? (
+                  {initialDailyEssentials.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {dailyEssentials.map((product) => (
+                          {initialDailyEssentials.map((product) => (
                               <ProductCard key={product.id} product={product} />
                           ))}
                       </div>
                   ) : (
-                      !isLoading && <p className="text-muted-foreground">No "Daily Essentials" products found at the moment.</p>
+                      <p className="text-muted-foreground">No "Daily Essentials" products found at the moment.</p>
                   )}
               </div>
           </div>

@@ -1,6 +1,6 @@
 
-import HomePageTest from '@/components/app/HomePageTest';
-
+// This file is not active in the current project configuration.
+// The active homepage is located at `src/app/page.tsx`.
 export default function Home() {
-  return <HomePageTest message="THIS IS THE HOMEPAGE FROM THE ROOT app/ DIRECTORY" />;
+  return null;
 }

@@ -15,6 +15,7 @@ import ProductCarousel from "@/components/app/ProductCarousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useProduct, useSimilarProducts } from "@/hooks/use-swr-data";
 import { Progress } from "@/components/ui/progress";
+import type { Product } from "@/types";
 
 export default function ProductDetailPage() {
   const params = useParams();
