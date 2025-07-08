@@ -1,4 +1,6 @@
 
+"use client";
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -11,11 +13,6 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-export const metadata: Metadata = {
-  title: "Kundan Mart",
-  description: "Your one-stop shop for everything.",
-};
 
 const HeaderSkeleton = () => (
   <header className="sticky top-0 z-40 w-full bg-[hsl(var(--header-background))]">
@@ -41,6 +38,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>Kundan Mart</title>
+        <meta name="description" content="Your one-stop shop for everything." />
+      </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
         <AuthProvider>
           <CartProvider>
