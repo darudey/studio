@@ -6,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { Clock } from "lucide-react";
+import { Clock, Minus, Plus } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { addToCart } = useCart();
+  const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
+
+  const cartItem = cartItems.find(item => item.productId === product.id);
+  const quantityInCart = cartItem?.quantity || 0;
 
   const displayPrice = user?.role === 'wholesaler' || user?.role === 'developer' 
     ? product.wholesalePrice 
@@ -23,10 +26,18 @@ export default function ProductCard({ product }: ProductCardProps) {
   const mrp = product.retailPrice > displayPrice ? product.retailPrice : displayPrice * 1.25;
   const discount = mrp > displayPrice ? Math.round(((mrp - displayPrice) / mrp) * 100) : 0;
   
-  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleIncrease = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(product.id, 1, product.stock);
+  };
+
+  const handleDecrease = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (quantityInCart > 0) {
+      updateQuantity(product.id, quantityInCart - 1, product.stock);
+    }
   };
 
   return (
@@ -49,14 +60,26 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </div>
             )}
              <div className="absolute bottom-[-10px] right-1">
-                <Button
-                    size="sm"
-                    className="bg-green-100 text-green-800 font-bold hover:bg-green-200 border-2 border-green-600 h-8 rounded-lg shadow-md px-5"
-                    onClick={handleAddToCart}
-                    aria-label="Add to Cart"
-                >
-                    ADD
-                </Button>
+                {quantityInCart === 0 ? (
+                    <Button
+                        size="sm"
+                        className="bg-green-100 text-green-800 font-bold hover:bg-green-200 border-2 border-green-600 h-8 rounded-lg shadow-md px-5"
+                        onClick={handleIncrease}
+                        aria-label="Add to Cart"
+                    >
+                        ADD
+                    </Button>
+                ) : (
+                    <div className="flex items-center gap-1 rounded-lg border-2 border-green-600 bg-green-100 text-green-800 p-0 shadow-md h-8">
+                        <Button size="icon" variant="ghost" className="h-full w-8 hover:bg-green-200 rounded-r-none" onClick={handleDecrease}>
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-6 text-center font-bold text-sm tabular-nums">{quantityInCart}</span>
+                        <Button size="icon" variant="ghost" className="h-full w-8 hover:bg-green-200 rounded-l-none" onClick={handleIncrease}>
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
         
