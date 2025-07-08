@@ -1,19 +1,45 @@
 import ProductPage from "@/components/app/ProductPage";
-import { getRecentlyUpdatedProducts, getCategories, getProducts } from '@/lib/data';
+import { getProducts } from '@/lib/data';
 import { Product } from "@/types";
 
+// Helper function to extract categories from a product list.
+// This avoids an extra database call.
+function getCategoriesFromProducts(products: Product[]): string[] {
+    const categoriesSet = new Set(products.map(p => p.category));
+    const categories = Array.from(categoriesSet).sort();
+    if (!categories.includes("Uncategorized")) {
+        return ["Uncategorized", ...categories];
+    }
+    return categories;
+}
+
+// Helper function to get recently updated products from a list.
+// This avoids an extra database call.
+function getRecentlyUpdatedFromProducts(products: Product[], limit: number): Product[] {
+    // Create a copy before sorting to avoid mutating the original array
+    const sorted = [...products].sort((a, b) => {
+        // Handle cases where updatedAt might be missing
+        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return dateB - dateA;
+    });
+    return sorted.slice(0, limit);
+}
+
+
 export default async function Home() {
-  let dailyEssentialsProducts: Product[] = [];
   let allProducts: Product[] = [];
   let categories: string[] = [];
+  let dailyEssentialsProducts: Product[] = [];
   
   try {
-    // Fetch critical data in parallel on the server before rendering the page.
-    [dailyEssentialsProducts, categories, allProducts] = await Promise.all([
-      getRecentlyUpdatedProducts(10),
-      getCategories(),
-      getProducts()
-    ]);
+    // Fetch all products just ONCE. This is the key optimization.
+    allProducts = await getProducts();
+    
+    // Derive categories and "daily essentials" from the single list of products in memory.
+    categories = getCategoriesFromProducts(allProducts);
+    dailyEssentialsProducts = getRecentlyUpdatedFromProducts(allProducts, 10);
+
   } catch (error) {
     console.error("Failed to fetch server-side data for homepage:", error);
     // In case of a database error, the page will still render with empty sections 
@@ -22,7 +48,7 @@ export default async function Home() {
   
   return <ProductPage 
             serverRecommendedProducts={dailyEssentialsProducts} 
-            serverCategories={categories}
             serverAllProducts={allProducts}
+            serverCategories={categories}
          />;
 }
