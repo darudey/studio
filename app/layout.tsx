@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -21,8 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
+    <html lang="en">
+      <body 
+        className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}
+        suppressHydrationWarning={true}
+      >
         <AuthProvider>
           <CartProvider>
             <div className="relative flex min-h-screen flex-col">
