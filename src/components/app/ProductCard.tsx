@@ -6,6 +6,7 @@ import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Clock, Loader2, Minus, Plus } from "lucide-react";
+import { useState } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -16,6 +17,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, isLoading, onClick }: ProductCardProps) {
   const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const cartItem = cartItems.find(item => item.productId === product.id);
   const quantityInCart = cartItem?.quantity || 0;
@@ -30,15 +32,21 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
   const handleIncrease = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isUpdating) return;
+    setIsUpdating(true);
     addToCart(product.id, 1, product.stock);
+    setTimeout(() => setIsUpdating(false), 500); // Artificial delay for UX feedback
   };
 
   const handleDecrease = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isUpdating) return;
+    setIsUpdating(true);
     if (quantityInCart > 0) {
       updateQuantity(product.id, quantityInCart - 1, product.stock);
     }
+    setTimeout(() => setIsUpdating(false), 500); // Artificial delay for UX feedback
   };
 
   return (
@@ -71,17 +79,20 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
                         size="sm"
                         className="bg-green-100 text-green-800 font-bold hover:bg-green-200 border border-green-600 h-8 rounded-lg shadow-md px-5"
                         onClick={handleIncrease}
+                        disabled={isUpdating}
                         aria-label="Add to Cart"
                     >
-                        ADD
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin"/> : 'ADD'}
                     </Button>
                 ) : (
                     <div className="flex items-center gap-1 rounded-lg border border-green-600 bg-green-100 text-green-800 p-0 shadow-md h-8">
-                        <Button size="icon" variant="ghost" className="h-full w-8 hover:bg-green-200 rounded-r-none" onClick={handleDecrease}>
+                        <Button size="icon" variant="ghost" className="h-full w-8 hover:bg-green-200 rounded-r-none" onClick={handleDecrease} disabled={isUpdating}>
                             <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-6 text-center font-bold text-sm tabular-nums">{quantityInCart}</span>
-                        <Button size="icon" variant="ghost" className="h-full w-8 hover:bg-green-200 rounded-l-none" onClick={handleIncrease}>
+                        <span className="w-6 text-center font-bold text-sm tabular-nums">
+                            {isUpdating ? <Loader2 className="h-4 w-4 animate-spin mx-auto"/> : quantityInCart}
+                        </span>
+                        <Button size="icon" variant="ghost" className="h-full w-8 hover:bg-green-200 rounded-l-none" onClick={handleIncrease} disabled={isUpdating}>
                             <Plus className="h-4 w-4" />
                         </Button>
                     </div>
