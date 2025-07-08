@@ -259,12 +259,15 @@ export default function ManageProductsPage() {
             Product Catalog
         </h1>
         <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+            <div className="relative">
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm pr-8"
+              />
+              {isSearching && page === 1 && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+            </div>
             <Button variant="outline" size="icon" onClick={() => setIsCategoryManagerOpen(true)} title="Manage Categories">
                 <Hash className="h-4 w-4 text-blue-600" />
                 <span className="sr-only">Manage Categories</span>
@@ -433,7 +436,7 @@ export default function ManageProductsPage() {
       </AlertDialog>
 
 
-      {isSearching ? (
+      {isSearching && page === 1 ? (
          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(12)].map((_, i) => <ProductCardSkeleton key={i} />)}
          </div>
@@ -473,3 +476,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
