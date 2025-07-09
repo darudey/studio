@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -6,6 +7,7 @@ import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
+import { useCategorySettings } from '@/context/CategorySettingsContext';
 
 interface ProductPageProps {
   serverRecommendedProducts: Product[];
@@ -18,6 +20,7 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
+  const { settingsMap } = useCategorySettings();
 
   const handleProductClick = (productId: string) => {
     setLoadingProductId(productId);
@@ -80,6 +83,7 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
                             products={serverRecommendedProducts} 
                             loadingProductId={loadingProductId}
                             onProductClick={handleProductClick}
+                            categorySettingsMap={settingsMap}
                         />
                     </div>
                 </div>
@@ -98,6 +102,7 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
                                 products={categoryProducts} 
                                 loadingProductId={loadingProductId}
                                 onProductClick={handleProductClick}
+                                categorySettingsMap={settingsMap}
                              />
                         </div>
                     </div>
@@ -117,6 +122,7 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
                             product={product} 
                             isLoading={loadingProductId === product.id}
                             onClick={() => handleProductClick(product.id)}
+                            placeholderImageUrl={settingsMap[product.category]}
                         />
                     ))}
                 </div>

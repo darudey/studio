@@ -4,6 +4,7 @@
 import { Product } from "@/types";
 import Image from "next/image";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 interface SearchSuggestionsProps {
   suggestions: Product[];
@@ -11,6 +12,8 @@ interface SearchSuggestionsProps {
 }
 
 export default function SearchSuggestions({ suggestions, onSuggestionClick }: SearchSuggestionsProps) {
+  const { settingsMap } = useCategorySettings();
+
   if (suggestions.length === 0) {
     return null;
   }
@@ -32,7 +35,7 @@ export default function SearchSuggestions({ suggestions, onSuggestionClick }: Se
             >
               <div className="relative h-8 w-8 flex-shrink-0">
                 {isPlaceholder ? (
-                  <CategoryIconAsImage category={product.category} />
+                  <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]}/>
                 ) : (
                   <Image
                     src={imageUrl}

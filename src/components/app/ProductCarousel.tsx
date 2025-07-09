@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Product } from "@/types";
@@ -9,9 +10,10 @@ interface ProductCarouselProps {
     products: Product[];
     loadingProductId: string | null;
     onProductClick: (productId: string) => void;
+    categorySettingsMap: Record<string, string>;
 }
 
-export default function ProductCarousel({ title, products, loadingProductId, onProductClick }: ProductCarouselProps) {
+export default function ProductCarousel({ title, products, loadingProductId, onProductClick, categorySettingsMap }: ProductCarouselProps) {
     if (!products || products.length === 0) {
         return null;
     }
@@ -34,6 +36,7 @@ export default function ProductCarousel({ title, products, loadingProductId, onP
                                     product={product} 
                                     isLoading={loadingProductId === product.id}
                                     onClick={() => onProductClick(product.id)}
+                                    placeholderImageUrl={categorySettingsMap[product.category]}
                                 />
                             </div>
                         </CarouselItem>

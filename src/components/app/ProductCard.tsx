@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { Clock, Loader2, Minus, Plus } from "lucide-react";
+import { Loader2, Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { CategoryIconAsImage } from "@/lib/icons";
 
@@ -14,9 +14,10 @@ interface ProductCardProps {
   product: Product;
   isLoading: boolean;
   onClick: () => void;
+  placeholderImageUrl?: string;
 }
 
-export default function ProductCard({ product, isLoading, onClick }: ProductCardProps) {
+export default function ProductCard({ product, isLoading, onClick, placeholderImageUrl }: ProductCardProps) {
   const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -52,7 +53,7 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
   };
 
   const imageUrl = product.images?.[0];
-  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+  const isPlaceholder = !imageUrl;
 
   return (
     <Link href={`/products/${product.id}`} onClick={onClick} className="block w-full h-full">
@@ -65,7 +66,7 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
         <div className="relative">
             <div className="aspect-square relative">
                 {isPlaceholder ? (
-                    <CategoryIconAsImage category={product.category} />
+                    <CategoryIconAsImage category={product.category} imageUrl={placeholderImageUrl}/>
                 ) : (
                     <Image
                     src={imageUrl}

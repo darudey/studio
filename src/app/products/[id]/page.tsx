@@ -9,24 +9,25 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import type { Product } from "@/types";
 import { Minus, Plus, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import ProductCarousel from "@/components/app/ProductCarousel";
+import ProductCarousel from "@/src/components/app/ProductCarousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const [quantity, setQuantity] = useState(1);
   const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { settingsMap } = useCategorySettings();
+  const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
 
   useEffect(() => {
     const productId = params.id as string;
@@ -74,6 +75,10 @@ export default function ProductDetailPage() {
     if (quantityInCart > 0) {
       updateQuantity(product.id, quantityInCart - 1, product.stock);
     }
+  };
+  
+  const handleProductClick = (productId: string) => {
+    setLoadingProduct(productId);
   };
 
   if (loading) {
@@ -131,7 +136,7 @@ export default function ProductDetailPage() {
                 </Carousel>
             ) : (
                 <div className="aspect-square relative bg-white border rounded-md">
-                    <CategoryIconAsImage category={product.category} />
+                    <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]}/>
                 </div>
             )}
         </div>
@@ -163,8 +168,14 @@ export default function ProductDetailPage() {
         </div>
 
         {similarProducts.length > 0 && (
-            <div className="bg-background">
-                 <ProductCarousel title="Similar Products" products={similarProducts} />
+            <div className="bg-background py-6 px-4">
+                 <ProductCarousel 
+                    title="Similar Products"
+                    products={similarProducts}
+                    loadingProductId={loadingProduct}
+                    onProductClick={handleProductClick}
+                    categorySettingsMap={settingsMap}
+                  />
             </div>
         )}
       </div>
