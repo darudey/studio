@@ -1,4 +1,5 @@
 
+import { cache } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import type { Product, User, Order, OrderItem, Coupon, Notification, Category } from "@/types";
@@ -6,12 +7,12 @@ import type { Product, User, Order, OrderItem, Coupon, Notification, Category } 
 // USER FUNCTIONS
 const usersCollection = collection(db, 'users');
 
-export const getUsers = async (): Promise<User[]> => {
+export const getUsers = cache(async (): Promise<User[]> => {
     const snapshot = await getDocs(usersCollection);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-};
+});
 
-export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
+export const getUsersByIds = cache(async (ids: string[]): Promise<User[]> => {
     if (ids.length === 0) return [];
     try {
         const userPromises: Promise<User[]>[] = [];
@@ -32,21 +33,21 @@ export const getUsersByIds = async (ids: string[]): Promise<User[]> => {
        }
        return []; // Return empty array to prevent crash
     }
-};
+});
 
-export const getUserById = async (id: string): Promise<User | null> => {
+export const getUserById = cache(async (id: string): Promise<User | null> => {
     const docRef = doc(db, 'users', id);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as User : null;
-}
+});
 
-export const getUserByEmail = async (email: string): Promise<User | null> => {
+export const getUserByEmail = cache(async (email: string): Promise<User | null> => {
     const q = query(usersCollection, where("email", "==", email.toLowerCase()));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
     const docSnap = snapshot.docs[0];
     return { id: docSnap.id, ...docSnap.data() } as User;
-}
+});
 
 export const createUserProfile = async (user: User): Promise<void> => {
     const userRef = doc(db, 'users', user.id);
@@ -65,7 +66,7 @@ export const updateUser = async (user: User): Promise<void> => {
 // PRODUCT FUNCTIONS
 const productsCollection = collection(db, 'products');
 
-export const getProducts = async (): Promise<Product[]> => {
+export const getProducts = cache(async (): Promise<Product[]> => {
     try {
         const snapshot = await getDocs(query(productsCollection, orderBy("createdAt", "desc")));
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
@@ -77,7 +78,7 @@ export const getProducts = async (): Promise<Product[]> => {
         }
         return []; // Return empty array to prevent crash
     }
-};
+});
 
 export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }: { search?: string; page?: number; limit?: number; }) => {
     // This is a client-side implementation for demonstration.
@@ -114,7 +115,7 @@ export const getPaginatedProducts = async ({ search = '', page = 1, limit = 20 }
     };
 };
 
-export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
+export const getProductsByIds = cache(async (ids: string[]): Promise<Product[]> => {
     if (ids.length === 0) return [];
     // Firestore 'in' queries are limited to 30 items. We need to batch.
     const productPromises: Promise<Product[]>[] = [];
@@ -126,13 +127,13 @@ export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
         }
     }
     return (await Promise.all(productPromises)).flat();
-};
+});
 
-export const getProductById = async (id: string): Promise<Product | null> => {
+export const getProductById = cache(async (id: string): Promise<Product | null> => {
     const docRef = doc(db, 'products', id);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Product : null;
-}
+});
 
 export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
     const now = new Date().toISOString();
@@ -205,18 +206,18 @@ export const deleteMultipleProducts = async (productIds: string[]): Promise<void
 // ORDER FUNCTIONS
 const ordersCollection = collection(db, 'orders');
 
-export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
+export const getOrdersByUserId = cache(async (userId: string): Promise<Order[]> => {
     const q = query(ordersCollection, where("userId", "==", userId));
     const snapshot = await getDocs(q);
     const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
     // Sort on the client-side to avoid needing a composite index
     return orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-};
+});
 
-export const getAllOrders = async (): Promise<Order[]> => {
+export const getAllOrders = cache(async (): Promise<Order[]> => {
     const snapshot = await getDocs(ordersCollection);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-};
+});
 
 
 export const addOrder = async (orderData: Omit<Order, 'id' | 'date'>): Promise<Order> => {
@@ -295,13 +296,13 @@ export const updateOrder = async (order: Order): Promise<void> => {
 // COUPON FUNCTIONS
 const couponsCollection = collection(db, 'coupons');
 
-export const getUnusedCoupons = async (): Promise<Coupon[]> => {
+export const getUnusedCoupons = cache(async (): Promise<Coupon[]> => {
     const q = query(couponsCollection, where("isUsed", "==", false));
     const snapshot = await getDocs(q);
     const coupons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
     // Sort on the client-side to avoid needing a composite index
     return coupons.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-};
+});
 
 export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon> => {
     const docRef = await addDoc(couponsCollection, couponData);
@@ -309,7 +310,7 @@ export const addCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon>
 };
 
 // HOMEPAGE FUNCTIONS
-export const getRecommendedProducts = async (): Promise<Product[]> => {
+export const getRecommendedProducts = cache(async (): Promise<Product[]> => {
     try {
         const q = query(productsCollection, where("isRecommended", "==", true), firestoreLimit(10));
         const snapshot = await getDocs(q);
@@ -322,15 +323,15 @@ export const getRecommendedProducts = async (): Promise<Product[]> => {
        }
        return []; // Return empty array to prevent a crash
     }
-}
+});
 
-export const getNewestProducts = async (limitCount = 10): Promise<Product[]> => {
+export const getNewestProducts = cache(async (limitCount = 10): Promise<Product[]> => {
     const q = query(productsCollection, orderBy("createdAt", "desc"), firestoreLimit(limitCount));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-}
+});
 
-export const getRecentlyUpdatedProducts = async (limitCount = 10): Promise<Product[]> => {
+export const getRecentlyUpdatedProducts = cache(async (limitCount = 10): Promise<Product[]> => {
     try {
         const q = query(productsCollection, orderBy("updatedAt", "desc"), firestoreLimit(limitCount));
         const snapshot = await getDocs(q);
@@ -349,17 +350,17 @@ export const getRecentlyUpdatedProducts = async (limitCount = 10): Promise<Produ
         console.error("Failed to fetch recently updated products, falling back to newest:", error);
         return getNewestProducts(limitCount);
     }
-}
+});
 
-export const getTrendingProducts = async (limitCount = 10): Promise<Product[]> => {
+export const getTrendingProducts = cache(async (limitCount = 10): Promise<Product[]> => {
     // This function is disabled by default because it requires insecure database rules
     // (reading all orders). For a production app, this logic should be moved to a
     // secure backend service (e.g., a Cloud Function) that aggregates data periodically.
     console.warn("getTrendingProducts is disabled due to security constraints. Returning empty array.");
     return [];
-}
+});
 
-export const getSimilarProducts = async (category: string, excludeId: string): Promise<Product[]> => {
+export const getSimilarProducts = cache(async (category: string, excludeId: string): Promise<Product[]> => {
     try {
         const q = query(
             productsCollection,
@@ -378,22 +379,22 @@ export const getSimilarProducts = async (category: string, excludeId: string): P
         }
         return [];
     }
-}
+});
 
 
 // CATEGORY MANAGEMENT
 const categoriesCollection = collection(db, 'categories');
 
-export const getCategories = async (): Promise<string[]> => {
+export const getCategories = cache(async (): Promise<string[]> => {
     const products = await getProducts();
     const categories = [...new Set(products.map(p => p.category))].sort();
     if (!categories.includes("Uncategorized")) {
         return ["Uncategorized", ...categories];
     }
     return categories;
-};
+});
 
-export const getCategorySettings = async (): Promise<Category[]> => {
+export const getCategorySettings = cache(async (): Promise<Category[]> => {
     try {
         const snapshot = await getDocs(categoriesCollection);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
@@ -401,7 +402,7 @@ export const getCategorySettings = async (): Promise<Category[]> => {
         console.error("Failed to fetch category settings:", error);
         return [];
     }
-};
+});
 
 export const setCategoryImageUrl = async (categoryName: string, imageUrl: string): Promise<void> => {
     const categoryRef = doc(db, 'categories', categoryName);
@@ -455,7 +456,7 @@ export const addNotification = async (notificationData: Omit<Notification, 'id' 
     });
 };
 
-export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
+export const getNotificationsForUser = cache(async (userId: string): Promise<Notification[]> => {
     try {
         const q = query(notificationsCollection, where("userId", "==", userId), firestoreLimit(50));
         const snapshot = await getDocs(q);
@@ -470,7 +471,7 @@ export const getNotificationsForUser = async (userId: string): Promise<Notificat
         }
         return [];
     }
-};
+});
 
 export const markUserNotificationsAsRead = async (userId: string): Promise<void> => {
     const q = query(notificationsCollection, where("userId", "==", userId), where("isRead", "==", false));
