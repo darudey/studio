@@ -4,11 +4,11 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getProducts, updateProduct, getCategories } from "@/lib/data";
-import type { Product } from "@/types";
+import { getProducts, updateProduct, getCategories, getCategorySettings, setCategoryImageUrl } from "@/lib/data";
+import type { Product, Category } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ImageIcon, Upload, Loader2, Trash2 } from "lucide-react";
+import { ImageIcon, Upload, Loader2, Trash2, Pencil } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -28,8 +28,11 @@ export default function ManageProductImagesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
+  const [categorySettings, setCategorySettings] = useState<Record<string, string>>({});
+  const [updatingCategory, setUpdatingCategory] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const categoryFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -45,9 +48,15 @@ export default function ManageProductImagesPage() {
     Promise.all([
         getProducts(),
         getCategories(),
-    ]).then(([productsData, categoriesData]) => {
+        getCategorySettings(),
+    ]).then(([productsData, categoriesData, settingsData]) => {
       setProducts(productsData);
       setCategories(categoriesData);
+      const settingsMap = settingsData.reduce((acc, setting) => {
+        acc[setting.id] = setting.imageUrl;
+        return acc;
+      }, {} as Record<string, string>);
+      setCategorySettings(settingsMap);
       setLoading(false);
     }).catch(err => {
         console.error("Failed to load page data", err);
@@ -153,6 +162,38 @@ export default function ManageProductImagesPage() {
         setUpdatingProductId(null);
     }
   };
+
+  const handleCategoryDefaultImageClick = (category: string) => {
+    if (updatingCategory) return;
+    setUpdatingCategory(category);
+    categoryFileInputRef.current?.click();
+  };
+
+  const handleCategoryFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0] && updatingCategory) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const newImage = e.target?.result as string;
+        try {
+          await setCategoryImageUrl(updatingCategory, newImage);
+          setCategorySettings(prev => ({ ...prev, [updatingCategory!]: newImage }));
+          toast({ title: "Default Image Updated", description: `The default for ${updatingCategory} has been changed.` });
+        } catch (error) {
+          console.error("Failed to update category image", error);
+          toast({ title: "Update Failed", description: "Could not save the new default image.", variant: "destructive" });
+        } finally {
+          setUpdatingCategory(null);
+          if (categoryFileInputRef.current) {
+            categoryFileInputRef.current.value = "";
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setUpdatingCategory(null);
+    }
+  };
   
   const ProductImageSkeleton = () => (
       <Card>
@@ -197,6 +238,16 @@ export default function ManageProductImagesPage() {
         ref={fileInputRef} 
         disabled={!!updatingProductId}
       />
+
+      <Input 
+        id="category-file-upload" 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleCategoryFileChange} 
+        ref={categoryFileInputRef} 
+        disabled={!!updatingCategory}
+      />
       
       {loading ? (
         <div className="space-y-4">
@@ -207,11 +258,30 @@ export default function ManageProductImagesPage() {
       ) : (
         <Accordion type="multiple" defaultValue={Object.keys(productsByCategory).slice(0, 1)} className="w-full space-y-4">
             {Object.entries(productsByCategory).map(([category, categoryProducts]) => {
+                const placeholderImageUrl = categorySettings[category];
                 return (
                 <AccordionItem value={category} key={category} className="border-b-0">
                     <Card>
                         <AccordionTrigger className="p-4 hover:no-underline">
-                            <h2 className="text-xl font-bold">{category}</h2>
+                           <div className="flex items-center gap-4 w-full">
+                                <div className="w-12 h-12 flex-shrink-0">
+                                    <CategoryIconAsImage category={category} imageUrl={placeholderImageUrl} />
+                                </div>
+                                <h2 className="text-xl font-bold">{category}</h2>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="ml-auto" 
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent accordion from toggling
+                                        handleCategoryDefaultImageClick(category);
+                                    }}
+                                    disabled={!!updatingCategory && updatingCategory !== category}
+                                >
+                                    {updatingCategory === category ? <Loader2 className="h-4 w-4 animate-spin"/> : <Pencil className="h-4 w-4 mr-2"/>}
+                                    Change Default
+                                </Button>
+                            </div>
                         </AccordionTrigger>
                         <AccordionContent>
                             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -249,7 +319,7 @@ export default function ManageProductImagesPage() {
                                                     onClick={() => handleImageClick(p)}
                                                 >
                                                     {isPlaceholder ? (
-                                                        <CategoryIconAsImage category={p.category} className="transition-transform group-hover:scale-105" />
+                                                        <CategoryIconAsImage category={p.category} imageUrl={placeholderImageUrl} className="transition-transform group-hover:scale-105" />
                                                     ) : (
                                                         <Image 
                                                             src={imageUrl}
@@ -281,3 +351,5 @@ export default function ManageProductImagesPage() {
     </div>
   );
 }
+
+    

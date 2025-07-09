@@ -1,7 +1,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where, documentId, writeBatch, setDoc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
-import type { Product, User, Order, OrderItem, Coupon, Notification } from "@/types";
+import type { Product, User, Order, OrderItem, Coupon, Notification, Category } from "@/types";
 
 // USER FUNCTIONS
 const usersCollection = collection(db, 'users');
@@ -382,6 +382,8 @@ export const getSimilarProducts = async (category: string, excludeId: string): P
 
 
 // CATEGORY MANAGEMENT
+const categoriesCollection = collection(db, 'categories');
+
 export const getCategories = async (): Promise<string[]> => {
     const products = await getProducts();
     const categories = [...new Set(products.map(p => p.category))].sort();
@@ -389,6 +391,27 @@ export const getCategories = async (): Promise<string[]> => {
         return ["Uncategorized", ...categories];
     }
     return categories;
+};
+
+export const getCategorySettings = async (): Promise<Category[]> => {
+    try {
+        const snapshot = await getDocs(categoriesCollection);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+    } catch (error) {
+        console.error("Failed to fetch category settings:", error);
+        return [];
+    }
+};
+
+export const setCategoryImageUrl = async (categoryName: string, imageUrl: string): Promise<void> => {
+    const categoryRef = doc(db, 'categories', categoryName);
+    // Using partial to avoid having to provide all fields
+    const categoryData: Partial<Category> = {
+        name: categoryName,
+        imageUrl: imageUrl,
+        createdAt: new Date().toISOString(),
+    };
+    await setDoc(categoryRef, categoryData, { merge: true });
 };
 
 export const renameCategory = async (oldName: string, newName: string): Promise<void> => {
@@ -461,3 +484,6 @@ export const markUserNotificationsAsRead = async (userId: string): Promise<void>
     });
     await batch.commit();
 };
+
+
+    

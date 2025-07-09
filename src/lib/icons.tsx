@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import { cn } from './utils';
+import Image from 'next/image';
 
 const ChowminIcon = () => (
     <svg
@@ -43,23 +44,28 @@ const ChowminIcon = () => (
   );
 
 const PujaIcon = () => (
-    <svg 
-        width="24" 
-        height="24" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" // Increased stroke width for better visibility
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        xmlns="http://www.w3.org/2000/svg"
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-        <path d="M9 17V8" />
-        <path d="M9 6c.5-1.5 2-2 2-2" />
-        <path d="M13 17V10" />
-        <path d="M13 8c.5-1.5 2-2 2-2" />
-        <path d="M5 20h14" />
-        <path d="M8 20a4 4 0 0 1 8 0" />
+      {/* Incense sticks */}
+      <path d="M10 20v-8" />
+      <path d="M7 20v-5" />
+      <path d="M13 20v-5" />
+      <path d="M10 9a1.5 1.5 0 0 0-3-2" />
+      <path d="M7 12a1.5 1.5 0 0 0-3-2" />
+      <path d="M13 12a1.5 1.5 0 0 0-3-2" />
+      
+      {/* Diya (Oil Lamp) */}
+      <path d="M17 16c0 1.5-1.5 3-3.5 3s-3.5-1.5-3.5-3 1.5-3 3.5-3" />
+      <path d="M17 16a2 2 0 1 0 4 0c0-2-3-4-3-4s-1 2-1 4Z" />
     </svg>
 );
 
@@ -116,13 +122,26 @@ export const getIconForCategory = (category: string): React.ElementType => {
     return Package; // Default fallback icon
 };
 
-// Component to render the icon as a default image
-// Updated for better visual appearance: more solid background and clearer icon color.
-export const CategoryIconAsImage = ({ category, className }: { category: string, className?: string }) => {
+export const CategoryIconAsImage = ({ category, imageUrl, className }: { category: string; imageUrl?: string | null; className?: string }) => {
+    if (imageUrl) {
+      return (
+        <div className={cn("relative w-full h-full", className)}>
+          <Image
+            src={imageUrl}
+            alt={`${category} default image`}
+            fill
+            className="object-cover rounded-md"
+          />
+        </div>
+      );
+    }
+  
     const Icon = getIconForCategory(category);
     return (
-        <div className={cn("flex items-center justify-center w-full h-full bg-muted rounded-md", className)}>
-            <Icon className="w-1/2 h-1/2 text-slate-500" />
-        </div>
+      <div className={cn("flex items-center justify-center w-full h-full bg-muted rounded-md", className)}>
+        <Icon className="w-1/2 h-1/2 text-slate-500" />
+      </div>
     );
-};
+  };
+
+    
