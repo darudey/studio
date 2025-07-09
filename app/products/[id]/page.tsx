@@ -114,7 +114,7 @@ export default function ProductDetailPage() {
                                         src={img}
                                         alt={`${product.name} image ${index + 1}`}
                                         fill
-                                        className="object-contain"
+                                        className="object-cover"
                                         sizes="100vw"
                                         data-ai-hint={product.dataAiHint}
                                     />
