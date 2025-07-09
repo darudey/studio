@@ -8,6 +8,7 @@ export type Product = {
   description: string;
   images: string[];
   category: string;
+  mrp?: number;
   retailPrice: number;
   wholesalePrice: number;
   unit: 'kg' | 'g' | 'litre' | 'ml' | 'piece' | 'dozen';

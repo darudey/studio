@@ -29,7 +29,7 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
     ? product.wholesalePrice 
     : product.retailPrice;
     
-  const mrp = product.retailPrice > displayPrice ? product.retailPrice : displayPrice * 1.25;
+  const mrp = product.mrp && product.mrp > displayPrice ? product.mrp : product.retailPrice;
   const discount = mrp > displayPrice ? Math.round(((mrp - displayPrice) / mrp) * 100) : 0;
   
   const handleIncrease = (e: React.MouseEvent<HTMLButtonElement>) => {

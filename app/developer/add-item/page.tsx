@@ -116,6 +116,7 @@ export default function AddItemPage() {
                         return;
                     }
 
+                    const mrp = parseFloat(row['MRP']);
                     const retailPrice = parseFloat(row['Selling Price']);
                     const wholesalePrice = parseFloat(row['Purchase Price']);
                     const stock = parseInt(row['Stock Quantity'], 10);
@@ -130,6 +131,7 @@ export default function AddItemPage() {
                         images: row.image ? [row.image] : [],
                         imageUpdatedAt: now,
                         category: row.category || 'Uncategorized',
+                        mrp: !isNaN(mrp) ? mrp : (!isNaN(retailPrice) ? retailPrice : 0),
                         retailPrice: !isNaN(retailPrice) ? retailPrice : 0,
                         wholesalePrice: !isNaN(wholesalePrice) ? wholesalePrice : 0,
                         unit: unit as Product['unit'],

@@ -27,6 +27,7 @@ const formSchema = z.object({
   batchNo: z.string().optional(),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   category: z.string().min(1, { message: "Category is required." }),
+  mrp: z.coerce.number().min(0, "MRP must be a positive number.").optional(),
   retailPrice: z.coerce.number().min(0.01, { message: "Retail price must be positive." }),
   wholesalePrice: z.coerce.number().min(0.01, { message: "Wholesale price must be positive." }),
   unit: z.enum(['kg', 'g', 'litre', 'ml', 'piece', 'dozen']),
@@ -59,6 +60,7 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
         resolver: zodResolver(formSchema),
         defaultValues: product ? {
             ...product,
+            mrp: product.mrp || product.retailPrice,
             isRecommended: product.isRecommended || false,
         } : {
             name: "",
@@ -66,6 +68,7 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
             batchNo: "",
             description: "",
             category: "",
+            mrp: 0,
             retailPrice: 0,
             wholesalePrice: 0,
             unit: "piece",
@@ -78,6 +81,7 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
         if (product) {
             form.reset({
                 ...product,
+                mrp: product.mrp || product.retailPrice,
                 isRecommended: product.isRecommended || false,
             });
             setImages(product.images.filter(img => !img.includes('placehold.co')));
@@ -269,7 +273,10 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                         <FormMessage />
                     </FormItem>
                 )}/>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                     <FormField control={form.control} name="mrp" render={({ field }) => (
+                        <FormItem><FormLabel>MRP (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
                     <FormField control={form.control} name="retailPrice" render={({ field }) => (
                         <FormItem><FormLabel>Retail Price (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
