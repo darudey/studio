@@ -20,7 +20,7 @@ export default function SearchSuggestions({ suggestions, onSuggestionClick }: Se
       <div className="p-1 space-y-1">
         {suggestions.map((product) => {
           const imageUrl = product.images?.[0];
-          const isPlaceholder = !imageUrl;
+          const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
           return (
             <div
               key={product.id}

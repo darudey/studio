@@ -142,7 +142,7 @@ export default function CheckoutPage() {
                         <TableBody>
                             {cartDetails.map(({ product, quantity, note }) => {
                                 const imageUrl = product?.images?.[0];
-                                const isPlaceholder = !imageUrl;
+                                const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
                                 return product ? (
                                 <TableRow key={product.id}>
                                     <TableCell className="w-[80px]">
