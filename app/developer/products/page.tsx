@@ -4,14 +4,18 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getPaginatedProducts, getCategories, renameCategory, deleteCategory } from "@/lib/data";
+import { getPaginatedProducts, getCategories, updateProduct, renameCategory, deleteCategory } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { debounce } from "lodash";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClipboardList, Loader2, Hash, Pencil, Trash2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import ProductForm from "@/components/app/ProductForm";
+import { ClipboardList, Edit, Loader2, Hash, Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,11 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { CategoryIconAsImage } from "@/lib/icons";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
+
 
 export default function ManageProductsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -40,12 +43,17 @@ export default function ManageProductsPage() {
   
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const { toast } = useToast();
+  const { settingsMap } = useCategorySettings();
 
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [renamingCategory, setRenamingCategory] = useState<{ oldName: string; newName: string } | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isCategoryActionLoading, setIsCategoryActionLoading] = useState(false);
+  
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const limit = 20;
 
@@ -96,6 +104,44 @@ export default function ManageProductsPage() {
     if (!loading && hasMore) {
       fetchProducts(searchTerm, page + 1);
     }
+  };
+
+  const handleEditClick = async (product: Product) => {
+    setEditingProduct(product);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleFormSubmit = async (data: any, images: string[]) => {
+      if (!editingProduct) return;
+      setIsSubmitting(true);
+      
+      const imageChanged = JSON.stringify(images) !== JSON.stringify(editingProduct.images.filter(img => !img.includes('placehold.co')));
+      const updatedProductData: Product = {
+          ...editingProduct,
+          ...data,
+          images,
+          imageUpdatedAt: imageChanged ? new Date().toISOString() : editingProduct.imageUpdatedAt,
+      };
+
+      try {
+          await updateProduct(updatedProductData);
+          setProducts(currentProducts => 
+            currentProducts.map(p => 
+                p.id === editingProduct.id ? updatedProductData : p
+            )
+          );
+          toast({
+              title: "Product Updated",
+              description: `${data.name} has been updated.`,
+          });
+          setIsEditDialogOpen(false);
+          setEditingProduct(null);
+      } catch (error) {
+          console.error("Failed to update product", error);
+          toast({ title: "Error", description: "Failed to update product.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
+      }
   };
 
   const handleAddNewCategory = async () => {
@@ -155,6 +201,47 @@ export default function ManageProductsPage() {
   if (authLoading || !user) {
     return <div className="container py-12 text-center">Redirecting...</div>;
   }
+  
+  const AdminProductCard = ({ product }: { product: Product }) => {
+    const imageUrl = product.images?.[0];
+    const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+    
+    return (
+        <Card className="flex flex-col">
+            <CardContent className="p-0">
+                <div className="aspect-square relative">
+                    {isPlaceholder ? (
+                        <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} className="rounded-t-lg" />
+                    ) : (
+                        <Image
+                            src={imageUrl}
+                            alt={product.name}
+                            fill
+                            className="object-cover rounded-t-lg"
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                            data-ai-hint={product.dataAiHint}
+                        />
+                    )}
+                </div>
+            </CardContent>
+            <div className="p-4 border-t flex-grow flex flex-col justify-between">
+                <div>
+                    <h3 className="font-semibold line-clamp-2 h-12">{product.name}</h3>
+                    <p className="text-sm text-muted-foreground">{product.category}</p>
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                    <div className="text-sm">
+                        <p>Stock: <span className="font-bold">{product.stock}</span></p>
+                        <p>₹{product.retailPrice.toFixed(2)}</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleEditClick(product)}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                    </Button>
+                </div>
+            </div>
+        </Card>
+    );
+  };
 
   return (
     <div className="container py-12">
@@ -167,7 +254,7 @@ export default function ManageProductsPage() {
               <Input placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm pr-8" />
               {isSearching && page === 1 && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
             </div>
-            <Button variant="outline" size="icon" onClick={() => setIsCategoryManagerOpen(true)} title="Manage Categories">
+             <Button variant="outline" size="icon" onClick={() => setIsCategoryManagerOpen(true)} title="Manage Categories">
                 <Hash className="h-4 w-4 text-blue-600" /> <span className="sr-only">Manage Categories</span>
             </Button>
         </div>
@@ -185,7 +272,7 @@ export default function ManageProductsPage() {
             </div>
         </DialogContent>
       </Dialog>
-
+      
       <AlertDialog open={!!categoryToDelete} onOpenChange={(isOpen) => !isOpen && setCategoryToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the category &quot;{categoryToDelete}&quot; and move all its products to &quot;Uncategorized&quot;. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
@@ -193,61 +280,39 @@ export default function ManageProductsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Retail Price</TableHead>
-              <TableHead>Wholesale Price</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(isSearching && page === 1) ? (
-              [...Array(10)].map((_, i) => (
-                <TableRow key={`skeleton-${i}`}>
-                  <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-12" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
-                </TableRow>
-              ))
-            ) : products.length > 0 ? (
-              products.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">
-                    {p.name}
-                    {p.isRecommended && <Badge variant="secondary" className="ml-2">Recommended</Badge>}
-                  </TableCell>
-                  <TableCell>{p.category}</TableCell>
-                  <TableCell>₹{p.retailPrice.toFixed(2)}</TableCell>
-                  <TableCell>₹{p.wholesalePrice.toFixed(2)}</TableCell>
-                  <TableCell>{p.stock}</TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/developer/products/edit/${p.id}`}>Edit</Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">No products found.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { if(!open) { setEditingProduct(null); setIsEditDialogOpen(false); }}}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>Update the details for &quot;{editingProduct?.name}&quot;.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto p-1">
+             <ProductForm 
+                product={editingProduct}
+                categories={allCategories}
+                onFormSubmit={handleFormSubmit}
+                isSubmitting={isSubmitting}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {(isSearching && page === 1) ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => <Skeleton key={`skeleton-${i}`} className="h-80 w-full" />)}
+        </div>
+      ) : products.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.map(p => <AdminProductCard key={p.id} product={p} />)}
+        </div>
+      ) : (
+        <div className="text-center py-10">No products found.</div>
+      )}
 
       {hasMore && (
         <div className="mt-8 text-center">
           <Button onClick={loadMore} disabled={loading}>
-            {loading ? "Loading..." : "Load More"}
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Loading...</> : "Load More"}
           </Button>
         </div>
       )}
