@@ -192,13 +192,22 @@ export default function ManageProductImagesPage() {
   const handleCategoryFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0] && updatingCategory) {
       const file = event.target.files[0];
+      const categoryName = updatingCategory;
       const reader = new FileReader();
       reader.onload = async (e) => {
         const newImage = e.target?.result as string;
         try {
-          await setCategoryImageUrl(updatingCategory, newImage);
-          setCategorySettings(prev => ({ ...prev, [updatingCategory!]: newImage }));
-          toast({ title: "Default Image Updated", description: `The default for ${updatingCategory} has been changed.` });
+          await setCategoryImageUrl(categoryName, newImage);
+          
+          // Re-fetch all settings to ensure the UI updates with the latest data
+          const freshSettingsData = await getCategorySettings();
+          const freshSettingsMap = freshSettingsData.reduce((acc, setting) => {
+            acc[setting.id] = setting.imageUrl;
+            return acc;
+          }, {} as Record<string, string>);
+          setCategorySettings(freshSettingsMap);
+
+          toast({ title: "Default Image Updated", description: `The default for ${categoryName} has been changed.` });
         } catch (error) {
           console.error("Failed to update category image", error);
           toast({ title: "Update Failed", description: "Could not save the new default image.", variant: "destructive" });
@@ -371,3 +380,4 @@ export default function ManageProductImagesPage() {
     </div>
   );
 }
+    
