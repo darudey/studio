@@ -4,14 +4,14 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getPaginatedProducts, updateProduct, getCategories, renameCategory, deleteCategory } from "@/lib/data";
+import { getPaginatedProducts, getCategories, renameCategory, deleteCategory } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { debounce } from "lodash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardList, Loader2, Hash, Pencil, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,11 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
 export default function ManageProductsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -37,14 +37,10 @@ export default function ManageProductsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(true);
-
-  // State for the edit dialog
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // State for category management
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [renamingCategory, setRenamingCategory] = useState<{ oldName: string; newName: string } | null>(null);
@@ -54,17 +50,10 @@ export default function ManageProductsPage() {
   const limit = 20;
 
   const fetchProducts = useCallback(async (query: string, pageNum: number) => {
-    if (pageNum === 1) {
-      setIsSearching(true);
-    } else {
-      setLoading(true);
-    }
+    if (pageNum === 1) setIsSearching(true);
+    else setLoading(true);
     
-    const { products: newProducts, more } = await getPaginatedProducts({
-      search: query,
-      page: pageNum,
-      limit,
-    });
+    const { products: newProducts, more } = await getPaginatedProducts({ search: query, page: pageNum, limit });
     
     setProducts(prev => pageNum === 1 ? newProducts : [...prev, ...newProducts]);
     setHasMore(more);
@@ -75,9 +64,7 @@ export default function ManageProductsPage() {
   }, []);
 
   const debouncedFetch = useMemo(() => {
-    return debounce((query: string) => {
-      fetchProducts(query, 1);
-    }, 300);
+    return debounce((query: string) => fetchProducts(query, 1), 300);
   }, [fetchProducts]);
 
   const refreshAllData = useCallback(async () => {
@@ -90,7 +77,6 @@ export default function ManageProductsPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    
     if (!user) {
       router.push('/login');
       return;
@@ -99,14 +85,11 @@ export default function ManageProductsPage() {
       router.push("/");
       return;
     }
-
-    // Fetch all categories for the edit dialog dropdown
+    
     getCategories().then(setAllCategories);
 
     debouncedFetch(searchTerm);
-    return () => {
-      debouncedFetch.cancel();
-    };
+    return () => debouncedFetch.cancel();
   }, [user, authLoading, router, searchTerm, debouncedFetch]);
 
   const loadMore = () => {
@@ -115,72 +98,15 @@ export default function ManageProductsPage() {
     }
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (!editingProduct) return;
-    const { name, value } = e.target;
-    setEditingProduct({ ...editingProduct, [name]: value });
-  };
-  
-  const handleSelectChange = (name: string, value: string) => {
-    if (!editingProduct) return;
-    setEditingProduct({ ...editingProduct, [name]: value });
-  };
-
-  const handleSaveChanges = async () => {
-    if (!editingProduct) return;
-
-    setIsSaving(true);
-    try {
-      // Coerce prices and stock to numbers before saving
-      const productToUpdate: Product = {
-        ...editingProduct,
-        retailPrice: Number(editingProduct.retailPrice) || 0,
-        wholesalePrice: Number(editingProduct.wholesalePrice) || 0,
-        stock: Number(editingProduct.stock) || 0,
-      };
-
-      await updateProduct(productToUpdate);
-      toast({ title: "Success", description: "Product updated successfully." });
-      
-      // Refresh the product list
-      refreshAllData();
-      
-      setEditingProduct(null); // Close dialog on success
-    } catch (error) {
-      console.error("Failed to update product", error);
-      toast({ title: "Error", description: "Failed to update product.", variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Category Management Handlers
   const handleAddNewCategory = async () => {
     const trimmedName = newCategoryName.trim();
-    if (!trimmedName) {
-      toast({
-        title: "Invalid Name",
-        description: "Category name cannot be empty.",
-        variant: "destructive",
-      });
+    if (!trimmedName || allCategories.find((c) => c.toLowerCase() === trimmedName.toLowerCase())) {
+      toast({ title: "Invalid or Duplicate Category", description: "Category name cannot be empty and must be unique.", variant: "destructive" });
       return;
     }
-    if (allCategories.find((c) => c.toLowerCase() === trimmedName.toLowerCase())) {
-      toast({
-        title: "Duplicate Category",
-        description: "This category already exists.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Add to local state only
     setAllCategories(prev => [...prev, trimmedName].sort());
     setNewCategoryName("");
-    toast({
-        title: "Category Added Temporarily",
-        description: `"${trimmedName}" is available. Assign it to a product to save permanently.`,
-    });
+    toast({ title: "Category Added Temporarily", description: `"${trimmedName}" is available. Assign it to a product to save permanently.` });
   };
 
   const handleStartRename = (category: string) => {
@@ -190,7 +116,6 @@ export default function ManageProductsPage() {
   const handleRenameCategory = async () => {
       if (!renamingCategory) return;
       const trimmedNewName = renamingCategory.newName.trim();
-      
       if (!trimmedNewName || trimmedNewName.toLowerCase() === renamingCategory.oldName.toLowerCase()) {
           setRenamingCategory(null);
           return;
@@ -199,7 +124,6 @@ export default function ManageProductsPage() {
           toast({ title: "Rename Failed", description: "A category with that name already exists.", variant: "destructive" });
           return;
       }
-
       setIsCategoryActionLoading(true);
       try {
           await renameCategory(renamingCategory.oldName, trimmedNewName);
@@ -207,7 +131,6 @@ export default function ManageProductsPage() {
           refreshAllData();
           setRenamingCategory(null);
       } catch (error) {
-          console.error("Failed to rename category", error);
           toast({ title: "Error", description: "Failed to rename category.", variant: "destructive" });
       } finally {
           setIsCategoryActionLoading(false);
@@ -216,7 +139,6 @@ export default function ManageProductsPage() {
   
   const handleDeleteCategory = async () => {
       if (!categoryToDelete) return;
-
       setIsCategoryActionLoading(true);
       try {
           await deleteCategory(categoryToDelete);
@@ -224,29 +146,12 @@ export default function ManageProductsPage() {
           refreshAllData();
           setCategoryToDelete(null);
       } catch (error) {
-          console.error("Failed to delete category", error);
           toast({ title: "Error", description: "Failed to delete category.", variant: "destructive" });
       } finally {
           setIsCategoryActionLoading(false);
       }
   };
   
-  const ProductCardSkeleton = () => (
-      <div className="border p-4 rounded-lg shadow-sm space-y-3">
-        <Skeleton className="h-5 bg-muted rounded w-3/4" />
-        <div className="space-y-2 pt-2 border-t border-muted/20">
-            <div className="flex justify-between">
-                <Skeleton className="h-4 bg-muted rounded w-1/2" />
-                <Skeleton className="h-4 bg-muted rounded w-1/4" />
-            </div>
-            <div className="flex justify-between">
-                <Skeleton className="h-4 bg-muted rounded w-1/3" />
-                <Skeleton className="h-4 bg-muted rounded w-1/3" />
-            </div>
-        </div>
-      </div>
-  );
-
   if (authLoading || !user) {
     return <div className="container py-12 text-center">Redirecting...</div>;
   }
@@ -255,226 +160,97 @@ export default function ManageProductsPage() {
     <div className="container py-12">
       <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ClipboardList className="h-6 w-6 text-blue-600" />
-            Product Catalog
+            <ClipboardList className="h-6 w-6 text-blue-600" /> Product Catalog
         </h1>
         <div className="flex items-center gap-2">
             <div className="relative">
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm pr-8"
-              />
+              <Input placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm pr-8" />
               {isSearching && page === 1 && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
             </div>
             <Button variant="outline" size="icon" onClick={() => setIsCategoryManagerOpen(true)} title="Manage Categories">
-                <Hash className="h-4 w-4 text-blue-600" />
-                <span className="sr-only">Manage Categories</span>
+                <Hash className="h-4 w-4 text-blue-600" /> <span className="sr-only">Manage Categories</span>
             </Button>
         </div>
       </div>
-
-      <Dialog open={!!editingProduct} onOpenChange={(isOpen) => !isOpen && setEditingProduct(null)}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          {editingProduct && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <DialogTitle>Edit Product</DialogTitle>
-                  <Button type="button" size="sm" onClick={handleSaveChanges} disabled={isSaving}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save
-                  </Button>
-                </div>
-                <DialogDescription>
-                  Make changes to &quot;{editingProduct.name}&quot;. Click save when you&apos;re done.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Name</Label>
-                  <Input id="name" name="name" value={editingProduct.name} onChange={handleFormChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">Description</Label>
-                  <Textarea id="description" name="description" value={editingProduct.description} onChange={handleFormChange} className="col-span-3" />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="category" className="text-right">Category</Label>
-                    <Select name="category" value={editingProduct.category} onValueChange={(value) => handleSelectChange('category', value)}>
-                        <SelectTrigger className="col-span-3" id="category">
-                            <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {allCategories.map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="itemCode" className="text-right">Item Code</Label>
-                  <Input id="itemCode" name="itemCode" value={editingProduct.itemCode} onChange={handleFormChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="batchNo" className="text-right">Batch No.</Label>
-                  <Input id="batchNo" name="batchNo" value={editingProduct.batchNo} onChange={handleFormChange} className="col-span-3" />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="retailPrice" className="text-right">Retail Price (₹)</Label>
-                  <Input id="retailPrice" name="retailPrice" type="number" value={editingProduct.retailPrice} onChange={handleFormChange} className="col-span-3" />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="wholesalePrice" className="text-right">Wholesale Price (₹)</Label>
-                  <Input id="wholesalePrice" name="wholesalePrice" type="number" value={editingProduct.wholesalePrice} onChange={handleFormChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="stock" className="text-right">Stock</Label>
-                  <Input id="stock" name="stock" type="number" value={editingProduct.stock} onChange={handleFormChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="unit" className="text-right">Unit</Label>
-                  <Select name="unit" value={editingProduct.unit} onValueChange={(value) => handleSelectChange('unit', value)}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">Kilogram (kg)</SelectItem>
-                      <SelectItem value="g">Gram (g)</SelectItem>
-                      <SelectItem value="litre">Litre (litre)</SelectItem>
-                      <SelectItem value="ml">Millilitre (ml)</SelectItem>
-                      <SelectItem value="piece">Piece</SelectItem>
-                      <SelectItem value="dozen">Dozen</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditingProduct(null)}
-                  disabled={isSaving}
-                  className="w-full"
-                >
-                  Cancel
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
       
-      <Dialog open={isCategoryManagerOpen} onOpenChange={(open) => { if (!open) { setRenamingCategory(null); } setIsCategoryManagerOpen(open); }}>
+      <Dialog open={isCategoryManagerOpen} onOpenChange={(open) => { if (!open) setRenamingCategory(null); setIsCategoryManagerOpen(open); }}>
         <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Manage Categories</DialogTitle>
-                <DialogDescription>Add, rename, or delete product categories.</DialogDescription>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>Manage Categories</DialogTitle><DialogDescription>Add, rename, or delete product categories.</DialogDescription></DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="flex gap-2">
-                    <Input 
-                        placeholder="New category name..."
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        disabled={isCategoryActionLoading}
-                    />
-                    <Button onClick={handleAddNewCategory} disabled={isCategoryActionLoading}>
-                       Add
-                    </Button>
+                    <Input placeholder="New category name..." value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} disabled={isCategoryActionLoading} />
+                    <Button onClick={handleAddNewCategory} disabled={isCategoryActionLoading}>Add</Button>
                 </div>
-                <ScrollArea className="h-64">
-                    <div className="space-y-2 pr-4">
-                        {allCategories.map(cat => (
-                            <div key={cat} className="flex items-center justify-between gap-2 p-2 rounded-md border">
-                                {renamingCategory?.oldName === cat ? (
-                                    <Input 
-                                        value={renamingCategory.newName}
-                                        onChange={(e) => setRenamingCategory({...renamingCategory, newName: e.target.value})}
-                                        onBlur={handleRenameCategory}
-                                        onKeyDown={(e) => { if(e.key === 'Enter') handleRenameCategory() }}
-                                        autoFocus
-                                        className="h-8"
-                                        disabled={isCategoryActionLoading}
-                                    />
-                                ) : (
-                                    <span className="font-medium text-sm">{cat}</span>
-                                )}
-                                <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartRename(cat)} disabled={cat === "Uncategorized" || isCategoryActionLoading}>
-                                        <Pencil className="h-4 w-4 text-blue-600"/>
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCategoryToDelete(cat)} disabled={cat === "Uncategorized" || isCategoryActionLoading}>
-                                        <Trash2 className="h-4 w-4 text-red-600"/>
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
+                <ScrollArea className="h-64"><div className="space-y-2 pr-4">{allCategories.map(cat => (<div key={cat} className="flex items-center justify-between gap-2 p-2 rounded-md border">{renamingCategory?.oldName === cat ? (<Input value={renamingCategory.newName} onChange={(e) => setRenamingCategory({...renamingCategory, newName: e.target.value})} onBlur={handleRenameCategory} onKeyDown={(e) => { if(e.key === 'Enter') handleRenameCategory() }} autoFocus className="h-8" disabled={isCategoryActionLoading} />) : (<span className="font-medium text-sm">{cat}</span>)}<div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartRename(cat)} disabled={cat === "Uncategorized" || isCategoryActionLoading}><Pencil className="h-4 w-4 text-blue-600"/></Button><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCategoryToDelete(cat)} disabled={cat === "Uncategorized" || isCategoryActionLoading}><Trash2 className="h-4 w-4 text-red-600"/></Button></div></div>))}</div></ScrollArea>
             </div>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={!!categoryToDelete} onOpenChange={(isOpen) => !isOpen && setCategoryToDelete(null)}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This will delete the category &quot;{categoryToDelete}&quot; and move all its products to &quot;Uncategorized&quot;. This action cannot be undone.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCategoryActionLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCategory} disabled={isCategoryActionLoading}>
-                {isCategoryActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Continue
-            </AlertDialogAction>
-            </AlertDialogFooter>
+            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the category &quot;{categoryToDelete}&quot; and move all its products to &quot;Uncategorized&quot;. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel disabled={isCategoryActionLoading}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteCategory} disabled={isCategoryActionLoading}>{isCategoryActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Continue</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Retail Price</TableHead>
+              <TableHead>Wholesale Price</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(isSearching && page === 1) ? (
+              [...Array(10)].map((_, i) => (
+                <TableRow key={`skeleton-${i}`}>
+                  <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-12" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : products.length > 0 ? (
+              products.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">
+                    {p.name}
+                    {p.isRecommended && <Badge variant="secondary" className="ml-2">Recommended</Badge>}
+                  </TableCell>
+                  <TableCell>{p.category}</TableCell>
+                  <TableCell>₹{p.retailPrice.toFixed(2)}</TableCell>
+                  <TableCell>₹{p.wholesalePrice.toFixed(2)}</TableCell>
+                  <TableCell>{p.stock}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/developer/products/edit/${p.id}`}>Edit</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">No products found.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      {isSearching && page === 1 ? (
-         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(12)].map((_, i) => <ProductCardSkeleton key={i} />)}
-         </div>
-      ) : products.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((p) => (
-              <button key={p.id} className="border p-4 rounded-lg shadow-sm text-left hover:shadow-md transition-shadow flex flex-col" onClick={() => setEditingProduct(p)}>
-                <h4 className="font-medium truncate flex-grow">{p.name}</h4>
-                <div className="mt-2 pt-2 border-t border-muted/20 text-xs text-muted-foreground space-y-1">
-                    <div className="flex justify-between items-center gap-2">
-                        <span className="truncate"><span className="font-semibold text-foreground/80">CG:</span> {p.category}</span>
-                        <span className="flex-shrink-0"><span className="font-semibold text-foreground/80">ST:</span> {p.stock}</span>
-                    </div>
-                    <div className="flex justify-between items-center gap-2">
-                        <span><span className="font-semibold text-foreground/80">RP:</span> ₹{p.retailPrice.toFixed(0)}</span>
-                        <span><span className="font-semibold text-foreground/80">WP:</span> ₹{p.wholesalePrice.toFixed(0)}</span>
-                    </div>
-                </div>
-              </button>
-            ))}
-          </div>
-          {hasMore && (
-            <div className="mt-8 text-center">
-              <Button onClick={loadMore} disabled={loading}>
-                {loading ? "Loading..." : "Load More"}
-              </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center py-16">
-          <h2 className="text-xl font-semibold">No products found</h2>
-          <p className="text-muted-foreground mt-2">Try adjusting your search.</p>
+      {hasMore && (
+        <div className="mt-8 text-center">
+          <Button onClick={loadMore} disabled={loading}>
+            {loading ? "Loading..." : "Load More"}
+          </Button>
         </div>
       )}
     </div>
   );
 }
-
-    
