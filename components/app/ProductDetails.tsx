@@ -48,9 +48,16 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
     setLoadingProduct(productId);
   };
 
-  const price = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
-  const mrp = product.mrp && product.mrp > price ? product.mrp : product.retailPrice;
-  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const displayPrice = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
+
+  let priceToShowStrikethrough: number | undefined = undefined;
+  if (product.mrp && product.mrp > displayPrice) {
+      priceToShowStrikethrough = product.mrp;
+  } else if (!product.mrp && product.retailPrice > displayPrice) {
+      priceToShowStrikethrough = product.retailPrice;
+  }
+
+  const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
   
   const displayImages = product.images.filter(img => !img.includes('placehold.co'));
 
@@ -95,10 +102,10 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
             <p className="text-muted-foreground">{product.unit}</p>
 
             <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-2xl font-bold">₹{price.toFixed(2)}</p>
-                {discount > 0 && (
+                <p className="text-2xl font-bold">₹{displayPrice.toFixed(2)}</p>
+                {priceToShowStrikethrough && discount > 0 && (
                   <>
-                    <p className="text-muted-foreground line-through">MRP ₹{mrp.toFixed(2)}</p>
+                    <p className="text-muted-foreground line-through">MRP ₹{priceToShowStrikethrough.toFixed(2)}</p>
                     <Badge variant="destructive">{discount}% OFF</Badge>
                   </>
                 )}
@@ -132,7 +139,7 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
       <footer className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex items-center justify-between h-24 p-4">
           <div className="flex-1">
-             <p className="font-bold text-xl">₹{price.toFixed(2)}</p>
+             <p className="font-bold text-xl">₹{displayPrice.toFixed(2)}</p>
              <p className="text-xs text-muted-foreground">Inclusive of all taxes</p>
           </div>
           {quantityInCart === 0 ? (

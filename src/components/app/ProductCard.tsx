@@ -29,8 +29,15 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
     ? product.wholesalePrice 
     : product.retailPrice;
     
-  const mrp = product.mrp && product.mrp > displayPrice ? product.mrp : product.retailPrice;
-  const discount = mrp > displayPrice ? Math.round(((mrp - displayPrice) / mrp) * 100) : 0;
+  let priceToShowStrikethrough: number | undefined = undefined;
+  if (product.mrp && product.mrp > displayPrice) {
+    priceToShowStrikethrough = product.mrp;
+  } else if (!product.mrp && product.retailPrice > displayPrice) {
+    // Fallback for wholesalers when MRP isn't set, but retail price is higher.
+    priceToShowStrikethrough = product.retailPrice;
+  }
+  
+  const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
   
   const handleIncrease = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -121,7 +128,7 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
             <div className="flex items-center justify-between mt-2">
                 <div>
                     <p className="text-sm font-bold">₹{displayPrice.toFixed(0)}</p>
-                    {mrp > displayPrice && <p className="text-xs text-gray-500 line-through">₹{mrp.toFixed(0)}</p>}
+                    {priceToShowStrikethrough && <p className="text-xs text-gray-500 line-through">₹{priceToShowStrikethrough.toFixed(0)}</p>}
                 </div>
             </div>
         </div>
