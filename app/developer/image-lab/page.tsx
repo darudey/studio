@@ -35,6 +35,26 @@ export default function ManageProductImagesPage() {
   const categoryFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const handleFocus = () => {
+      // When the file dialog closes, the window regains focus. We check
+      // if we were in a loading state. If so, and if no file was selected
+      // in the input, it means the user cancelled the dialog. We then reset the state.
+      // This is necessary because the `onChange` event doesn't fire on cancellation.
+      if (updatingCategory && categoryFileInputRef.current && !categoryFileInputRef.current.files?.length) {
+        setUpdatingCategory(null);
+      }
+      if (updatingProductId && fileInputRef.current && !fileInputRef.current.files?.length) {
+        setUpdatingProductId(null);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [updatingCategory, updatingProductId]);
+
+  useEffect(() => {
     if (!user) {
       router.push("/login");
       return;
@@ -351,5 +371,3 @@ export default function ManageProductImagesPage() {
     </div>
   );
 }
-
-    
