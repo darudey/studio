@@ -78,12 +78,15 @@ const PujaIcon = () => (
         strokeLinejoin="round" 
         xmlns="http://www.w3.org/2000/svg"
     >
-        <path d="M7 20V10" />
-        <path d="M7 8c.5-1.5 2-2 2-2" />
-        <path d="M12 20V12" />
-        <path d="M12 10c.5-1.5 2-2 2-2" />
-        <path d="M17 20V14" />
-        <path d="M17 12c.5-1.5 2-2 2-2" />
+        {/* Incense Sticks */}
+        <path d="M9 17V8" />
+        <path d="M9 6c.5-1.5 2-2 2-2" />
+        <path d="M13 17V10" />
+        <path d="M13 8c.5-1.5 2-2 2-2" />
+        
+        {/* Diya Base */}
+        <path d="M5 20h14" />
+        <path d="M8 20a4 4 0 0 1 8 0" />
     </svg>
 );
 
