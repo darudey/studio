@@ -1,8 +1,7 @@
 
-import { getProductById, getProducts } from "@/lib/data";
+import { getProductById, getSimilarProducts } from "@/lib/data";
 import { notFound } from "next/navigation";
 import ProductDetails from "@/components/app/ProductDetails";
-import type { Product } from "@/types";
 
 export default async function ProductDetailPage({ params }: { params: { id: string } }) {
   const productId = params.id as string;
@@ -10,19 +9,16 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
     notFound();
   }
 
-  // Fetch in parallel
-  const [product, allProducts] = await Promise.all([
-    getProductById(productId),
-    getProducts(),
-  ]);
+  // Fetch the main product first
+  const product = await getProductById(productId);
 
   if (!product) {
     notFound();
   }
   
-  const similarProducts = allProducts
-    .filter((p: Product) => p.category === product.category && p.id !== product.id)
-    .slice(0, 6);
+  // Then, fetch similar products based on the main product's category.
+  // This is much more efficient than fetching all products.
+  const similarProducts = await getSimilarProducts(product.category, product.id);
 
   return <ProductDetails product={product} similarProducts={similarProducts} />;
 }
