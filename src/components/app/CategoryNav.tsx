@@ -65,6 +65,7 @@ const CosmeticsIcon = () => (
   </svg>
 );
 
+
 const PujaIcon = () => (
     <svg 
         width="24" 
@@ -77,8 +78,12 @@ const PujaIcon = () => (
         strokeLinejoin="round" 
         xmlns="http://www.w3.org/2000/svg"
     >
-        <path d="M3 17C4.66667 15 8 13 12 13C16 13 19.3333 15 21 17" />
-        <path d="M12 13C10.5 11 10.5 7 12 5C13.5 7 13.5 11 12 13Z" fill="currentColor" />
+        <path d="M7 20V10" />
+        <path d="M7 8c.5-1.5 2-2 2-2" />
+        <path d="M12 20V12" />
+        <path d="M12 10c.5-1.5 2-2 2-2" />
+        <path d="M17 20V14" />
+        <path d="M17 12c.5-1.5 2-2 2-2" />
     </svg>
 );
 
