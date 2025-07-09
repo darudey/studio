@@ -317,13 +317,16 @@ export default function EditItemPage() {
 
                         <FormField control={form.control} name="category" render={({ field }) => (
                             <FormItem><FormLabel>Category</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} >
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
+                                <FormControl>
+                                    <Input placeholder="e.g., Fruits or Vegetables" {...field} list="categories-list" />
+                                </FormControl>
+                                <datalist id="categories-list">
+                                    {categories.map(cat => <option key={cat} value={cat} />)}
+                                </datalist>
+                                <FormDescription>
+                                    Select an existing category or type to create a new one.
+                                </FormDescription>
+                                <FormMessage />
                             </FormItem>
                         )}/>
                         <div className="grid grid-cols-2 gap-4">
