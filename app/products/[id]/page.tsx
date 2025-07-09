@@ -98,7 +98,7 @@ export default function ProductDetailPage() {
   const mrp = product.retailPrice > price ? product.retailPrice : price * 1.25;
   const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   
-  const displayImages = product.images.filter(img => img && !img.includes('placehold.co'));
+  const displayImages = product.images;
 
   return (
     <div className="pb-32"> {/* Padding bottom to make space for sticky footer */}

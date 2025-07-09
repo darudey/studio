@@ -217,7 +217,7 @@ export default function ManageProductImagesPage() {
                             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {categoryProducts.map(p => {
                                   const imageUrl = p.images?.[0];
-                                  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+                                  const isPlaceholder = !imageUrl;
                                   return (
                                     <Card key={p.id}>
                                         <CardContent className="p-4 grid grid-cols-3 gap-4 items-center">

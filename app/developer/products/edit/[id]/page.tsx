@@ -236,7 +236,7 @@ export default function EditItemPage() {
                             <FormLabel>Product Images</FormLabel>
                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {images.map((src, index) => {
-                                    const isPlaceholder = !src || src.includes('placehold.co');
+                                    const isPlaceholder = !src;
                                     return (
                                         <div key={index} className="relative group aspect-square">
                                             {isPlaceholder ? (

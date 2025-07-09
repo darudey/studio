@@ -68,7 +68,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
               <div className="flex flex-col gap-4 p-6">
                 {cartDetails.map(({ product, quantity, note }) => {
                   const imageUrl = product?.images?.[0];
-                  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+                  const isPlaceholder = !imageUrl;
                   
                   return product ? (
                     <div key={product.id} className="grid grid-cols-[auto_1fr] gap-4 items-start border-b pb-4">

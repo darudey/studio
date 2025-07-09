@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Product } from "@/types";
@@ -19,7 +20,7 @@ export default function SearchSuggestions({ suggestions, onSuggestionClick }: Se
       <div className="p-1 space-y-1">
         {suggestions.map((product) => {
           const imageUrl = product.images?.[0];
-          const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+          const isPlaceholder = !imageUrl;
           return (
             <div
               key={product.id}
