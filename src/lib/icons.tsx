@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,8 +12,10 @@ import {
   Cookie,
   ShoppingBasket,
   Shirt,
+  Brush, // Replaced custom icon with a cleaner one from Lucide
 } from 'lucide-react';
 import React from 'react';
+import { cn } from './utils';
 
 const ChowminIcon = () => (
     <svg
@@ -39,29 +42,6 @@ const ChowminIcon = () => (
     </svg>
   );
 
-const CosmeticsIcon = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13.5 10.5C13.5 9.67 12.83 9 12 9C11.17 9 10.5 9.67 10.5 10.5V20.5H13.5V10.5Z" fill="#87CEFA" />
-      <path d="M10.5 13H9C8.45 13 8 12.55 8 12V11C8 10.45 8.45 10 9 10H12" />
-      <path d="M3 16H8V20.5H3V16Z" fill="#E6E6FA" />
-      <path d="M3 14H8V16H3V14Z" fill="#A9A9A9" />
-      <path d="M4 17H7V19.5H4V17Z" fill="#98FB98" />
-      <path d="M15 12H20V20.5H15V12Z" fill="#87CEFA" />
-      <path d="M15 10H20V12H15V10Z" fill="#A9A9A9" />
-      <path d="M3.5 5.5L4 6.5L4.5 5.5L4 4.5L3.5 5.5Z" fill="#FFD700" stroke="none" />
-      <path d="M19.5 5.5L20 6.5L20.5 5.5L20 4.5L19.5 5.5Z" fill="#FFD700" stroke="none" />
-      <path d="M6 8.5L6.5 9.5L7 8.5L6.5 7.5L6 8.5Z" fill="#FFD700" stroke="none" />
-    </g>
-  </svg>
-);
-
 const PujaIcon = () => (
     <svg 
         width="24" 
@@ -69,7 +49,7 @@ const PujaIcon = () => (
         viewBox="0 0 24 24" 
         fill="none" 
         stroke="currentColor" 
-        strokeWidth="1.5" 
+        strokeWidth="2" // Increased stroke width for better visibility
         strokeLinecap="round" 
         strokeLinejoin="round" 
         xmlns="http://www.w3.org/2000/svg"
@@ -88,11 +68,11 @@ const categoryIcons: { [key: string]: React.ElementType } = {
   'all': LayoutGrid,
   'monsoon': Umbrella,
   'electronics': Headphones,
-  'beauty': CosmeticsIcon,
+  'beauty': Brush, // Using cleaner icon
   'decor': Lamp,
   'fashion': Shirt,
   'chowmin': ChowminIcon,
-  'cosmetics': CosmeticsIcon,
+  'cosmetics': Brush, // Using cleaner icon
   'general': Package,
   'puja items': PujaIcon,
   'rice': Bean,
@@ -115,11 +95,12 @@ export const getIconForCategory = (category: string): React.ElementType => {
 };
 
 // Component to render the icon as a default image
+// Updated for better visual appearance: more solid background and clearer icon color.
 export const CategoryIconAsImage = ({ category, className }: { category: string, className?: string }) => {
     const Icon = getIconForCategory(category);
     return (
-        <div className={`flex items-center justify-center w-full h-full bg-muted/30 rounded-md ${className}`}>
-            <Icon className="w-1/2 h-1/2 text-muted-foreground/60" />
+        <div className={cn("flex items-center justify-center w-full h-full bg-muted rounded-md", className)}>
+            <Icon className="w-1/2 h-1/2 text-slate-500" />
         </div>
     );
 };
