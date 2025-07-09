@@ -221,9 +221,9 @@ export default function ManageProductsPage() {
   return (
     <div className="container py-12">
       <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h3 className="text-xl font-bold flex items-center gap-2">
             <ClipboardList className="h-6 w-6 text-blue-600" /> Product Catalog
-        </h1>
+        </h3>
         <div className="flex items-center gap-2">
             <div className="relative">
               <Input placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm pr-8" />
