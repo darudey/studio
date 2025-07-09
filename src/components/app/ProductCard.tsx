@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Clock, Loader2, Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import { CategoryIconAsImage } from "@/lib/icons";
 
 interface ProductCardProps {
   product: Product;
@@ -50,6 +51,9 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
     setTimeout(() => setIsUpdating(false), 500); // Artificial delay for UX feedback
   };
 
+  const imageUrl = product.images?.[0];
+  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+
   return (
     <Link href={`/products/${product.id}`} onClick={onClick} className="block w-full h-full">
       <div className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80 relative">
@@ -60,14 +64,18 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
         )}
         <div className="relative">
             <div className="aspect-square relative">
-                <Image
-                src={product.images[0]}
-                alt={product.name}
-                fill
-                className="object-contain"
-                sizes="20vw"
-                data-ai-hint={product.dataAiHint}
-                />
+                {isPlaceholder ? (
+                    <CategoryIconAsImage category={product.category} />
+                ) : (
+                    <Image
+                    src={imageUrl}
+                    alt={product.name}
+                    fill
+                    className="object-contain"
+                    sizes="20vw"
+                    data-ai-hint={product.dataAiHint}
+                    />
+                )}
             </div>
             {discount > 0 && (
                 <div className="absolute top-0 left-0 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tl-md rounded-br-md">

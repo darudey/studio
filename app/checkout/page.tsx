@@ -15,6 +15,7 @@ import type { Product } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { CategoryIconAsImage } from "@/lib/icons";
 
 export default function CheckoutPage() {
   const { user } = useAuth();
@@ -139,11 +140,19 @@ export default function CheckoutPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {cartDetails.map(({ product, quantity, note }) =>
-                                product ? (
+                            {cartDetails.map(({ product, quantity, note }) => {
+                                const imageUrl = product?.images?.[0];
+                                const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+                                return product ? (
                                 <TableRow key={product.id}>
-                                    <TableCell>
-                                        <Image src={product.images[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover"/>
+                                    <TableCell className="w-[80px]">
+                                        <div className="aspect-square relative">
+                                            {isPlaceholder ? (
+                                                <CategoryIconAsImage category={product.category} />
+                                            ) : (
+                                                <Image src={imageUrl} alt={product.name} fill className="rounded-md object-cover"/>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="font-medium align-top">
                                         {product.name}
@@ -156,7 +165,7 @@ export default function CheckoutPage() {
                                     <TableCell className="text-right">₹{(getPrice(product) * quantity).toFixed(2)}</TableCell>
                                 </TableRow>
                                 ) : null
-                            )}
+                            })}
                         </TableBody>
                     </Table>
                 </CardContent>

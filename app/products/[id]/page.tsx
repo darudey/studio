@@ -16,6 +16,7 @@ import { Minus, Plus, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProductCarousel from "@/components/app/ProductCarousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CategoryIconAsImage } from "@/lib/icons";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -96,35 +97,43 @@ export default function ProductDetailPage() {
   const price = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
   const mrp = product.retailPrice > price ? product.retailPrice : price * 1.25;
   const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  
+  const displayImages = product.images.filter(img => img && !img.includes('placehold.co'));
 
   return (
     <div className="pb-32"> {/* Padding bottom to make space for sticky footer */}
       <div className="max-w-4xl mx-auto">
         <div className="w-full">
-            <Carousel>
-                <CarouselContent>
-                    {product.images.map((img, index) => (
-                        <CarouselItem key={index}>
-                            <div className="aspect-square relative bg-white">
-                                <Image
-                                    src={img}
-                                    alt={`${product.name} image ${index + 1}`}
-                                    fill
-                                    className="object-contain"
-                                    sizes="100vw"
-                                    data-ai-hint={product.dataAiHint}
-                                />
-                            </div>
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-                {product.images.length > 1 && (
-                    <>
-                        <CarouselPrevious className="left-4" />
-                        <CarouselNext className="right-4" />
-                    </>
-                )}
-            </Carousel>
+            {displayImages.length > 0 ? (
+                <Carousel>
+                    <CarouselContent>
+                        {displayImages.map((img, index) => (
+                            <CarouselItem key={index}>
+                                <div className="aspect-square relative bg-white">
+                                    <Image
+                                        src={img}
+                                        alt={`${product.name} image ${index + 1}`}
+                                        fill
+                                        className="object-contain"
+                                        sizes="100vw"
+                                        data-ai-hint={product.dataAiHint}
+                                    />
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    {displayImages.length > 1 && (
+                        <>
+                            <CarouselPrevious className="left-4" />
+                            <CarouselNext className="right-4" />
+                        </>
+                    )}
+                </Carousel>
+            ) : (
+                <div className="aspect-square relative bg-white border rounded-md">
+                    <CategoryIconAsImage category={product.category} />
+                </div>
+            )}
         </div>
         
         <div className="p-4 space-y-4 bg-background">

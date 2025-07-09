@@ -120,7 +120,7 @@ export default function AddItemPage() {
     const newProductData: Omit<Product, 'id'> = {
       ...data,
       batchNo: data.batchNo || 'N/A',
-      images: [imageSrc || 'https://placehold.co/600x400.png'],
+      images: imageSrc ? [imageSrc] : [],
       imageUpdatedAt: new Date().toISOString(),
       isRecommended: false,
       createdAt: new Date().toISOString(),
@@ -230,7 +230,7 @@ export default function AddItemPage() {
               itemCode: row['Item Code']?.toString() || `IMP-${Date.now()}-${index}`,
               batchNo: row['Batch No.']?.toString() || 'N/A',
               description: row.description || 'No description provided.',
-              images: [row.image || 'https://placehold.co/600x400.png'],
+              images: row.image ? [row.image] : [],
               imageUpdatedAt: now,
               category: row.category || 'Uncategorized',
               retailPrice: !isNaN(retailPrice) ? retailPrice : 0,

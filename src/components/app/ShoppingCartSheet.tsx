@@ -23,6 +23,7 @@ import type { Product } from "@/types";
 import { Skeleton } from "../ui/skeleton";
 import { Textarea } from "../ui/textarea";
 import { useRouter } from "next/navigation";
+import { CategoryIconAsImage } from "@/lib/icons";
 
 export default function ShoppingCartSheet({ children }: { children: React.ReactNode }) {
   const { cartDetails, updateQuantity, removeFromCart, loading: cartLoading, cartCount, updateItemNote } = useCart();
@@ -65,18 +66,25 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
           <>
             <ScrollArea className="flex-1">
               <div className="flex flex-col gap-4 p-6">
-                {cartDetails.map(({ product, quantity, note }) =>
-                  product ? (
+                {cartDetails.map(({ product, quantity, note }) => {
+                  const imageUrl = product?.images?.[0];
+                  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+                  
+                  return product ? (
                     <div key={product.id} className="grid grid-cols-[auto_1fr] gap-4 items-start border-b pb-4">
-                        <div className="relative h-20 w-20 overflow-hidden rounded-md">
-                            <Image
-                                src={product.images[0]}
-                                alt={product.name}
-                                fill
-                                className="object-cover"
-                                data-ai-hint={product.dataAiHint}
-                                sizes="80px"
-                            />
+                        <div className="relative h-20 w-20 overflow-hidden rounded-md border">
+                            {isPlaceholder ? (
+                                <CategoryIconAsImage category={product.category} />
+                            ) : (
+                                <Image
+                                    src={imageUrl}
+                                    alt={product.name}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint={product.dataAiHint}
+                                    sizes="80px"
+                                />
+                            )}
                         </div>
                         <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-start">
@@ -111,7 +119,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                         </div>
                     </div>
                   ) : null
-                )}
+                })}
               </div>
             </ScrollArea>
             <Separator />

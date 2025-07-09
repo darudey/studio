@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { CategoryIconAsImage } from "@/lib/icons";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Product name must be at least 2 characters." }),
@@ -143,7 +144,7 @@ export default function EditItemPage() {
       ...product,
       ...data,
       isRecommended: data.isRecommended || false,
-      images: images.length > 0 ? images : ['https://placehold.co/600x400.png'],
+      images: images,
       imageUpdatedAt: imageChanged ? new Date().toISOString() : product.imageUpdatedAt,
     };
     await updateProduct(updatedProductData);
@@ -191,10 +192,6 @@ export default function EditItemPage() {
   }
 
   const handleDeleteImage = (indexToDelete: number) => {
-    if (images.length === 1) {
-        toast({title: "Cannot delete the last image.", variant: "destructive"});
-        return;
-    }
     setImages(images.filter((_, index) => index !== indexToDelete));
   }
 
@@ -238,16 +235,23 @@ export default function EditItemPage() {
                         <FormItem>
                             <FormLabel>Product Images</FormLabel>
                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {images.map((src, index) => (
-                                    <div key={index} className="relative group aspect-square">
-                                        <Image src={src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md border" />
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-1 p-1">
-                                           {index > 0 && <Button type="button" size="sm" className="w-full text-xs" onClick={() => handleSetPrimary(index)}><Star className="h-3 w-3 mr-1"/>Primary</Button>}
-                                           <Button type="button" size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteImage(index)}><Trash2 className="h-3 w-3 mr-1"/>Delete</Button>
+                                {images.map((src, index) => {
+                                    const isPlaceholder = !src || src.includes('placehold.co');
+                                    return (
+                                        <div key={index} className="relative group aspect-square">
+                                            {isPlaceholder ? (
+                                                <CategoryIconAsImage category={product.category} />
+                                            ) : (
+                                                <Image src={src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md border" />
+                                            )}
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-1 p-1">
+                                            {index > 0 && <Button type="button" size="sm" className="w-full text-xs" onClick={() => handleSetPrimary(index)}><Star className="h-3 w-3 mr-1"/>Primary</Button>}
+                                            <Button type="button" size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteImage(index)}><Trash2 className="h-3 w-3 mr-1"/>Delete</Button>
+                                            </div>
+                                            {index === 0 && <Badge className="absolute top-1 left-1">Primary</Badge>}
                                         </div>
-                                         {index === 0 && <Badge className="absolute top-1 left-1">Primary</Badge>}
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                             <div className="space-y-4 mt-4">
                                 {showCamera ? (

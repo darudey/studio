@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { CategoryIconAsImage } from "@/lib/icons";
 
 export default function ManageProductImagesPage() {
   const { user } = useAuth();
@@ -110,12 +111,10 @@ export default function ManageProductImagesPage() {
   const handleResetImage = async (productToUpdate: Product) => {
     if (updatingProductId) return;
     setUpdatingProductId(productToUpdate.id);
-    const otherImages = productToUpdate.images.slice(1);
-    const updatedImages = ['https://placehold.co/400x400.png', ...otherImages];
-
+    
     const updatedProductData: Product = {
       ...productToUpdate,
-      images: updatedImages,
+      images: [], // Reset to an empty array
       imageUpdatedAt: new Date().toISOString(),
     };
 
@@ -216,7 +215,10 @@ export default function ManageProductImagesPage() {
                         </AccordionTrigger>
                         <AccordionContent>
                             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {categoryProducts.map(p => (
+                                {categoryProducts.map(p => {
+                                  const imageUrl = p.images?.[0];
+                                  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+                                  return (
                                     <Card key={p.id}>
                                         <CardContent className="p-4 grid grid-cols-3 gap-4 items-center">
                                             <div className="col-span-2 space-y-2">
@@ -246,13 +248,17 @@ export default function ManageProductImagesPage() {
                                                     className="w-full aspect-square rounded-md relative overflow-hidden border cursor-pointer group"
                                                     onClick={() => handleImageClick(p)}
                                                 >
-                                                    <Image 
-                                                        src={p.images[0] || 'https://placehold.co/400x400.png'}
-                                                        alt={p.name}
-                                                        fill
-                                                        className="object-cover transition-transform group-hover:scale-105"
-                                                        data-ai-hint={p.dataAiHint}
-                                                    />
+                                                    {isPlaceholder ? (
+                                                        <CategoryIconAsImage category={p.category} className="transition-transform group-hover:scale-105" />
+                                                    ) : (
+                                                        <Image 
+                                                            src={imageUrl}
+                                                            alt={p.name}
+                                                            fill
+                                                            className="object-cover transition-transform group-hover:scale-105"
+                                                            data-ai-hint={p.dataAiHint}
+                                                        />
+                                                    )}
                                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                         {updatingProductId === p.id ? (
                                                             <Loader2 className="h-8 w-8 text-white animate-spin" />
@@ -264,7 +270,7 @@ export default function ManageProductImagesPage() {
                                             </div>
                                         </CardContent>
                                     </Card>
-                                ))}
+                                )})}
                             </div>
                         </AccordionContent>
                     </Card>
