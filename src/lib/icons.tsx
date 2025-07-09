@@ -63,6 +63,28 @@ const PujaIcon = () => (
     </svg>
 );
 
+const RiceIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 23H4C2.89543 23 2 22.1046 2 21V7C2 4.79086 3.79086 3 6 3H18C20.2091 3 22 4.79086 22 7V21C22 22.1046 21.1046 23 20 23Z" fill="#D2B48C"/>
+      <path d="M19 23C19.5523 23 20 22.5523 20 22V8C20 6.34315 18.6569 5 17 5H7C5.34315 5 4 6.34315 4 8V22C4 22.5523 4.44772 23 5 23H19Z" fill="#C6A682"/>
+      <path d="M2 7H22V9H2V7Z" fill="#2F3542"/>
+      <path d="M2 7L3 8L4 7L5 8L6 7L7 8L8 7L9 8L10 7L11 8L12 7L13 8L14 7L15 8L16 7L17 8L18 7L19 8L20 7L21 8L22 7" stroke="#9A8C78" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect x="5" y="10" width="14" height="10" rx="1" fill="#2F3542"/>
+      <path d="M16 12C16 11.1716 12.8284 10.5 12 10.5C11.1716 10.5 8 11.1716 8 12" stroke="white" strokeWidth="1" strokeLinecap="round"/>
+      <text x="12" y="15.5" textAnchor="middle" fontFamily="sans-serif" fontSize="3" fill="white" fontWeight="bold">Rice</text>
+      <ellipse cx="9" cy="17.5" rx="0.7" ry="0.4" fill="white" transform="rotate(30 9 17.5)"/>
+      <ellipse cx="10.5" cy="17.5" rx="0.7" ry="0.4" fill="white" transform="rotate(-20 10.5 17.5)"/>
+      <ellipse cx="12" cy="17.5" rx="0.7" ry="0.4" fill="white" transform="rotate(10 12 17.5)"/>
+      <ellipse cx="13.5" cy="17.5" rx="0.7" ry="0.4" fill="white" transform="rotate(40 13.5 17.5)"/>
+      <ellipse cx="15" cy="17.5" rx="0.7" ry="0.4" fill="white" transform="rotate(-10 15 17.5)"/>
+      <ellipse cx="8.5" cy="19" rx="0.7" ry="0.4" fill="white" transform="rotate(-15 8.5 19)"/>
+      <ellipse cx="10" cy="19" rx="0.7" ry="0.4" fill="white" transform="rotate(25 10 19)"/>
+      <ellipse cx="11.5" cy="19" rx="0.7" ry="0.4" fill="white" transform="rotate(-5 11.5 19)"/>
+      <ellipse cx="13" cy="19" rx="0.7" ry="0.4" fill="white" transform="rotate(15 13 19)"/>
+      <ellipse cx="14.5" cy="19" rx="0.7" ry="0.4" fill="white" transform="rotate(35 14.5 19)"/>
+    </svg>
+);
+
 
 const categoryIcons: { [key: string]: React.ElementType } = {
   'all': LayoutGrid,
@@ -75,7 +97,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
   'cosmetics': Brush, // Using cleaner icon
   'general': Package,
   'puja items': PujaIcon,
-  'rice': Bean,
+  'rice': RiceIcon,
   'stationary': PenSquare,
   'kurkure': Cookie,
   'daily essentials': ShoppingBasket,
