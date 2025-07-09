@@ -1,7 +1,7 @@
 
 "use client";
 
-import { getProductById, getProducts, getCategorySettings } from "@/lib/data";
+import { getProductById, getProducts } from "@/lib/data";
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ProductCarousel from "@/components/app/ProductCarousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -25,8 +26,8 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categorySettingsMap, setCategorySettingsMap] = useState<Record<string, string>>({});
   const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
+  const { settingsMap } = useCategorySettings();
 
   useEffect(() => {
     const productId = params.id as string;
@@ -35,10 +36,9 @@ export default function ProductDetailPage() {
     const fetchProductData = async () => {
       setLoading(true);
       try {
-        const [foundProduct, allProducts, settings] = await Promise.all([
+        const [foundProduct, allProducts] = await Promise.all([
           getProductById(productId),
           getProducts(),
-          getCategorySettings(),
         ]);
 
         if (foundProduct) {
@@ -48,12 +48,6 @@ export default function ProductDetailPage() {
             .filter(p => p.category === foundProduct.category && p.id !== foundProduct.id)
             .slice(0, 6);
           setSimilarProducts(similar);
-
-          const settingsMap = settings.reduce((acc, setting) => {
-            acc[setting.id] = setting.imageUrl;
-            return acc;
-          }, {} as Record<string, string>);
-          setCategorySettingsMap(settingsMap);
 
         } else {
           notFound();
@@ -146,7 +140,7 @@ export default function ProductDetailPage() {
                 </Carousel>
             ) : (
                 <div className="aspect-square relative bg-white border rounded-md">
-                    <CategoryIconAsImage category={product.category} imageUrl={categorySettingsMap[product.category]} />
+                    <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} />
                 </div>
             )}
         </div>
@@ -184,7 +178,7 @@ export default function ProductDetailPage() {
                     products={similarProducts} 
                     loadingProductId={loadingProduct}
                     onProductClick={handleProductClick}
-                    categorySettingsMap={categorySettingsMap}
+                    categorySettingsMap={settingsMap}
                 />
             </div>
         )}

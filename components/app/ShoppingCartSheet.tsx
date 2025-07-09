@@ -24,14 +24,13 @@ import { Skeleton } from "../ui/skeleton";
 import { Textarea } from "../ui/textarea";
 import { useRouter } from "next/navigation";
 import { CategoryIconAsImage } from "@/lib/icons";
-import { useEffect, useState } from "react";
-import { getCategorySettings } from "@/lib/data";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 export default function ShoppingCartSheet({ children }: { children: React.ReactNode }) {
   const { cartDetails, updateQuantity, removeFromCart, loading: cartLoading, cartCount, updateItemNote } = useCart();
   const { user } = useAuth();
   const router = useRouter();
-  const [categorySettingsMap, setCategorySettingsMap] = useState<Record<string, string>>({});
+  const { settingsMap } = useCategorySettings();
 
   const getPrice = (product: Product) => {
       if (user?.role === 'wholesaler' || user?.role === 'developer') {
@@ -43,13 +42,6 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
   const handleOpenChange = (open: boolean) => {
     if (open) {
       router.prefetch('/checkout');
-      getCategorySettings().then(settings => {
-        const settingsMap = settings.reduce((acc, setting) => {
-          acc[setting.id] = setting.imageUrl;
-          return acc;
-        }, {} as Record<string, string>);
-        setCategorySettingsMap(settingsMap);
-      });
     }
   };
 
@@ -83,7 +75,7 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                     <div key={product.id} className="grid grid-cols-[auto_1fr] gap-4 items-start border-b pb-4">
                         <div className="relative h-20 w-20 overflow-hidden rounded-md border">
                             {isPlaceholder ? (
-                                <CategoryIconAsImage category={product.category} imageUrl={categorySettingsMap[product.category]} />
+                                <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} />
                             ) : (
                                 <Image
                                     src={imageUrl}

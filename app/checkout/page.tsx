@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { addOrder, getCategorySettings } from "@/lib/data";
+import { addOrder } from "@/lib/data";
 import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 export default function CheckoutPage() {
   const { user } = useAuth();
@@ -23,17 +24,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [categorySettingsMap, setCategorySettingsMap] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    getCategorySettings().then(settings => {
-      const settingsMap = settings.reduce((acc, setting) => {
-        acc[setting.id] = setting.imageUrl;
-        return acc;
-      }, {} as Record<string, string>);
-      setCategorySettingsMap(settingsMap);
-    })
-  }, []);
+  const { settingsMap, loading: settingsLoading } = useCategorySettings();
 
   const getPrice = (product: Product) => {
     if (user?.role === 'wholesaler' || user?.role === 'developer') {
@@ -96,7 +87,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (cartLoading) {
+  if (cartLoading || settingsLoading) {
     return (
         <div className="container py-12">
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
@@ -159,7 +150,7 @@ export default function CheckoutPage() {
                                     <TableCell className="w-[80px]">
                                         <div className="aspect-square relative">
                                             {isPlaceholder ? (
-                                                <CategoryIconAsImage category={product.category} imageUrl={categorySettingsMap[product.category]} />
+                                                <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} />
                                             ) : (
                                                 <Image src={imageUrl} alt={product.name} fill className="rounded-md object-cover"/>
                                             )}

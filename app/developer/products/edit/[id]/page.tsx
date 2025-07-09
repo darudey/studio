@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { getProductById, getProducts, updateProduct, getCategorySettings } from "@/lib/data";
+import { getProductById, getProducts, updateProduct } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Product } from "@/types";
@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Product name must be at least 2 characters." }),
@@ -54,7 +55,7 @@ export default function EditItemPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [categorySettingsMap, setCategorySettingsMap] = useState<Record<string, string>>({});
+  const { settingsMap } = useCategorySettings();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,10 +78,9 @@ export default function EditItemPage() {
     const productId = params.id as string;
     const fetchData = async () => {
         try {
-            const [foundProduct, allProducts, categorySettings] = await Promise.all([
+            const [foundProduct, allProducts] = await Promise.all([
                 getProductById(productId),
                 getProducts(),
-                getCategorySettings()
             ]);
 
             if (foundProduct) {
@@ -91,12 +91,6 @@ export default function EditItemPage() {
                 });
                 setImages(foundProduct.images.filter(img => !img.includes('placehold.co')));
                 setCategories([...new Set(allProducts.map(p => p.category))].sort());
-
-                const settingsMap = categorySettings.reduce((acc, setting) => {
-                    acc[setting.id] = setting.imageUrl;
-                    return acc;
-                }, {} as Record<string, string>);
-                setCategorySettingsMap(settingsMap);
 
             } else {
                 notFound();
@@ -246,7 +240,7 @@ export default function EditItemPage() {
                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {images.length === 0 && (
                                     <div className="relative group aspect-square col-span-full border rounded-md">
-                                        <CategoryIconAsImage category={product.category} imageUrl={categorySettingsMap[product.category]} />
+                                        <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} />
                                     </div>
                                 )}
                                 {images.map((src, index) => {

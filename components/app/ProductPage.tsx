@@ -7,24 +7,24 @@ import ProductCard from './ProductCard';
 import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
+import { useCategorySettings } from '@/context/CategorySettingsContext';
 
 interface ProductPageProps {
   serverRecommendedProducts: Product[];
   serverCategories: string[];
   serverAllProducts: Product[];
-  serverCategorySettingsMap: Record<string, string>;
 }
 
 export default function ProductPage({ 
   serverRecommendedProducts, 
   serverCategories, 
-  serverAllProducts,
-  serverCategorySettingsMap
+  serverAllProducts
 }: ProductPageProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search') || '';
+  const { settingsMap } = useCategorySettings();
 
   const handleProductClick = (productId: string) => {
     setLoadingProductId(productId);
@@ -87,7 +87,7 @@ export default function ProductPage({
                             products={serverRecommendedProducts} 
                             loadingProductId={loadingProductId}
                             onProductClick={handleProductClick}
-                            categorySettingsMap={serverCategorySettingsMap}
+                            categorySettingsMap={settingsMap}
                         />
                     </div>
                 </div>
@@ -106,7 +106,7 @@ export default function ProductPage({
                                 products={categoryProducts} 
                                 loadingProductId={loadingProductId}
                                 onProductClick={handleProductClick}
-                                categorySettingsMap={serverCategorySettingsMap}
+                                categorySettingsMap={settingsMap}
                              />
                         </div>
                     </div>
@@ -126,7 +126,7 @@ export default function ProductPage({
                             product={product} 
                             isLoading={loadingProductId === product.id}
                             onClick={() => handleProductClick(product.id)}
-                            placeholderImageUrl={serverCategorySettingsMap[product.category]}
+                            placeholderImageUrl={settingsMap[product.category]}
                         />
                     ))}
                 </div>

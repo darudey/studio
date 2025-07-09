@@ -4,8 +4,7 @@
 import { Product } from "@/types";
 import Image from "next/image";
 import { CategoryIconAsImage } from "@/lib/icons";
-import { useEffect, useState } from "react";
-import { getCategorySettings } from "@/lib/data";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 interface SearchSuggestionsProps {
   suggestions: Product[];
@@ -13,19 +12,7 @@ interface SearchSuggestionsProps {
 }
 
 export default function SearchSuggestions({ suggestions, onSuggestionClick }: SearchSuggestionsProps) {
-  const [categorySettingsMap, setCategorySettingsMap] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (suggestions.length > 0) {
-        getCategorySettings().then(settings => {
-            const settingsMap = settings.reduce((acc, setting) => {
-                acc[setting.id] = setting.imageUrl;
-                return acc;
-            }, {} as Record<string, string>);
-            setCategorySettingsMap(settingsMap);
-        });
-    }
-  }, [suggestions.length]);
+  const { settingsMap } = useCategorySettings();
 
   if (suggestions.length === 0) {
     return null;
@@ -48,7 +35,7 @@ export default function SearchSuggestions({ suggestions, onSuggestionClick }: Se
             >
               <div className="relative h-8 w-8 flex-shrink-0">
                 {isPlaceholder ? (
-                  <CategoryIconAsImage category={product.category} imageUrl={categorySettingsMap[product.category]} />
+                  <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} />
                 ) : (
                   <Image
                     src={imageUrl}

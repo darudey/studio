@@ -4,8 +4,8 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getProducts, updateProduct, getCategories, getCategorySettings, setCategoryImageUrl } from "@/lib/data";
-import type { Product, Category } from "@/types";
+import { getProducts, updateProduct, getCategories, setCategoryImageUrl } from "@/lib/data";
+import type { Product } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageIcon, Upload, Loader2, Trash2, Pencil } from "lucide-react";
@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 export default function ManageProductImagesPage() {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ export default function ManageProductImagesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
-  const [categorySettings, setCategorySettings] = useState<Record<string, string>>({});
+  const { settingsMap, refreshCategorySettings } = useCategorySettings();
   const [updatingCategory, setUpdatingCategory] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,15 +65,9 @@ export default function ManageProductImagesPage() {
     Promise.all([
         getProducts(),
         getCategories(),
-        getCategorySettings(),
-    ]).then(([productsData, categoriesData, settingsData]) => {
+    ]).then(([productsData, categoriesData]) => {
       setProducts(productsData);
       setCategories(categoriesData);
-      const settingsMap = settingsData.reduce((acc, setting) => {
-        acc[setting.id] = setting.imageUrl;
-        return acc;
-      }, {} as Record<string, string>);
-      setCategorySettings(settingsMap);
       setLoading(false);
     }).catch(err => {
         console.error("Failed to load page data", err);
@@ -190,14 +185,7 @@ export default function ManageProductImagesPage() {
     setUpdatingCategory(categoryName);
     try {
         await setCategoryImageUrl(categoryName, ""); // Set to empty string to reset
-        
-        const freshSettingsData = await getCategorySettings();
-        const freshSettingsMap = freshSettingsData.reduce((acc, setting) => {
-            acc[setting.id] = setting.imageUrl;
-            return acc;
-        }, {} as Record<string, string>);
-        setCategorySettings(freshSettingsMap);
-
+        await refreshCategorySettings();
         toast({ title: "Default Image Reset", description: `The default for ${categoryName} now uses the category icon.` });
     } catch (error) {
         console.error("Failed to reset category image", error);
@@ -216,14 +204,7 @@ export default function ManageProductImagesPage() {
         const newImage = e.target?.result as string;
         try {
           await setCategoryImageUrl(categoryName, newImage);
-          
-          const freshSettingsData = await getCategorySettings();
-          const freshSettingsMap = freshSettingsData.reduce((acc, setting) => {
-            acc[setting.id] = setting.imageUrl;
-            return acc;
-          }, {} as Record<string, string>);
-          setCategorySettings(freshSettingsMap);
-
+          await refreshCategorySettings();
           toast({ title: "Default Image Updated", description: `The default for ${categoryName} has been changed.` });
         } catch (error) {
           console.error("Failed to update category image", error);
@@ -304,7 +285,7 @@ export default function ManageProductImagesPage() {
       ) : (
         <Accordion type="multiple" defaultValue={Object.keys(productsByCategory).slice(0, 1)} className="w-full space-y-4">
             {Object.entries(productsByCategory).map(([category, categoryProducts]) => {
-                const placeholderImageUrl = categorySettings[category];
+                const placeholderImageUrl = settingsMap[category];
                 return (
                 <AccordionItem value={category} key={category} className="border-b-0">
                     <Card>
@@ -377,7 +358,7 @@ export default function ManageProductImagesPage() {
                             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {categoryProducts.map(p => {
                                   const imageUrl = p.images?.[0];
-                                  const isPlaceholder = !imageUrl;
+                                  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
                                   return (
                                     <Card key={p.id}>
                                         <CardContent className="p-4 grid grid-cols-3 gap-4 items-center">
@@ -441,4 +422,3 @@ export default function ManageProductImagesPage() {
     </div>
   );
 }
-    

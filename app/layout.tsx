@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import Header from "@/components/app/Header";
 import { cn } from "@/lib/utils";
+import { CategorySettingsProvider } from "@/context/CategorySettingsContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -26,13 +27,15 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         <AuthProvider>
-          <CartProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-            </div>
-            <Toaster />
-          </CartProvider>
+          <CategorySettingsProvider>
+            <CartProvider>
+              <div className="relative flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1">{children}</main>
+              </div>
+              <Toaster />
+            </CartProvider>
+          </CategorySettingsProvider>
         </AuthProvider>
       </body>
     </html>
