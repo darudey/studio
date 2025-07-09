@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { getProductById, getProducts, updateProduct } from "@/lib/data";
+import { getProductById, getProducts, updateProduct, getCategorySettings } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Product } from "@/types";
@@ -54,6 +54,7 @@ export default function EditItemPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [categorySettingsMap, setCategorySettingsMap] = useState<Record<string, string>>({});
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,9 +77,10 @@ export default function EditItemPage() {
     const productId = params.id as string;
     const fetchData = async () => {
         try {
-            const [foundProduct, allProducts] = await Promise.all([
+            const [foundProduct, allProducts, categorySettings] = await Promise.all([
                 getProductById(productId),
-                getProducts()
+                getProducts(),
+                getCategorySettings()
             ]);
 
             if (foundProduct) {
@@ -87,8 +89,15 @@ export default function EditItemPage() {
                   ...foundProduct,
                   isRecommended: foundProduct.isRecommended || false,
                 });
-                setImages(foundProduct.images);
+                setImages(foundProduct.images.filter(img => !img.includes('placehold.co')));
                 setCategories([...new Set(allProducts.map(p => p.category))].sort());
+
+                const settingsMap = categorySettings.reduce((acc, setting) => {
+                    acc[setting.id] = setting.imageUrl;
+                    return acc;
+                }, {} as Record<string, string>);
+                setCategorySettingsMap(settingsMap);
+
             } else {
                 notFound();
             }
@@ -139,7 +148,7 @@ export default function EditItemPage() {
 
   const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = async (data) => {
     if (!product) return;
-    const imageChanged = JSON.stringify(images) !== JSON.stringify(product.images);
+    const imageChanged = JSON.stringify(images) !== JSON.stringify(product.images.filter(img => !img.includes('placehold.co')));
     const updatedProductData: Product = {
       ...product,
       ...data,
@@ -235,15 +244,15 @@ export default function EditItemPage() {
                         <FormItem>
                             <FormLabel>Product Images</FormLabel>
                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {images.length === 0 && (
+                                    <div className="relative group aspect-square col-span-full border rounded-md">
+                                        <CategoryIconAsImage category={product.category} imageUrl={categorySettingsMap[product.category]} />
+                                    </div>
+                                )}
                                 {images.map((src, index) => {
-                                    const isPlaceholder = !src;
                                     return (
                                         <div key={index} className="relative group aspect-square">
-                                            {isPlaceholder ? (
-                                                <CategoryIconAsImage category={product.category} />
-                                            ) : (
-                                                <Image src={src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md border" />
-                                            )}
+                                            <Image src={src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md border" />
                                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-1 p-1">
                                             {index > 0 && <Button type="button" size="sm" className="w-full text-xs" onClick={() => handleSetPrimary(index)}><Star className="h-3 w-3 mr-1"/>Primary</Button>}
                                             <Button type="button" size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteImage(index)}><Trash2 className="h-3 w-3 mr-1"/>Delete</Button>

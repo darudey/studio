@@ -1,6 +1,6 @@
 import ProductPage from "@/components/app/ProductPage";
-import { getProducts } from '@/lib/data';
-import { Product } from "@/types";
+import { getProducts, getCategorySettings } from '@/lib/data';
+import { Product, Category } from "@/types";
 
 // Helper function to extract categories from a product list.
 // This avoids an extra database call.
@@ -31,10 +31,14 @@ export default async function Home() {
   let allProducts: Product[] = [];
   let categories: string[] = [];
   let dailyEssentialsProducts: Product[] = [];
+  let categorySettings: Category[] = [];
   
   try {
-    // Fetch all products just ONCE. This is the key optimization.
-    allProducts = await getProducts();
+    // Fetch all products and settings just ONCE. This is the key optimization.
+    [allProducts, categorySettings] = await Promise.all([
+      getProducts(),
+      getCategorySettings(),
+    ]);
     
     // Derive categories and "daily essentials" from the single list of products in memory.
     categories = getCategoriesFromProducts(allProducts);
@@ -46,9 +50,15 @@ export default async function Home() {
     // to prevent a full application crash. Errors are logged on the server.
   }
   
+  const settingsMap = categorySettings.reduce((acc, setting) => {
+    acc[setting.id] = setting.imageUrl;
+    return acc;
+  }, {} as Record<string, string>);
+
   return <ProductPage 
             serverRecommendedProducts={dailyEssentialsProducts} 
             serverAllProducts={allProducts}
             serverCategories={categories}
+            serverCategorySettingsMap={settingsMap}
          />;
 }

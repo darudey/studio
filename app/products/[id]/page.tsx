@@ -1,7 +1,7 @@
 
 "use client";
 
-import { getProductById, getProducts } from "@/lib/data";
+import { getProductById, getProducts, getCategorySettings } from "@/lib/data";
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import type { Product } from "@/types";
 import { Minus, Plus, ChevronDown } from "lucide-react";
@@ -20,13 +19,14 @@ import { CategoryIconAsImage } from "@/lib/icons";
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const [quantity, setQuantity] = useState(1);
   const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categorySettingsMap, setCategorySettingsMap] = useState<Record<string, string>>({});
+  const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
 
   useEffect(() => {
     const productId = params.id as string;
@@ -35,15 +35,26 @@ export default function ProductDetailPage() {
     const fetchProductData = async () => {
       setLoading(true);
       try {
-        const foundProduct = await getProductById(productId);
+        const [foundProduct, allProducts, settings] = await Promise.all([
+          getProductById(productId),
+          getProducts(),
+          getCategorySettings(),
+        ]);
+
         if (foundProduct) {
           setProduct(foundProduct);
           // Fetch similar products
-          const allProducts = await getProducts();
           const similar = allProducts
             .filter(p => p.category === foundProduct.category && p.id !== foundProduct.id)
             .slice(0, 6);
           setSimilarProducts(similar);
+
+          const settingsMap = settings.reduce((acc, setting) => {
+            acc[setting.id] = setting.imageUrl;
+            return acc;
+          }, {} as Record<string, string>);
+          setCategorySettingsMap(settingsMap);
+
         } else {
           notFound();
         }
@@ -74,6 +85,10 @@ export default function ProductDetailPage() {
     if (quantityInCart > 0) {
       updateQuantity(product.id, quantityInCart - 1, product.stock);
     }
+  };
+
+  const handleProductClick = (productId: string) => {
+    setLoadingProduct(productId);
   };
 
   if (loading) {
@@ -131,7 +146,7 @@ export default function ProductDetailPage() {
                 </Carousel>
             ) : (
                 <div className="aspect-square relative bg-white border rounded-md">
-                    <CategoryIconAsImage category={product.category} />
+                    <CategoryIconAsImage category={product.category} imageUrl={categorySettingsMap[product.category]} />
                 </div>
             )}
         </div>
@@ -163,8 +178,14 @@ export default function ProductDetailPage() {
         </div>
 
         {similarProducts.length > 0 && (
-            <div className="bg-background">
-                 <ProductCarousel title="Similar Products" products={similarProducts} />
+            <div className="bg-background py-6 px-4">
+                 <ProductCarousel 
+                    title="Similar Products" 
+                    products={similarProducts} 
+                    loadingProductId={loadingProduct}
+                    onProductClick={handleProductClick}
+                    categorySettingsMap={categorySettingsMap}
+                />
             </div>
         )}
       </div>
