@@ -36,10 +36,6 @@ export default function ManageProductImagesPage() {
 
   useEffect(() => {
     const handleFocus = () => {
-      // When the file dialog closes, the window regains focus. We check
-      // if we were in a loading state. If so, and if no file was selected
-      // in the input, it means the user cancelled the dialog. We then reset the state.
-      // This is necessary because the `onChange` event doesn't fire on cancellation.
       if (updatingCategory && categoryFileInputRef.current && !categoryFileInputRef.current.files?.length) {
         setUpdatingCategory(null);
       }
@@ -188,6 +184,28 @@ export default function ManageProductImagesPage() {
     setUpdatingCategory(category);
     categoryFileInputRef.current?.click();
   };
+  
+  const handleResetCategoryDefault = async (categoryName: string) => {
+    if (updatingCategory) return;
+    setUpdatingCategory(categoryName);
+    try {
+        await setCategoryImageUrl(categoryName, ""); // Set to empty string to reset
+        
+        const freshSettingsData = await getCategorySettings();
+        const freshSettingsMap = freshSettingsData.reduce((acc, setting) => {
+            acc[setting.id] = setting.imageUrl;
+            return acc;
+        }, {} as Record<string, string>);
+        setCategorySettings(freshSettingsMap);
+
+        toast({ title: "Default Image Reset", description: `The default for ${categoryName} now uses the category icon.` });
+    } catch (error) {
+        console.error("Failed to reset category image", error);
+        toast({ title: "Reset Failed", description: "Could not reset the default image.", variant: "destructive" });
+    } finally {
+        setUpdatingCategory(null);
+    }
+  };
 
   const handleCategoryFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0] && updatingCategory) {
@@ -199,7 +217,6 @@ export default function ManageProductImagesPage() {
         try {
           await setCategoryImageUrl(categoryName, newImage);
           
-          // Re-fetch all settings to ensure the UI updates with the latest data
           const freshSettingsData = await getCategorySettings();
           const freshSettingsMap = freshSettingsData.reduce((acc, setting) => {
             acc[setting.id] = setting.imageUrl;
@@ -280,9 +297,9 @@ export default function ManageProductImagesPage() {
       
       {loading ? (
         <div className="space-y-4">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
         </div>
       ) : (
         <Accordion type="multiple" defaultValue={Object.keys(productsByCategory).slice(0, 1)} className="w-full space-y-4">
@@ -292,24 +309,68 @@ export default function ManageProductImagesPage() {
                 <AccordionItem value={category} key={category} className="border-b-0">
                     <Card>
                         <AccordionTrigger className="p-4 hover:no-underline">
-                           <div className="flex items-center gap-4 w-full">
-                                <div className="w-12 h-12 flex-shrink-0">
-                                    <CategoryIconAsImage category={category} imageUrl={placeholderImageUrl} />
+                            <div className="flex items-center gap-4 w-full">
+                                <div 
+                                    className="w-16 h-16 flex-shrink-0 border rounded-md"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!updatingCategory) handleCategoryDefaultImageClick(category);
+                                    }}
+                                >
+                                    {updatingCategory === category ? (
+                                        <div className="flex items-center justify-center h-full w-full">
+                                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
+                                        </div>
+                                    ) : (
+                                        <CategoryIconAsImage category={category} imageUrl={placeholderImageUrl} />
+                                    )}
                                 </div>
                                 <h2 className="text-xl font-bold">{category}</h2>
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="ml-auto" 
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Prevent accordion from toggling
-                                        handleCategoryDefaultImageClick(category);
-                                    }}
-                                    disabled={!!updatingCategory && updatingCategory !== category}
-                                >
-                                    {updatingCategory === category ? <Loader2 className="h-4 w-4 animate-spin"/> : <Pencil className="h-4 w-4 mr-2"/>}
-                                    Change Default
-                                </Button>
+                                <div className="ml-auto flex items-center gap-2">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleCategoryDefaultImageClick(category);
+                                                    }}
+                                                    disabled={!!updatingCategory}
+                                                >
+                                                    <Pencil className="h-4 w-4"/>
+                                                    <span className="sr-only">Change custom image</span>
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Change custom image</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon"
+                                                    className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleResetCategoryDefault(category);
+                                                    }}
+                                                    disabled={!placeholderImageUrl || !!updatingCategory}
+                                                >
+                                                    <Trash2 className="h-4 w-4"/>
+                                                    <span className="sr-only">Reset to icon</span>
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Reset to icon</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
                             </div>
                         </AccordionTrigger>
                         <AccordionContent>
