@@ -36,22 +36,6 @@ export default function ManageProductImagesPage() {
   const categoryFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handleFocus = () => {
-      if (updatingCategory && categoryFileInputRef.current && !categoryFileInputRef.current.files?.length) {
-        setUpdatingCategory(null);
-      }
-      if (updatingProductId && fileInputRef.current && !fileInputRef.current.files?.length) {
-        setUpdatingProductId(null);
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [updatingCategory, updatingProductId]);
-
-  useEffect(() => {
     if (!user) {
       router.push("/login");
       return;
@@ -176,8 +160,10 @@ export default function ManageProductImagesPage() {
 
   const handleCategoryDefaultImageClick = (category: string) => {
     if (updatingCategory) return;
-    setUpdatingCategory(category);
-    categoryFileInputRef.current?.click();
+    if (categoryFileInputRef.current) {
+        categoryFileInputRef.current.setAttribute('data-category', category);
+        categoryFileInputRef.current.click();
+    }
   };
   
   const handleResetCategoryDefault = async (categoryName: string) => {
@@ -196,29 +182,40 @@ export default function ManageProductImagesPage() {
   };
 
   const handleCategoryFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0] && updatingCategory) {
-      const file = event.target.files[0];
-      const categoryName = updatingCategory;
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const newImage = e.target?.result as string;
-        try {
-          await setCategoryImageUrl(categoryName, newImage);
-          await refreshCategorySettings();
-          toast({ title: "Default Image Updated", description: `The default for ${categoryName} has been changed.` });
-        } catch (error) {
-          console.error("Failed to update category image", error);
-          toast({ title: "Update Failed", description: "Could not save the new default image.", variant: "destructive" });
-        } finally {
-          setUpdatingCategory(null);
-          if (categoryFileInputRef.current) {
+    const file = event.target.files?.[0];
+    const categoryName = event.target.getAttribute('data-category');
+
+    // Clean up even if cancelled
+    if (!file || !categoryName) {
+        if (categoryFileInputRef.current) {
             categoryFileInputRef.current.value = "";
-          }
+            categoryFileInputRef.current.removeAttribute('data-category');
         }
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setUpdatingCategory(null);
+        return;
+    }
+
+    setUpdatingCategory(categoryName);
+
+    try {
+        const newImage = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target?.result as string);
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
+        });
+        
+        await setCategoryImageUrl(categoryName, newImage);
+        await refreshCategorySettings();
+        toast({ title: "Default Image Updated", description: `The default for ${categoryName} has been changed.` });
+    } catch (error) {
+        console.error("Failed to update category image", error);
+        toast({ title: "Update Failed", description: "Could not save the new default image.", variant: "destructive" });
+    } finally {
+        setUpdatingCategory(null);
+        if (categoryFileInputRef.current) {
+            categoryFileInputRef.current.value = "";
+            categoryFileInputRef.current.removeAttribute('data-category');
+        }
     }
   };
   
@@ -272,8 +269,7 @@ export default function ManageProductImagesPage() {
         accept="image/*" 
         className="hidden" 
         onChange={handleCategoryFileChange} 
-        ref={categoryFileInputRef} 
-        disabled={!!updatingCategory}
+        ref={categoryFileInputRef}
       />
       
       {loading ? (
@@ -293,10 +289,6 @@ export default function ManageProductImagesPage() {
                             <div className="flex items-center gap-4 w-full">
                                 <div 
                                     className="w-16 h-16 flex-shrink-0 border rounded-md"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!updatingCategory) handleCategoryDefaultImageClick(category);
-                                    }}
                                 >
                                     {updatingCategory === category ? (
                                         <div className="flex items-center justify-center h-full w-full">
@@ -358,7 +350,7 @@ export default function ManageProductImagesPage() {
                             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {categoryProducts.map(p => {
                                   const imageUrl = p.images?.[0];
-                                  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+                                  const isPlaceholder = !imageUrl;
                                   return (
                                     <Card key={p.id}>
                                         <CardContent className="p-4 grid grid-cols-3 gap-4 items-center">
