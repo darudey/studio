@@ -1,4 +1,3 @@
-
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -66,6 +65,23 @@ const CosmeticsIcon = () => (
   </svg>
 );
 
+const PujaIcon = () => (
+    <svg 
+        width="24" 
+        height="24" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="1.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <path d="M3 17C4.66667 15 8 13 12 13C16 13 19.3333 15 21 17" />
+        <path d="M12 13C10.5 11 10.5 7 12 5C13.5 7 13.5 11 12 13Z" fill="currentColor" />
+    </svg>
+);
+
 
 const categoryIcons: { [key: string]: React.ElementType } = {
   'all': LayoutGrid,
@@ -77,7 +93,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
   'chowmin': ChowminIcon,
   'cosmetics': CosmeticsIcon,
   'general': Package,
-  'puja items': Package,
+  'puja items': PujaIcon,
   'rice': Bean,
   'stationary': PenSquare,
   'kurkure': Cookie,
