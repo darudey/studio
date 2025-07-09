@@ -71,7 +71,7 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
                     src={imageUrl}
                     alt={product.name}
                     fill
-                    className="object-contain"
+                    className="object-cover"
                     sizes="20vw"
                     data-ai-hint={product.dataAiHint}
                     />
