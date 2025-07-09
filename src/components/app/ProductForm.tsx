@@ -242,9 +242,29 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                 )}
                
                 <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem><FormLabel>Category</FormLabel>
-                        <FormControl><Input placeholder="e.g., Fruits or Vegetables" {...field} list="categories-list" /></FormControl>
-                        <datalist id="categories-list">{categories.map(cat => <option key={cat} value={cat} />)}</datalist>
+                    <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <div className="relative">
+                            <div className="flex space-x-2 overflow-x-auto pb-2 -mx-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                {categories.map(cat => (
+                                    <Button
+                                        key={cat}
+                                        type="button"
+                                        variant={field.value === cat ? "default" : "outline"}
+                                        onClick={() => field.onChange(cat)}
+                                        className="shrink-0 h-8"
+                                    >
+                                        {cat}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                        <FormControl>
+                            <Input 
+                                placeholder="Select a category above or type a new one" 
+                                {...field} 
+                            />
+                        </FormControl>
                         <FormDescription>Select an existing category or type to create a new one.</FormDescription>
                         <FormMessage />
                     </FormItem>
