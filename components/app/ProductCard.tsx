@@ -53,7 +53,7 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
   };
 
   const imageUrl = product.images?.[0];
-  const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
+  const isPlaceholder = !imageUrl;
 
   return (
     <Link href={`/products/${product.id}`} onClick={onClick} className="block w-full h-full">
