@@ -13,9 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import Image from "next/image";
 import ProductForm from "@/components/app/ProductForm";
-import { ClipboardList, Edit, Loader2, Hash, Pencil, Trash2 } from "lucide-react";
+import { ClipboardList, Loader2, Hash, Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,8 +26,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CategoryIconAsImage } from "@/lib/icons";
-import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 
 export default function ManageProductsPage() {
@@ -43,7 +40,6 @@ export default function ManageProductsPage() {
   
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const { toast } = useToast();
-  const { settingsMap } = useCategorySettings();
 
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -203,42 +199,21 @@ export default function ManageProductsPage() {
   }
   
   const AdminProductCard = ({ product }: { product: Product }) => {
-    const imageUrl = product.images?.[0];
-    const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
-    
     return (
-        <Card className="flex flex-col">
-            <CardContent className="p-0">
-                <div className="aspect-square relative">
-                    {isPlaceholder ? (
-                        <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} className="rounded-t-lg" />
-                    ) : (
-                        <Image
-                            src={imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover rounded-t-lg"
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                            data-ai-hint={product.dataAiHint}
-                        />
-                    )}
+        <Card onClick={() => handleEditClick(product)} className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardContent className="p-4">
+                <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                        <h3 className="font-bold text-base leading-tight">{product.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-2">CG: {product.category}</p>
+                        <p className="text-sm text-muted-foreground">RP: ₹{product.retailPrice.toFixed(0)}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                         <p className="text-sm text-muted-foreground">ST: {product.stock}</p>
+                         <p className="text-sm text-muted-foreground">WP: ₹{product.wholesalePrice.toFixed(0)}</p>
+                    </div>
                 </div>
             </CardContent>
-            <div className="p-4 border-t flex-grow flex flex-col justify-between">
-                <div>
-                    <h3 className="font-semibold line-clamp-2 h-12">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.category}</p>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                    <div className="text-sm">
-                        <p>Stock: <span className="font-bold">{product.stock}</span></p>
-                        <p>₹{product.retailPrice.toFixed(2)}</p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => handleEditClick(product)}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit
-                    </Button>
-                </div>
-            </div>
         </Card>
     );
   };
@@ -298,11 +273,11 @@ export default function ManageProductsPage() {
       </Dialog>
       
       {(isSearching && page === 1) ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => <Skeleton key={`skeleton-${i}`} className="h-80 w-full" />)}
+        <div className="space-y-4">
+          {[...Array(8)].map((_, i) => <Skeleton key={`skeleton-${i}`} className="h-24 w-full" />)}
         </div>
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="space-y-4">
           {products.map(p => <AdminProductCard key={p.id} product={p} />)}
         </div>
       ) : (
