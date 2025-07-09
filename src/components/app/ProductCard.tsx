@@ -1,3 +1,4 @@
+
 "use client"
 import Image from "next/image";
 import Link from "next/link";
@@ -108,10 +109,6 @@ export default function ProductCard({ product, isLoading, onClick }: ProductCard
             <h3 className="font-medium text-sm leading-tight mt-1 flex-grow h-10 line-clamp-2">
                 {product.name}
             </h3>
-            <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
-                <Clock className="w-3 h-3 text-blue-600"/>
-                <span>15 MINS</span>
-            </div>
             <div className="flex items-center justify-between mt-2">
                 <div>
                     <p className="text-sm font-bold">₹{displayPrice.toFixed(0)}</p>

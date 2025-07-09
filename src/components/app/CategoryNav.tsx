@@ -2,7 +2,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { LayoutGrid, Umbrella, Headphones, Gem, Lamp, Package, Popcorn, Bean, PenSquare, Cookie, ShoppingBasket } from "lucide-react";
+import { LayoutGrid, Umbrella, Headphones, Gem, Lamp, Package, Popcorn, Bean, PenSquare, Cookie, ShoppingBasket, Shirt } from "lucide-react";
 import React from 'react';
 
 interface CategoryNavProps {
@@ -73,7 +73,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
   'electronics': Headphones,
   'beauty': CosmeticsIcon,
   'decor': Lamp,
-  'fashion': Popcorn,
+  'fashion': Shirt,
   'chowmin': ChowminIcon,
   'cosmetics': CosmeticsIcon,
   'general': Package,

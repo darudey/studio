@@ -13,6 +13,7 @@ export type Product = {
   unit: 'kg' | 'g' | 'litre' | 'ml' | 'piece' | 'dozen';
   stock: number;
   dataAiHint?: string;
+  imageUpdatedAt: string;
   updatedAt: string;
   isRecommended: boolean;
   createdAt: string;
