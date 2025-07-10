@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getPaginatedProducts, getCategories, updateProduct, renameCategory, deleteCategory } from "@/lib/data";
+import { getPaginatedProducts, getCategories, updateProduct, renameCategory, deleteCategory, deleteMultipleProducts } from "@/lib/data";
 import type { Product } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import ProductForm from "@/components/app/ProductForm";
-import { ClipboardList, Loader2, Hash, Pencil, Trash2 } from "lucide-react";
+import { ClipboardList, Loader2, Hash, Pencil, Trash2, PlusCircle, MoreVertical, X, CheckSquare } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 
 export default function ManageProductsPage() {
@@ -50,6 +54,10 @@ export default function ManageProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const limit = 20;
 
@@ -96,15 +104,31 @@ export default function ManageProductsPage() {
     return () => debouncedFetch.cancel();
   }, [user, authLoading, router, searchTerm, debouncedFetch]);
 
+  useEffect(() => {
+    if (!isSelectionMode) {
+      setSelectedProducts(new Set());
+    }
+  }, [isSelectionMode]);
+
   const loadMore = () => {
     if (!loading && hasMore) {
       fetchProducts(searchTerm, page + 1);
     }
   };
 
-  const handleEditClick = async (product: Product) => {
-    setEditingProduct(product);
-    setIsEditDialogOpen(true);
+  const handleCardClick = (product: Product) => {
+    if (isSelectionMode) {
+      const newSelected = new Set(selectedProducts);
+      if (newSelected.has(product.id)) {
+        newSelected.delete(product.id);
+      } else {
+        newSelected.add(product.id);
+      }
+      setSelectedProducts(newSelected);
+    } else {
+      setEditingProduct(product);
+      setIsEditDialogOpen(true);
+    }
   };
   
   const handleFormSubmit = async (data: any, images: string[]) => {
@@ -193,14 +217,36 @@ export default function ManageProductsPage() {
           setIsCategoryActionLoading(false);
       }
   };
+
+  const handleDeleteSelected = async () => {
+    if (selectedProducts.size === 0) return;
+    setIsDeleting(true);
+    try {
+        await deleteMultipleProducts(Array.from(selectedProducts));
+        setProducts(prev => prev.filter(p => !selectedProducts.has(p.id)));
+        toast({ title: "Products Deleted", description: `${selectedProducts.size} products have been deleted.` });
+        setIsSelectionMode(false);
+    } catch (error) {
+        console.error("Failed to delete products", error);
+        toast({ title: "Error", description: "Failed to delete selected products.", variant: "destructive" });
+    } finally {
+        setIsDeleting(false);
+    }
+  };
   
   if (authLoading || !user) {
     return <div className="container py-12 text-center">Redirecting...</div>;
   }
   
   const AdminProductCard = ({ product }: { product: Product }) => {
+    const isSelected = selectedProducts.has(product.id);
     return (
-        <Card onClick={() => handleEditClick(product)} className="cursor-pointer hover:bg-muted/50 transition-colors">
+        <Card onClick={() => handleCardClick(product)} className={cn("cursor-pointer hover:bg-muted/50 transition-colors relative", isSelectionMode && isSelected && "ring-2 ring-primary bg-primary/5")}>
+            {isSelectionMode && (
+                <div className="absolute top-2 right-2">
+                    <Checkbox checked={isSelected} className="h-5 w-5" />
+                </div>
+            )}
             <CardContent className="p-4">
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
@@ -221,18 +267,54 @@ export default function ManageProductsPage() {
 
   return (
     <div className="container py-12">
-      <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center">
-        <h4 className="text-lg font-bold flex items-center gap-2">
-            <ClipboardList className="h-6 w-6 text-blue-600" /> Product Catalog
-        </h4>
+      <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center gap-2">
+        <div className="flex items-center gap-2 flex-1">
+            {isSelectionMode ? (
+                <>
+                    <Button variant="ghost" size="icon" onClick={() => setIsSelectionMode(false)}><X className="h-5 w-5"/></Button>
+                    <h4 className="text-lg font-bold">{selectedProducts.size} selected</h4>
+                </>
+            ) : (
+                <h4 className="text-lg font-bold flex items-center gap-2">
+                    <ClipboardList className="h-6 w-6 text-blue-600" /> Product Catalog
+                </h4>
+            )}
+        </div>
         <div className="flex items-center gap-2">
-            <div className="relative">
-              <Input placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm pr-8" />
-              {isSearching && page === 1 && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
-            </div>
-             <Button variant="outline" size="icon" onClick={() => setIsCategoryManagerOpen(true)} title="Manage Categories">
-                <Hash className="h-4 w-4 text-blue-600" /> <span className="sr-only">Manage Categories</span>
-            </Button>
+            {isSelectionMode ? (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" disabled={selectedProducts.size === 0 || isDeleting}>
+                            <MoreVertical className="h-4 w-4 text-blue-600"/>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleDeleteSelected} className="text-red-600 focus:text-red-600 focus:bg-red-50" disabled={isDeleting}>
+                            <Trash2 className="mr-2 h-4 w-4"/>
+                            {isDeleting ? 'Deleting...' : `Delete (${selectedProducts.size})`}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ) : (
+                <>
+                    <div className="relative">
+                      <Input placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm pr-8" />
+                      {isSearching && page === 1 && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                    </div>
+                     <Button variant="outline" size="icon" onClick={() => setIsCategoryManagerOpen(true)} title="Manage Categories">
+                        <Hash className="h-4 w-4 text-blue-600" />
+                    </Button>
+                     <Button variant="outline" size="icon" onClick={() => setIsSelectionMode(true)} title="Select Items">
+                        <CheckSquare className="h-4 w-4 text-blue-600"/>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/developer/add-item">
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Add New
+                        </Link>
+                    </Button>
+                </>
+            )}
         </div>
       </div>
       
@@ -295,3 +377,5 @@ export default function ManageProductsPage() {
     </div>
   );
 }
+
+    
