@@ -211,6 +211,7 @@ export default function ManageProductsPage() {
                     <div className="text-right flex-shrink-0">
                          <p className="text-sm text-muted-foreground">ST: {product.stock}</p>
                          <p className="text-sm text-muted-foreground">WP: ₹{product.wholesalePrice.toFixed(0)}</p>
+                         <p className="text-sm text-muted-foreground">MRP: ₹{product.mrp ? product.mrp.toFixed(0) : 'N/A'}</p>
                     </div>
                 </div>
             </CardContent>
