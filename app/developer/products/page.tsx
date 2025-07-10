@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import ProductForm from "@/components/app/ProductForm";
-import { ClipboardList, Loader2, Hash, Pencil, Trash2, PlusCircle, MoreVertical, X, CheckSquare } from "lucide-react";
+import { ClipboardList, Loader2, Hash, Pencil, Trash2, Plus, MoreVertical, X, CheckSquare } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -141,6 +141,7 @@ export default function ManageProductsPage() {
           ...data,
           images,
           imageUpdatedAt: imageChanged ? new Date().toISOString() : editingProduct.imageUpdatedAt,
+          mrp: data.mrp || 0,
       };
 
       try {
@@ -267,17 +268,18 @@ export default function ManageProductsPage() {
 
   return (
     <div className="container py-12">
+        <div className="mb-6 flex items-center gap-2">
+            <ClipboardList className="h-6 w-6 text-blue-600" />
+            <h4 className="text-lg font-bold">Product Catalog</h4>
+        </div>
+
       <div className="sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-4 mb-6 flex justify-between items-center gap-2">
         <div className="flex items-center gap-2 flex-1">
-            {isSelectionMode ? (
+            {isSelectionMode && (
                 <>
                     <Button variant="ghost" size="icon" onClick={() => setIsSelectionMode(false)}><X className="h-5 w-5"/></Button>
                     <h4 className="text-lg font-bold">{selectedProducts.size} selected</h4>
                 </>
-            ) : (
-                <h4 className="text-lg font-bold flex items-center gap-2">
-                    <ClipboardList className="h-6 w-6 text-blue-600" /> Product Catalog
-                </h4>
             )}
         </div>
         <div className="flex items-center gap-2">
@@ -307,10 +309,10 @@ export default function ManageProductsPage() {
                      <Button variant="outline" size="icon" onClick={() => setIsSelectionMode(true)} title="Select Items">
                         <CheckSquare className="h-4 w-4 text-blue-600"/>
                     </Button>
-                    <Button asChild>
+                    <Button asChild size="icon" variant="outline">
                         <Link href="/developer/add-item">
-                            <PlusCircle className="mr-2 h-4 w-4"/>
-                            Add New
+                            <Plus className="h-4 w-4 text-blue-600"/>
+                            <span className="sr-only">Add New Product</span>
                         </Link>
                     </Button>
                 </>
