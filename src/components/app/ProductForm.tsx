@@ -326,49 +326,52 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                   <FormDescription className="mb-4">Add different units and prices for wholesale customers.</FormDescription>
                   <div className="space-y-4">
                   {fields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start p-3 border rounded-lg">
+                    <div key={field.id} className="p-3 border rounded-lg space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-start">
+                            <FormField
+                                control={form.control}
+                                name={`wholesalePrices.${index}.unit`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs">Unit</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g., Dozen" {...field} />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name={`wholesalePrices.${index}.price`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs">Price (₹)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" step="0.01" placeholder="120" {...field} />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="button" variant="ghost" size="icon" className="text-red-500 mt-6" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        
                         <FormField
-                            control={form.control}
-                            name={`wholesalePrices.${index}.unit`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs">Unit</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g., Dozen" {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name={`wholesalePrices.${index}.price`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs">Price (₹)</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" step="0.01" placeholder="120" {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
                             control={form.control}
                             name={`wholesalePrices.${index}.note`}
                             render={({ field }) => (
-                                <FormItem className="hidden sm:block">
+                                <FormItem>
                                     <FormLabel className="text-xs">Note (Optional)</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="e.g., 12 pieces" {...field} />
+                                        <Input placeholder="e.g., 1 dozen = 12 pieces" {...field} />
                                     </FormControl>
                                     <FormMessage/>
                                 </FormItem>
                             )}
                         />
-                        <Button type="button" variant="ghost" size="icon" className="text-red-500 mt-6" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
                     </div>
                   ))}
                   <Button
@@ -376,13 +379,14 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                     variant="outline"
                     size="sm"
                     onClick={() => append({ unit: "", price: 0, note: "" })}
+                    className="mt-2"
                   >
                     <Plus className="mr-2 h-4 w-4"/> Add Tier
                   </Button>
                   </div>
                 </div>
                 
-                 <Button type="submit" disabled={isSubmitting}>
+                 <Button type="submit" disabled={isSubmitting} className="w-full">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {product ? 'Save Changes' : 'Add Product'}
                 </Button>
