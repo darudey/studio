@@ -8,6 +8,7 @@ import ProductCarousel from './ProductCarousel';
 import CategoryNav from './CategoryNav';
 import { useSearchParams } from 'next/navigation';
 import { useCategorySettings } from '@/context/CategorySettingsContext';
+import { LazyLoadComponent } from './LazyLoadComponent';
 
 interface ProductPageProps {
   serverRecommendedProducts: Product[];
@@ -15,7 +16,11 @@ interface ProductPageProps {
   serverAllProducts: Product[];
 }
 
-export default function ProductPage({ serverRecommendedProducts, serverCategories, serverAllProducts }: ProductPageProps) {
+export default function ProductPage({ 
+  serverRecommendedProducts, 
+  serverCategories, 
+  serverAllProducts 
+}: ProductPageProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -95,8 +100,8 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
                 // Alternate background colors for visual separation
                 const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
                 return (
-                    <div key={category} className={`py-6 ${bgColor}`}>
-                        <div className="container">
+                    <LazyLoadComponent key={category} className={`py-6 ${bgColor}`}>
+                         <div className="container">
                              <ProductCarousel 
                                 title={category} 
                                 products={categoryProducts} 
@@ -105,7 +110,7 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
                                 categorySettingsMap={settingsMap}
                              />
                         </div>
-                    </div>
+                    </LazyLoadComponent>
                 )
             })}
         </>
@@ -117,13 +122,14 @@ export default function ProductPage({ serverRecommendedProducts, serverCategorie
             {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {filteredProducts.map(product => (
-                        <ProductCard 
-                            key={product.id} 
-                            product={product} 
-                            isLoading={loadingProductId === product.id}
-                            onClick={() => handleProductClick(product.id)}
-                            placeholderImageUrl={settingsMap[product.category]}
-                        />
+                       <LazyLoadComponent key={product.id}>
+                            <ProductCard 
+                                product={product} 
+                                isLoading={loadingProductId === product.id}
+                                onClick={() => handleProductClick(product.id)}
+                                placeholderImageUrl={settingsMap[product.category]}
+                            />
+                        </LazyLoadComponent>
                     ))}
                 </div>
             ) : (
