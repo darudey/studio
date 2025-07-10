@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { Camera, FileImage, Star, Trash2, Loader2, PlusCircle, Plus } from "lucide-react";
+import { Camera, FileImage, Star, Trash2, Loader2, Plus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -326,8 +326,8 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                   <FormDescription className="mb-4">Add different units and prices for wholesale customers.</FormDescription>
                   <div className="space-y-4">
                   {fields.map((field, index) => (
-                    <div key={field.id} className="p-3 border rounded-lg space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-start">
+                    <div key={field.id} className="p-3 border rounded-lg space-y-3 bg-muted/30">
+                        <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
                             <FormField
                                 control={form.control}
                                 name={`wholesalePrices.${index}.unit`}
