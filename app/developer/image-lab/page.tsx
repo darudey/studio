@@ -287,16 +287,40 @@ export default function ManageProductImagesPage() {
                     <Card>
                         <AccordionTrigger className="p-4 hover:no-underline">
                             <div className="flex items-center gap-4 w-full">
-                                <div 
-                                    className="w-16 h-16 flex-shrink-0 border rounded-md"
-                                >
-                                    {updatingCategory === category ? (
-                                        <div className="flex items-center justify-center h-full w-full">
-                                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
-                                        </div>
-                                    ) : (
-                                        <CategoryIconAsImage category={category} imageUrl={placeholderImageUrl} />
-                                    )}
+                                <div className="relative w-16 h-16 flex-shrink-0">
+                                    <div 
+                                        className="w-full h-full border rounded-md"
+                                    >
+                                        {updatingCategory === category ? (
+                                            <div className="flex items-center justify-center h-full w-full">
+                                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
+                                            </div>
+                                        ) : (
+                                            <CategoryIconAsImage category={category} imageUrl={placeholderImageUrl} />
+                                        )}
+                                    </div>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon"
+                                                    className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-red-500 text-white hover:bg-red-600"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleResetCategoryDefault(category);
+                                                    }}
+                                                    disabled={!placeholderImageUrl || !!updatingCategory}
+                                                >
+                                                    <Trash2 className="h-3 w-3"/>
+                                                    <span className="sr-only">Reset to icon</span>
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>Reset to icon</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
                                 </div>
                                 <h2 className="text-xl font-bold">{category}</h2>
                                 <div className="ml-auto flex items-center gap-2">
@@ -318,28 +342,6 @@ export default function ManageProductImagesPage() {
                                             </TooltipTrigger>
                                             <TooltipContent>
                                                 <p>Change custom image</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon"
-                                                    className="text-red-500 hover:bg-red-50 hover:text-red-600"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleResetCategoryDefault(category);
-                                                    }}
-                                                    disabled={!placeholderImageUrl || !!updatingCategory}
-                                                >
-                                                    <Trash2 className="h-4 w-4"/>
-                                                    <span className="sr-only">Reset to icon</span>
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Reset to icon</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
