@@ -2,10 +2,10 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Product } from "@/types";
+import { Product, WholesalePrice } from "@/types";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,12 +14,19 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { Camera, FileImage, Star, Trash2, Loader2 } from "lucide-react";
+import { Camera, FileImage, Star, Trash2, Loader2, PlusCircle, Plus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useCategorySettings } from "@/context/CategorySettingsContext";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { Separator } from "../ui/separator";
+
+const wholesalePriceSchema = z.object({
+  unit: z.string().min(1, "Unit is required."),
+  price: z.coerce.number().min(0.01, "Price must be positive."),
+  note: z.string().optional(),
+});
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Product name must be at least 2 characters." }),
@@ -29,10 +36,10 @@ const formSchema = z.object({
   category: z.string().min(1, { message: "Category is required." }),
   mrp: z.coerce.number().min(0, "MRP must be a positive number.").optional(),
   retailPrice: z.coerce.number().min(0.01, { message: "Retail price must be positive." }),
-  wholesalePrice: z.coerce.number().min(0.01, { message: "Wholesale price must be positive." }),
   unit: z.enum(['kg', 'g', 'litre', 'ml', 'piece', 'dozen']),
   stock: z.coerce.number().int().min(0, { message: "Stock cannot be negative." }),
   isRecommended: z.boolean().optional(),
+  wholesalePrices: z.array(wholesalePriceSchema).min(1, "At least one wholesale price is required."),
 });
 
 type ProductFormData = z.infer<typeof formSchema>;
@@ -43,6 +50,20 @@ interface ProductFormProps {
     onFormSubmit: (data: ProductFormData, images: string[]) => Promise<void>;
     isSubmitting: boolean;
 }
+
+const defaultValues = {
+    name: "",
+    itemCode: "",
+    batchNo: "",
+    description: "",
+    category: "",
+    mrp: 0,
+    retailPrice: 0,
+    unit: "piece" as const,
+    stock: 0,
+    isRecommended: false,
+    wholesalePrices: [{ unit: "piece", price: 0, note: "" }],
+};
 
 export default function ProductForm({ product, categories, onFormSubmit, isSubmitting }: ProductFormProps) {
     const { toast } = useToast();
@@ -62,19 +83,13 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
             ...product,
             mrp: product.mrp || product.retailPrice,
             isRecommended: product.isRecommended || false,
-        } : {
-            name: "",
-            itemCode: "",
-            batchNo: "",
-            description: "",
-            category: "",
-            mrp: 0,
-            retailPrice: 0,
-            wholesalePrice: 0,
-            unit: "piece",
-            stock: 0,
-            isRecommended: false,
-        },
+            wholesalePrices: product.wholesalePrices?.length > 0 ? product.wholesalePrices : [{ unit: 'piece', price: 0, note: '' }]
+        } : defaultValues,
+    });
+
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "wholesalePrices"
     });
 
     useEffect(() => {
@@ -83,6 +98,7 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                 ...product,
                 mrp: product.mrp || product.retailPrice,
                 isRecommended: product.isRecommended || false,
+                wholesalePrices: product.wholesalePrices?.length > 0 ? product.wholesalePrices : [{ unit: 'piece', price: 0, note: '' }]
             });
             setImages(product.images.filter(img => !img.includes('placehold.co')));
         }
@@ -233,7 +249,7 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                     <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
 
-                {product && ( // Only show recommendation switch on edit page
+                {product && (
                      <FormField control={form.control} name="isRecommended" render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
@@ -273,20 +289,17 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                         <FormMessage />
                     </FormItem>
                 )}/>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      <FormField control={form.control} name="mrp" render={({ field }) => (
                         <FormItem><FormLabel>MRP (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="retailPrice" render={({ field }) => (
                         <FormItem><FormLabel>Retail Price (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
-                    <FormField control={form.control} name="wholesalePrice" render={({ field }) => (
-                        <FormItem><FormLabel>Wholesale Price (₹)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="unit" render={({ field }) => (
-                        <FormItem><FormLabel>Measuring Unit</FormLabel>
+                        <FormItem><FormLabel>Base / Retail Unit</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger></FormControl>
                             <SelectContent>
@@ -304,6 +317,69 @@ export default function ProductForm({ product, categories, onFormSubmit, isSubmi
                     <FormField control={form.control} name="stock" render={({ field }) => (
                         <FormItem><FormLabel>Stock Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
+                </div>
+
+                <Separator />
+                
+                <div>
+                  <FormLabel>Wholesale Pricing Tiers</FormLabel>
+                  <FormDescription className="mb-4">Add different units and prices for wholesale customers.</FormDescription>
+                  <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start p-3 border rounded-lg">
+                        <FormField
+                            control={form.control}
+                            name={`wholesalePrices.${index}.unit`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs">Unit</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., Dozen" {...field} />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name={`wholesalePrices.${index}.price`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs">Price (₹)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" step="0.01" placeholder="120" {...field} />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name={`wholesalePrices.${index}.note`}
+                            render={({ field }) => (
+                                <FormItem className="hidden sm:block">
+                                    <FormLabel className="text-xs">Note (Optional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., 12 pieces" {...field} />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="button" variant="ghost" size="icon" className="text-red-500 mt-6" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ unit: "", price: 0, note: "" })}
+                  >
+                    <Plus className="mr-2 h-4 w-4"/> Add Tier
+                  </Button>
+                  </div>
                 </div>
                 
                  <Button type="submit" disabled={isSubmitting}>

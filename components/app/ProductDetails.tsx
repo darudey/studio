@@ -27,20 +27,28 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
   const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
   const { settingsMap } = useCategorySettings();
 
-  const cartItem = cartItems.find(item => item.productId === product.id);
+  const isWholesaler = user?.role === 'wholesaler' || user?.role === 'developer';
+  const [selectedUnit, setSelectedUnit] = useState(isWholesaler ? product.wholesalePrices?.[0]?.unit : product.unit);
+  
+  const selectedWholesalePriceInfo = product.wholesalePrices?.find(p => p.unit === selectedUnit);
+
+  const cartItem = cartItems.find(item => item.productId === product.id && item.wholesaleUnit === (isWholesaler ? selectedUnit : undefined));
   const quantityInCart = cartItem?.quantity || 0;
 
   const handleAddToCart = () => {
-    addToCart(product.id, 1, product.stock);
+    const unit = isWholesaler ? selectedUnit : undefined;
+    addToCart(product.id, 1, product.stock, unit);
   };
   
   const handleIncrease = () => {
-    addToCart(product.id, 1, product.stock);
+    const unit = isWholesaler ? selectedUnit : undefined;
+    addToCart(product.id, 1, product.stock, unit);
   };
 
   const handleDecrease = () => {
     if (quantityInCart > 0) {
-      updateQuantity(product.id, quantityInCart - 1, product.stock);
+      const unit = isWholesaler ? selectedUnit : undefined;
+      updateQuantity(product.id, quantityInCart - 1, product.stock, unit);
     }
   };
 
@@ -48,13 +56,11 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
     setLoadingProduct(productId);
   };
 
-  const displayPrice = user?.role === 'wholesaler' || user?.role === 'developer' ? product.wholesalePrice : product.retailPrice;
+  const displayPrice = isWholesaler ? (selectedWholesalePriceInfo?.price ?? product.retailPrice) : product.retailPrice;
 
   let priceToShowStrikethrough: number | undefined = undefined;
   if (product.mrp && product.mrp > displayPrice) {
       priceToShowStrikethrough = product.mrp;
-  } else if (!product.mrp && product.retailPrice > displayPrice) {
-      priceToShowStrikethrough = product.retailPrice;
   }
 
   const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
@@ -62,7 +68,7 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
   const displayImages = product.images.filter(img => !img.includes('placehold.co'));
 
   return (
-    <div className="pb-32"> {/* Padding bottom to make space for sticky footer */}
+    <div className="pb-32">
       <div className="max-w-4xl mx-auto">
         <div className="w-full">
             {displayImages.length > 0 ? (
@@ -99,7 +105,25 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
         
         <div className="p-4 space-y-4 bg-background">
             <h1 className="text-2xl font-bold">{product.name}</h1>
-            <p className="text-muted-foreground">{product.unit}</p>
+            
+            {isWholesaler && product.wholesalePrices && product.wholesalePrices.length > 0 ? (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <p className="text-sm text-muted-foreground">Select Unit:</p>
+                    <div className="flex flex-wrap gap-2">
+                        {product.wholesalePrices.map(wp => (
+                            <Button 
+                                key={wp.unit}
+                                variant={selectedUnit === wp.unit ? "default" : "outline"}
+                                onClick={() => setSelectedUnit(wp.unit)}
+                            >
+                                {wp.unit}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <p className="text-muted-foreground">{product.unit}</p>
+            )}
 
             <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-2xl font-bold">₹{displayPrice.toFixed(2)}</p>
@@ -119,6 +143,9 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                     <p className="text-muted-foreground text-sm mt-2">{product.description}</p>
+                     {isWholesaler && selectedWholesalePriceInfo?.note && (
+                        <p className="text-sm text-blue-600 italic mt-2">Note: {selectedWholesalePriceInfo.note}</p>
+                     )}
                 </CollapsibleContent>
             </Collapsible>
         </div>

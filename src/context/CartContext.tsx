@@ -2,21 +2,21 @@
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
-import { CartItem, Product } from '@/types';
+import { CartItem, Product, WholesalePrice } from '@/types';
 import { getProductsByIds } from '@/lib/data';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './AuthContext';
 
-type CartDetailItem = CartItem & { product: Product | undefined };
+type CartDetailItem = CartItem & { product: Product | undefined, price: number, name: string };
 
 interface CartContextType {
   cartItems: CartItem[];
   cartDetails: CartDetailItem[];
   loading: boolean;
-  addToCart: (productId: string, quantity: number, stock: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number, stock: number) => void;
-  updateItemNote: (productId: string, note: string) => void;
+  addToCart: (productId: string, quantity: number, stock: number, wholesaleUnit?: string) => void;
+  removeFromCart: (productId: string, wholesaleUnit?: string) => void;
+  updateQuantity: (productId: string, quantity: number, stock: number, wholesaleUnit?: string) => void;
+  updateItemNote: (productId: string, note: string, wholesaleUnit?: string) => void;
   clearCart: () => void;
   cartCount: number;
 }
@@ -51,7 +51,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setCartItems([]);
     }
-    // setLoading is handled in the next effect after products are fetched.
   }, [cartStorageKey]);
 
   // Effect to fetch product details for items in cart.
@@ -64,10 +63,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         setLoading(true);
         const productIdsInCart = new Set(cartItems.map(item => item.productId));
         
-        // Remove products from state that are no longer in the cart
         const updatedProducts = productsInCart.filter(p => productIdsInCart.has(p.id));
         
-        // Find which product details we still need to fetch
         const existingProductIds = new Set(updatedProducts.map(p => p.id));
         const idsToFetch = cartItems
             .map(item => item.productId)
@@ -85,11 +82,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (cartStorageKey) {
         syncProducts();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItems, cartStorageKey]);
 
-  const addToCart = (productId: string, quantity: number, stock: number) => {
-    const existingItem = cartItems.find(item => item.productId === productId);
+  const addToCart = (productId: string, quantity: number, stock: number, wholesaleUnit?: string) => {
+    const existingItem = cartItems.find(item => item.productId === productId && item.wholesaleUnit === wholesaleUnit);
 
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity;
@@ -98,7 +94,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
          return;
       }
       const newCartItems = cartItems.map(item =>
-        item.productId === productId ? { ...item, quantity: newQuantity } : item
+        (item.productId === productId && item.wholesaleUnit === wholesaleUnit) ? { ...item, quantity: newQuantity } : item
       );
       setCartItems(newCartItems);
       toast({ title: "Item updated in cart" });
@@ -107,42 +103,42 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           toast({ title: "Stock limit reached", description: `You cannot add more than ${stock} items.`, variant: "destructive" });
           return;
       }
-      const newCartItems = [...cartItems, { productId, quantity, note: '' }];
+      const newCartItems = [...cartItems, { productId, quantity, note: '', wholesaleUnit }];
       setCartItems(newCartItems);
       toast({ title: "Item added to cart" });
     }
   };
 
-  const removeFromCart = (productId: string) => {
-    const newCartItems = cartItems.filter(item => item.productId !== productId);
+  const removeFromCart = (productId: string, wholesaleUnit?: string) => {
+    const newCartItems = cartItems.filter(item => !(item.productId === productId && item.wholesaleUnit === wholesaleUnit));
     setCartItems(newCartItems);
     toast({ title: "Item removed from cart" });
   };
 
-  const updateQuantity = (productId: string, quantity: number, stock: number) => {
+  const updateQuantity = (productId: string, quantity: number, stock: number, wholesaleUnit?: string) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, wholesaleUnit);
       return;
     }
 
     if(quantity > stock) {
         toast({ title: "Stock limit reached", description: `Only ${stock} items available.`, variant: "destructive" });
         const newCartItems = cartItems.map(item =>
-            item.productId === productId ? { ...item, quantity: stock } : item
+            (item.productId === productId && item.wholesaleUnit === wholesaleUnit) ? { ...item, quantity: stock } : item
         );
         setCartItems(newCartItems);
         return;
     }
 
     const newCartItems = cartItems.map(item =>
-      item.productId === productId ? { ...item, quantity } : item
+      (item.productId === productId && item.wholesaleUnit === wholesaleUnit) ? { ...item, quantity } : item
     );
     setCartItems(newCartItems);
   };
 
-  const updateItemNote = (productId: string, note: string) => {
+  const updateItemNote = (productId: string, note: string, wholesaleUnit?: string) => {
     setCartItems(currentCart => currentCart.map(item =>
-        item.productId === productId ? { ...item, note } : item
+        (item.productId === productId && item.wholesaleUnit === wholesaleUnit) ? { ...item, note } : item
     ));
   };
 
@@ -152,13 +148,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const cartCount = useMemo(() => cartItems.reduce((count, item) => count + item.quantity, 0), [cartItems]);
 
-  const cartDetails = useMemo(() => cartItems.map(item => {
-    const product = productsInCart.find(p => p.id === item.productId);
-    return {
-      ...item,
-      product,
-    };
-  }), [cartItems, productsInCart]);
+  const cartDetails: CartDetailItem[] = useMemo(() => {
+    const isWholesaler = user?.role === 'wholesaler' || user?.role === 'developer';
+    return cartItems.map(item => {
+      const product = productsInCart.find(p => p.id === item.productId);
+      let price = product?.retailPrice || 0;
+      let name = product?.name || 'Product not found';
+
+      if (isWholesaler && item.wholesaleUnit && product) {
+        const wholesaleInfo = product.wholesalePrices.find(wp => wp.unit === item.wholesaleUnit);
+        if (wholesaleInfo) {
+          price = wholesaleInfo.price;
+          name = `${product.name} (${item.wholesaleUnit})`;
+        }
+      }
+
+      return {
+        ...item,
+        product,
+        price,
+        name
+      };
+    }).filter(item => item.product); // Filter out items where product wasn't found
+  }, [cartItems, productsInCart, user]);
 
 
   return (

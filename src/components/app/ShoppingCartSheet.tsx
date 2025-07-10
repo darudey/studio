@@ -28,21 +28,8 @@ import { useCategorySettings } from "@/context/CategorySettingsContext";
 
 export default function ShoppingCartSheet({ children }: { children: React.ReactNode }) {
   const { cartDetails, updateQuantity, removeFromCart, loading: cartLoading, cartCount, updateItemNote } = useCart();
-  const { user } = useAuth();
   const router = useRouter();
   const { settingsMap } = useCategorySettings();
-
-  const getPrice = (product: Product) => {
-      if (user?.role === 'wholesaler' || user?.role === 'developer') {
-          return product.wholesalePrice;
-      }
-      return product.retailPrice;
-  }
-
-  const total = cartDetails.reduce((acc, item) => {
-    if (!item.product) return acc;
-    return acc + getPrice(item.product) * item.quantity;
-  }, 0);
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
@@ -50,6 +37,9 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
     }
   };
 
+  const total = cartDetails.reduce((acc, item) => {
+    return acc + item.price * item.quantity;
+  }, 0);
 
   return (
     <Sheet onOpenChange={handleOpenChange}>
@@ -68,15 +58,15 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
           <>
             <ScrollArea className="flex-1">
               <div className="flex flex-col gap-4 p-6">
-                {cartDetails.map(({ product, quantity, note }) => {
+                {cartDetails.map(({ product, quantity, note, price, name, wholesaleUnit }) => {
                   const imageUrl = product?.images?.[0];
                   const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
                   
                   return product ? (
-                    <div key={product.id} className="grid grid-cols-[auto_1fr] gap-4 items-start border-b pb-4">
+                    <div key={`${product.id}-${wholesaleUnit || 'retail'}`} className="grid grid-cols-[auto_1fr] gap-4 items-start border-b pb-4">
                         <div className="relative h-20 w-20 overflow-hidden rounded-md border">
                             {isPlaceholder ? (
-                                <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]}/>
+                                <CategoryIconAsImage category={product.category} imageUrl={settingsMap[product.category]} />
                             ) : (
                                 <Image
                                     src={imageUrl}
@@ -90,11 +80,11 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                         </div>
                         <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-start">
-                                <h3 className="font-medium pr-2 leading-tight">{product.name}</h3>
-                                <p className="font-semibold shrink-0">₹{(getPrice(product) * quantity).toFixed(2)}</p>
+                                <h3 className="font-medium pr-2 leading-tight">{name}</h3>
+                                <p className="font-semibold shrink-0">₹{(price * quantity).toFixed(2)}</p>
                             </div>
                             <p className="text-sm text-muted-foreground -mt-1">
-                                Price: ₹{getPrice(product).toFixed(2)}
+                                Price: ₹{price.toFixed(2)}
                             </p>
                             <div className="flex items-center space-x-2">
                                 <label htmlFor={`quantity-${product.id}`} className="text-sm font-medium">Qty:</label>
@@ -102,19 +92,19 @@ export default function ShoppingCartSheet({ children }: { children: React.ReactN
                                     id={`quantity-${product.id}`}
                                     type="number"
                                     value={quantity}
-                                    onChange={(e) => updateQuantity(product.id, parseInt(e.target.value) || 0, product.stock)}
+                                    onChange={(e) => updateQuantity(product.id, parseInt(e.target.value) || 0, product.stock, wholesaleUnit)}
                                     className="h-8 w-16"
                                     min="0"
                                     max={product.stock}
                                 />
-                                <Button variant="ghost" size="icon" onClick={() => removeFromCart(product.id)} aria-label="Remove item">
+                                <Button variant="ghost" size="icon" onClick={() => removeFromCart(product.id, wholesaleUnit)} aria-label="Remove item">
                                     <Trash2 className="h-4 w-4 text-red-600" />
                                 </Button>
                             </div>
                             <Textarea
                                 placeholder="Add a note..."
                                 value={note || ""}
-                                onChange={(e) => updateItemNote(product.id, e.target.value)}
+                                onChange={(e) => updateItemNote(product.id, e.target.value, wholesaleUnit)}
                                 className="h-16 text-xs"
                                 rows={2}
                             />

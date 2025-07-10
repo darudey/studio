@@ -26,16 +26,8 @@ export default function CheckoutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const { settingsMap, loading: settingsLoading } = useCategorySettings();
 
-  const getPrice = (product: Product) => {
-    if (user?.role === 'wholesaler' || user?.role === 'developer') {
-      return product.wholesalePrice;
-    }
-    return product.retailPrice;
-  };
-  
   const total = cartDetails.reduce((acc, item) => {
-    if (!item.product) return acc;
-    return acc + getPrice(item.product) * item.quantity;
+    return acc + item.price * item.quantity;
   }, 0);
 
   const handlePlaceOrder = async () => {
@@ -56,11 +48,11 @@ export default function CheckoutPage() {
             if (!item.product) throw new Error("Product details missing in cart");
             return {
               productId: item.productId,
-              name: item.product.name,
+              name: item.name,
               quantity: item.quantity,
-              price: getPrice(item.product),
+              price: item.price,
               status: 'Pending' as const,
-              ...(item.note && { note: item.note }), // Conditionally add note if it exists
+              ...(item.note && { note: item.note }),
             }
         });
 
@@ -142,11 +134,11 @@ export default function CheckoutPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {cartDetails.map(({ product, quantity, note }) => {
+                            {cartDetails.map(({ product, quantity, note, price, name, wholesaleUnit }) => {
                                 const imageUrl = product?.images?.[0];
                                 const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
                                 return product ? (
-                                <TableRow key={product.id}>
+                                <TableRow key={`${product.id}-${wholesaleUnit || 'retail'}`}>
                                     <TableCell className="w-[80px]">
                                         <div className="aspect-square relative">
                                             {isPlaceholder ? (
@@ -157,14 +149,14 @@ export default function CheckoutPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-medium align-top">
-                                        {product.name}
+                                        {name}
                                         {note && (
                                             <p className="text-xs text-muted-foreground font-normal mt-1 italic">Note: {note}</p>
                                         )}
                                     </TableCell>
                                     <TableCell>{quantity}</TableCell>
-                                    <TableCell>₹{getPrice(product).toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">₹{(getPrice(product) * quantity).toFixed(2)}</TableCell>
+                                    <TableCell>₹{price.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">₹{(price * quantity).toFixed(2)}</TableCell>
                                 </TableRow>
                                 ) : null
                             })}

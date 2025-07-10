@@ -136,10 +136,15 @@ export default function ManageProductsPage() {
       setIsSubmitting(true);
       
       const imageChanged = JSON.stringify(images) !== JSON.stringify(editingProduct.images.filter(img => !img.includes('placehold.co')));
+      
+      // Ensure wholesalePrices is always an array
+      const wholesalePrices = Array.isArray(data.wholesalePrices) ? data.wholesalePrices : [];
+
       const updatedProductData: Product = {
           ...editingProduct,
           ...data,
           images,
+          wholesalePrices,
           imageUpdatedAt: imageChanged ? new Date().toISOString() : editingProduct.imageUpdatedAt,
           mrp: data.mrp || 0,
       };
@@ -186,15 +191,13 @@ export default function ManageProductsPage() {
       const { oldName, newName } = renamingCategory;
       const trimmedNewName = newName.trim();
       
-      // Reset editing state immediately
+      const oldNameForClosure = renamingCategory.oldName;
       setRenamingCategory(null);
 
-      // No change, so no action needed
-      if (!trimmedNewName || trimmedNewName.toLowerCase() === oldName.toLowerCase()) {
+      if (!trimmedNewName || trimmedNewName.toLowerCase() === oldNameForClosure.toLowerCase()) {
           return;
       }
       
-      // Check for duplicates
       if (allCategories.find(c => c.toLowerCase() === trimmedNewName.toLowerCase())) {
           toast({ title: "Rename Failed", description: "A category with that name already exists.", variant: "destructive" });
           return;
@@ -202,12 +205,12 @@ export default function ManageProductsPage() {
 
       setIsCategoryActionLoading(true);
       try {
-          await renameCategory(oldName, trimmedNewName);
-          toast({ title: "Category Renamed", description: `"${oldName}" was renamed to "${trimmedNewName}".` });
-          await refreshAllData(); // Fetches fresh data and stops loading spinner
+          await renameCategory(oldNameForClosure, trimmedNewName);
+          toast({ title: "Category Renamed", description: `"${oldNameForClosure}" was renamed to "${trimmedNewName}".` });
+          await refreshAllData();
       } catch (error) {
           toast({ title: "Error", description: "Failed to rename category.", variant: "destructive" });
-          setIsCategoryActionLoading(false); // Manually stop spinner on error
+          setIsCategoryActionLoading(false);
       }
   };
   
@@ -247,6 +250,8 @@ export default function ManageProductsPage() {
   
   const AdminProductCard = ({ product }: { product: Product }) => {
     const isSelected = selectedProducts.has(product.id);
+    const primaryWholesalePrice = product.wholesalePrices?.[0];
+
     return (
         <Card onClick={() => handleCardClick(product)} className={cn("cursor-pointer hover:bg-muted/50 transition-colors relative", isSelectionMode && isSelected && "ring-2 ring-primary bg-primary/5")}>
             {isSelectionMode && (
@@ -263,7 +268,7 @@ export default function ManageProductsPage() {
                     </div>
                     <div className="text-right flex-shrink-0">
                          <p className="text-sm text-muted-foreground">ST: {product.stock}</p>
-                         <p className="text-sm text-muted-foreground">WP: ₹{product.wholesalePrice.toFixed(0)}</p>
+                         <p className="text-sm text-muted-foreground">WP: ₹{primaryWholesalePrice ? primaryWholesalePrice.price.toFixed(0) : 'N/A'}</p>
                          <p className="text-sm text-muted-foreground">MRP: ₹{product.mrp ? product.mrp.toFixed(0) : 'N/A'}</p>
                     </div>
                 </div>

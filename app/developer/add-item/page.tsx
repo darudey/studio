@@ -48,6 +48,7 @@ export default function AddItemPage() {
         setIsSubmitting(true);
         const newProductData: Omit<Product, 'id'> = {
             ...data,
+            wholesalePrices: data.wholesalePrices || [],
             batchNo: data.batchNo || 'N/A',
             images: images,
             imageUpdatedAt: new Date().toISOString(),
@@ -117,8 +118,8 @@ export default function AddItemPage() {
                     }
 
                     const mrp = parseFloat(row['MRP']);
-                    const retailPrice = parseFloat(row['Selling Price']);
-                    const wholesalePrice = parseFloat(row['Purchase Price']);
+                    const retailPrice = parseFloat(row['Retail Price']);
+                    const wholesalePrice = parseFloat(row['Wholesale Price']);
                     const stock = parseInt(row['Stock Quantity'], 10);
                     const rowUnit = typeof row.Unit === 'string' ? row.Unit.toLowerCase().trim() : 'piece';
                     const unit = validUnits.includes(rowUnit) ? rowUnit : 'piece';
@@ -133,12 +134,13 @@ export default function AddItemPage() {
                         category: row.category || 'Uncategorized',
                         mrp: !isNaN(mrp) ? mrp : (!isNaN(retailPrice) ? retailPrice : 0),
                         retailPrice: !isNaN(retailPrice) ? retailPrice : 0,
-                        wholesalePrice: !isNaN(wholesalePrice) ? wholesalePrice : 0,
+                        wholesalePrices: [{ unit: 'piece', price: !isNaN(wholesalePrice) ? wholesalePrice : 0 }],
                         unit: unit as Product['unit'],
                         stock: !isNaN(stock) ? stock : 0,
                         dataAiHint: productName.toLowerCase().split(' ').slice(0, 2).join(' '),
                         isRecommended: false,
                         createdAt: now,
+                        updatedAt: now,
                     };
                     
                     importedProducts.push(newProductData);

@@ -1,5 +1,11 @@
 
 
+export type WholesalePrice = {
+  unit: string;
+  price: number;
+  note?: string;
+};
+
 export type Product = {
   id: string;
   itemCode: string;
@@ -10,8 +16,8 @@ export type Product = {
   category: string;
   mrp?: number;
   retailPrice: number;
-  wholesalePrice: number;
-  unit: 'kg' | 'g' | 'litre' | 'ml' | 'piece' | 'dozen';
+  wholesalePrices: WholesalePrice[];
+  unit: 'kg' | 'g' | 'litre' | 'ml' | 'piece' | 'dozen'; // This is now the base/retail unit
   stock: number;
   dataAiHint?: string;
   imageUpdatedAt: string;
@@ -40,6 +46,7 @@ export type CartItem = {
   productId: string;
   quantity: number;
   note?: string;
+  wholesaleUnit?: string; // To specify which wholesale price is being used
 };
 
 export type OrderItemStatus = 'Pending' | 'Fulfilled' | 'Cancelled';
@@ -48,7 +55,7 @@ export type OrderItem = {
   productId: string;
   quantity: number;
   price: number;
-  name: string;
+  name:string; // Includes unit like "Tomatoes (Dozen)"
   status: OrderItemStatus;
   note?: string;
 };
