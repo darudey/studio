@@ -182,25 +182,32 @@ export default function ManageProductsPage() {
 
   const handleRenameCategory = async () => {
       if (!renamingCategory) return;
-      const trimmedNewName = renamingCategory.newName.trim();
-      if (!trimmedNewName || trimmedNewName.toLowerCase() === renamingCategory.oldName.toLowerCase()) {
-          setRenamingCategory(null);
+      
+      const { oldName, newName } = renamingCategory;
+      const trimmedNewName = newName.trim();
+      
+      // Reset editing state immediately
+      setRenamingCategory(null);
+
+      // No change, so no action needed
+      if (!trimmedNewName || trimmedNewName.toLowerCase() === oldName.toLowerCase()) {
           return;
       }
+      
+      // Check for duplicates
       if (allCategories.find(c => c.toLowerCase() === trimmedNewName.toLowerCase())) {
           toast({ title: "Rename Failed", description: "A category with that name already exists.", variant: "destructive" });
           return;
       }
+
       setIsCategoryActionLoading(true);
       try {
-          await renameCategory(renamingCategory.oldName, trimmedNewName);
-          toast({ title: "Category Renamed", description: `"${renamingCategory.oldName}" was renamed to "${trimmedNewName}".` });
-          refreshAllData();
-          setRenamingCategory(null);
+          await renameCategory(oldName, trimmedNewName);
+          toast({ title: "Category Renamed", description: `"${oldName}" was renamed to "${trimmedNewName}".` });
+          await refreshAllData(); // Fetches fresh data and stops loading spinner
       } catch (error) {
           toast({ title: "Error", description: "Failed to rename category.", variant: "destructive" });
-      } finally {
-          setIsCategoryActionLoading(false);
+          setIsCategoryActionLoading(false); // Manually stop spinner on error
       }
   };
   
@@ -210,11 +217,10 @@ export default function ManageProductsPage() {
       try {
           await deleteCategory(categoryToDelete);
           toast({ title: "Category Deleted", description: `Products in "${categoryToDelete}" were moved to "Uncategorized".` });
-          refreshAllData();
           setCategoryToDelete(null);
+          await refreshAllData();
       } catch (error) {
           toast({ title: "Error", description: "Failed to delete category.", variant: "destructive" });
-      } finally {
           setIsCategoryActionLoading(false);
       }
   };
@@ -379,5 +385,3 @@ export default function ManageProductsPage() {
     </div>
   );
 }
-
-    
