@@ -32,12 +32,20 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
 
   const displayPrice = isWholesaler ? (selectedWholesalePriceInfo?.price ?? product.retailPrice) : product.retailPrice;
     
-  let priceToShowStrikethrough: number | undefined = undefined;
+  // Intelligent Strikethrough Logic:
+  // Show strikethrough only if the MRP is higher than the price for the *same unit*.
+  let showStrikethrough = false;
   if (product.mrp && product.mrp > displayPrice) {
-    priceToShowStrikethrough = product.mrp;
+    if (!isWholesaler) { // Retail user always compares to retail price
+      showStrikethrough = true;
+    } else { // Wholesaler only compares if the selected unit is the base unit
+      if (selectedWholesaleUnit.toLowerCase() === product.unit.toLowerCase()) {
+        showStrikethrough = true;
+      }
+    }
   }
   
-  const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
+  const discount = showStrikethrough && product.mrp ? Math.round(((product.mrp - displayPrice) / product.mrp) * 100) : 0;
   
   const handleIncrease = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -144,11 +152,14 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
             <h3 className="font-medium text-sm leading-tight mt-1 flex-grow h-10 line-clamp-2">
                 {product.name}
             </h3>
-            <div className="flex items-center justify-between mt-2">
+            <div className="flex items-end justify-between mt-2">
                 <div>
-                    <p className="text-sm font-bold">₹{displayPrice.toFixed(0)}</p>
-                    {priceToShowStrikethrough && <p className="text-xs text-gray-500 line-through">MRP ₹{priceToShowStrikethrough.toFixed(0)}</p>}
+                    <p className="text-lg font-bold">₹{displayPrice.toFixed(0)}</p>
+                    {showStrikethrough && product.mrp && <p className="text-xs text-gray-500 line-through">₹{product.mrp.toFixed(0)}</p>}
                 </div>
+                {isWholesaler && product.mrp && !showStrikethrough && (
+                    <p className="text-xs text-muted-foreground">MRP: ₹{product.mrp.toFixed(0)}</p>
+                )}
             </div>
         </div>
       </div>

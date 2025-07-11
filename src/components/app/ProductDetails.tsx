@@ -58,12 +58,20 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
 
   const displayPrice = isWholesaler ? (selectedWholesalePriceInfo?.price ?? product.retailPrice) : product.retailPrice;
 
-  let priceToShowStrikethrough: number | undefined = undefined;
+  // Intelligent Strikethrough Logic:
+  // Show strikethrough only if the MRP is higher than the price for the *same unit*.
+  let showStrikethrough = false;
   if (product.mrp && product.mrp > displayPrice) {
-      priceToShowStrikethrough = product.mrp;
+    if (!isWholesaler) { // Retail user always compares to retail price
+      showStrikethrough = true;
+    } else { // Wholesaler only compares if the selected unit is the base unit
+      if (selectedUnit.toLowerCase() === product.unit.toLowerCase()) {
+        showStrikethrough = true;
+      }
+    }
   }
 
-  const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
+  const discount = showStrikethrough && product.mrp ? Math.round(((product.mrp - displayPrice) / displayPrice) * 100) : 0;
   
   const displayImages = product.images.filter(img => !img.includes('placehold.co'));
 
@@ -126,13 +134,16 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
                 <p className="text-muted-foreground capitalize">{product.unit}</p>
             )}
 
-            <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-2xl font-bold">₹{displayPrice.toFixed(2)}</p>
-                {priceToShowStrikethrough && (
+            <div className="flex items-baseline gap-2 flex-wrap">
+                <p className="text-3xl font-bold">₹{displayPrice.toFixed(2)}</p>
+                {showStrikethrough && product.mrp && (
                   <>
-                    <p className="text-muted-foreground line-through">MRP ₹{priceToShowStrikethrough.toFixed(2)}</p>
+                    <p className="text-lg text-muted-foreground line-through">MRP ₹{product.mrp.toFixed(2)}</p>
                     {discount > 0 && <Badge variant="destructive">{discount}% OFF</Badge>}
                   </>
+                )}
+                 {isWholesaler && product.mrp && !showStrikethrough && (
+                    <p className="text-lg text-muted-foreground"> (Base MRP: ₹{product.mrp.toFixed(2)})</p>
                 )}
             </div>
             
