@@ -147,7 +147,7 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
             <div className="flex items-center justify-between mt-2">
                 <div>
                     <p className="text-sm font-bold">₹{displayPrice.toFixed(0)}</p>
-                    {priceToShowStrikethrough && <p className="text-xs text-gray-500 line-through">₹{priceToShowStrikethrough.toFixed(0)}</p>}
+                    {priceToShowStrikethrough && <p className="text-xs text-gray-500 line-through">MRP ₹{priceToShowStrikethrough.toFixed(0)}</p>}
                 </div>
             </div>
         </div>
