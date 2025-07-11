@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Product } from "@/types";
+import { Product, WholesalePrice } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, Minus, Plus } from "lucide-react";
+import { Loader2, Minus, Plus, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { CategoryIconAsImage } from "@/lib/icons";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 interface ProductCardProps {
   product: Product;
@@ -21,20 +22,19 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
   const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
+  const isWholesaler = user?.role === 'wholesaler' || user?.role === 'developer';
+  
+  const [selectedWholesaleUnit, setSelectedWholesaleUnit] = useState(product.wholesalePrices?.[0]?.unit || product.unit);
+  const selectedWholesalePriceInfo = product.wholesalePrices?.find(p => p.unit === selectedWholesaleUnit) || product.wholesalePrices?.[0];
 
-  const cartItem = cartItems.find(item => item.productId === product.id);
+  const cartItem = cartItems.find(item => item.productId === product.id && item.wholesaleUnit === (isWholesaler ? selectedWholesaleUnit : undefined));
   const quantityInCart = cartItem?.quantity || 0;
 
-  const displayPrice = user?.role === 'wholesaler' || user?.role === 'developer' 
-    ? product.wholesalePrice 
-    : product.retailPrice;
+  const displayPrice = isWholesaler ? (selectedWholesalePriceInfo?.price ?? product.retailPrice) : product.retailPrice;
     
   let priceToShowStrikethrough: number | undefined = undefined;
   if (product.mrp && product.mrp > displayPrice) {
     priceToShowStrikethrough = product.mrp;
-  } else if (!product.mrp && product.retailPrice > displayPrice) {
-    // Fallback for wholesalers when MRP isn't set, but retail price is higher.
-    priceToShowStrikethrough = product.retailPrice;
   }
   
   const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
@@ -44,8 +44,9 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
     e.stopPropagation();
     if (isUpdating) return;
     setIsUpdating(true);
-    addToCart(product.id, 1, product.stock);
-    setTimeout(() => setIsUpdating(false), 500); // Artificial delay for UX feedback
+    const unit = isWholesaler ? selectedWholesaleUnit : undefined;
+    addToCart(product.id, 1, product.stock, unit);
+    setTimeout(() => setIsUpdating(false), 500);
   };
 
   const handleDecrease = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -54,9 +55,10 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
     if (isUpdating) return;
     setIsUpdating(true);
     if (quantityInCart > 0) {
-      updateQuantity(product.id, quantityInCart - 1, product.stock);
+      const unit = isWholesaler ? selectedWholesaleUnit : undefined;
+      updateQuantity(product.id, quantityInCart - 1, product.stock, unit);
     }
-    setTimeout(() => setIsUpdating(false), 500); // Artificial delay for UX feedback
+    setTimeout(() => setIsUpdating(false), 500);
   };
 
   const imageUrl = product.images?.[0];
@@ -119,7 +121,24 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
         
         <div className="mt-4 flex-grow flex flex-col">
             <div className="flex justify-between items-center text-xs">
-                <span className="text-blue-600">{product.unit}</span>
+                {isWholesaler && product.wholesalePrices && product.wholesalePrices.length > 0 ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-auto p-0 text-blue-600 text-xs font-semibold capitalize" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                                {selectedWholesaleUnit} <ChevronDown className="h-3 w-3 ml-1" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                            {product.wholesalePrices.map(wp => (
+                                <DropdownMenuItem key={wp.unit} onSelect={() => setSelectedWholesaleUnit(wp.unit)} className="capitalize">
+                                    {wp.unit}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
+                    <span className="text-blue-600 font-semibold capitalize">{product.unit}</span>
+                )}
                 <span className="text-muted-foreground">Stock: <span className="font-bold text-foreground">{product.stock}</span></span>
             </div>
             <h3 className="font-medium text-sm leading-tight mt-1 flex-grow h-10 line-clamp-2">
