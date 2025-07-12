@@ -1,0 +1,108 @@
+
+"use client";
+
+import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
+import UserNav from "./UserNav";
+import ShoppingCartSheet from "./ShoppingCartSheet";
+import { useCart } from "@/context/CartContext";
+import { Badge } from "../ui/badge";
+import { useEffect, useState, Suspense } from "react";
+import AnimatedLogo from "./AnimatedLogo";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import SearchBar from "./SearchBar";
+import { Skeleton } from "../ui/skeleton";
+
+export default function Header() {
+  const { user, loading } = useAuth();
+  const { cartCount } = useCart();
+  const { toast } = useToast();
+  
+  const [isMounted, setIsMounted] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      const q = query(
+        collection(db, "notifications"),
+        where("userId", "==", user.id),
+        where("isRead", "==", false)
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setUnreadCount(snapshot.size);
+      }, (error) => {
+        if (error.message.includes("Missing or insufficient permissions")) {
+            const errorMessage = "Firestore Security Rules Error: The real-time notification listener failed. This is likely because your rules for the 'notifications' collection are too restrictive. Please ensure a logged-in user has permission to 'list' documents where their UID matches the 'userId' field. This will not crash the app, but the notification badge will not update in real-time.";
+            console.error(errorMessage, error);
+        } else if (error.message.includes("The query requires an index")) {
+            console.error("Firestore Index Error: The real-time notification query failed because it needs a composite index. Please create it using the link provided in the full error message in your browser's console.", error);
+            toast({
+                title: "Database Index Required",
+                description: "Real-time notifications are paused. A database index is needed. Check the browser console for a link to create it.",
+                variant: "destructive",
+                duration: 120000,
+            });
+        }
+        else {
+            console.error("Error listening for new notifications:", error);
+        }
+        setUnreadCount(0);
+      });
+
+      return () => unsubscribe();
+    } else {
+        setUnreadCount(0);
+    }
+  }, [user, toast]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  return (
+    <header className="sticky top-0 z-40 w-full bg-[hsl(var(--header-background))]">
+      <div className="container flex h-16 items-center justify-between gap-2 px-2 sm:px-4 md:px-6">
+        <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+             <AnimatedLogo />
+          </Link>
+        </div>
+
+        <div className="relative flex-1 max-w-md">
+            <Suspense fallback={<Skeleton className="h-10 w-full" />}>
+                <SearchBar />
+            </Suspense>
+        </div>
+
+        <div className="flex shrink-0 items-center justify-end space-x-2">
+          {isMounted && (
+            <>
+              <ShoppingCartSheet>
+                <Button size="icon" className="relative rounded-full bg-white text-green-600 hover:bg-white/90">
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                     <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center rounded-full p-0">{cartCount}</Badge>
+                  )}
+                  <span className="sr-only">Shopping Cart</span>
+                </Button>
+              </ShoppingCartSheet>
+
+              {loading ? null : user ? (
+                <UserNav newOrdersCount={unreadCount} />
+              ) : (
+                <Button asChild className="bg-white text-blue-600 hover:bg-white/90">
+                  <Link href="/login">Login</Link>
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}

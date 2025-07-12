@@ -1,9 +1,9 @@
 import ProductPage from "@/components/app/ProductPage";
 import { getProducts } from '@/lib/data';
 import { Product } from "@/types";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Helper function to extract categories from a product list.
-// This avoids an extra database call.
 function getCategoriesFromProducts(products: Product[]): string[] {
     const categoriesSet = new Set(products.map(p => p.category));
     const categories = Array.from(categoriesSet).sort();
@@ -13,12 +13,8 @@ function getCategoriesFromProducts(products: Product[]): string[] {
     return categories;
 }
 
-// Helper function to get recently updated products from a list.
-// This avoids an extra database call.
 function getRecentlyUpdatedFromProducts(products: Product[], limit: number): Product[] {
-    // Create a copy before sorting to avoid mutating the original array
     const sorted = [...products].sort((a, b) => {
-        // Handle cases where updatedAt might be missing
         const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return dateB - dateA;
@@ -33,22 +29,42 @@ export default async function Home() {
   let dailyEssentialsProducts: Product[] = [];
   
   try {
-    // Fetch all products just ONCE. This is the key optimization.
     allProducts = await getProducts();
-    
-    // Derive categories and "daily essentials" from the single list of products in memory.
     categories = getCategoriesFromProducts(allProducts);
     dailyEssentialsProducts = getRecentlyUpdatedFromProducts(allProducts, 10);
 
   } catch (error) {
     console.error("Failed to fetch server-side data for homepage:", error);
-    // In case of a database error, the page will still render with empty sections 
-    // to prevent a full application crash. Errors are logged on the server.
   }
 
-  return <ProductPage 
+  return (
+    <Suspense fallback={<HomePageSkeleton />}>
+        <ProductPage 
             serverRecommendedProducts={dailyEssentialsProducts} 
             serverAllProducts={allProducts}
             serverCategories={categories}
-         />;
+        />
+    </Suspense>
+  );
+}
+
+function HomePageSkeleton() {
+    return (
+        <div className="container py-12">
+            <Skeleton className="h-10 w-1/3 mb-6" />
+            <div className="space-y-8">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i}>
+                        <Skeleton className="h-8 w-1/4 mb-4" />
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            <Skeleton className="h-64 w-full" />
+                            <Skeleton className="h-64 w-full" />
+                            <Skeleton className="h-64 w-full" />
+                            <Skeleton className="h-64 w-full" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }

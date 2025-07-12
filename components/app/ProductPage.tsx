@@ -96,7 +96,6 @@ export default function ProductPage({
             {serverCategories.map((category, index) => {
                 const categoryProducts = serverAllProducts.filter(p => p.category === category);
                 if (categoryProducts.length === 0) return null;
-                // Alternate background colors for visual separation
                 const bgColor = index % 2 === 0 ? 'bg-background' : 'bg-[hsl(var(--section-background))]';
                 return (
                     <div key={category} className={`py-6 ${bgColor}`}>
