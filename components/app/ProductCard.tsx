@@ -1,9 +1,8 @@
 
 "use client"
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Product, WholesalePrice } from "@/types";
+import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2, Minus, Plus, ChevronDown } from "lucide-react";
@@ -67,7 +66,7 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
   const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
 
   return (
-    <Link href={`/products/${product.id}`} onClick={onClick} className="block w-full h-full">
+    <div onClick={onClick} className="block w-full h-full cursor-pointer">
       <div className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80 relative">
         {isLoading && (
             <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
@@ -154,6 +153,7 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
             </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
+
