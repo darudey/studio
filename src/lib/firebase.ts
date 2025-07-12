@@ -1,3 +1,4 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
@@ -16,7 +17,7 @@ const firebaseConfig = {
 };
 
 if (!firebaseConfig.apiKey) {
-    throw new Error("Firebase API Key is missing. Please add NEXT_PUBLIC_FIREBASE_API_KEY to your .env.local file and restart the development server.");
+    throw new Error("Firebase API Key is missing. Add NEXT_PUBLIC_FIREBASE_API_KEY to your environment variables. If deploying, ensure it is set in your provider's dashboard.");
 }
 
 // Initialize Firebase
