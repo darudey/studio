@@ -14,6 +14,7 @@ import ProductCarousel from "@/components/app/ProductCarousel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CategoryIconAsImage } from "@/lib/icons";
 import { useCategorySettings } from "@/context/CategorySettingsContext";
+import { useRouter } from "next/navigation";
 
 interface ProductDetailsProps {
     product: Product;
@@ -23,6 +24,7 @@ interface ProductDetailsProps {
 export default function ProductDetails({ product, similarProducts }: ProductDetailsProps) {
   const { addToCart, updateQuantity, cartItems } = useCart();
   const { user } = useAuth();
+  const router = useRouter();
   
   const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
   const { settingsMap } = useCategorySettings();
@@ -54,24 +56,17 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
 
   const handleProductClick = (productId: string) => {
     setLoadingProduct(productId);
+    router.push(`/products/${productId}`);
   };
 
   const displayPrice = isWholesaler ? (selectedWholesalePriceInfo?.price ?? product.retailPrice) : product.retailPrice;
 
-  // Intelligent Strikethrough Logic:
-  // Show strikethrough only if the MRP is higher than the price for the *same unit*.
-  let showStrikethrough = false;
+  let priceToShowStrikethrough: number | undefined = undefined;
   if (product.mrp && product.mrp > displayPrice) {
-    if (!isWholesaler) { // Retail user always compares to retail price
-      showStrikethrough = true;
-    } else { // Wholesaler only compares if the selected unit is the base unit
-      if (selectedUnit.toLowerCase() === product.unit.toLowerCase()) {
-        showStrikethrough = true;
-      }
-    }
+      priceToShowStrikethrough = product.mrp;
   }
 
-  const discount = showStrikethrough && product.mrp ? Math.round(((product.mrp - displayPrice) / displayPrice) * 100) : 0;
+  const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
   
   const displayImages = product.images.filter(img => !img.includes('placehold.co'));
 
@@ -123,7 +118,6 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
                                 key={wp.unit}
                                 variant={selectedUnit === wp.unit ? "default" : "outline"}
                                 onClick={() => setSelectedUnit(wp.unit)}
-                                className="capitalize"
                             >
                                 {wp.unit}
                             </Button>
@@ -131,19 +125,16 @@ export default function ProductDetails({ product, similarProducts }: ProductDeta
                     </div>
                 </div>
             ) : (
-                <p className="text-muted-foreground capitalize">{product.unit}</p>
+                <p className="text-muted-foreground">{product.unit}</p>
             )}
 
-            <div className="flex items-baseline gap-2 flex-wrap">
-                <p className="text-3xl font-bold">₹{displayPrice.toFixed(2)}</p>
-                {showStrikethrough && product.mrp && (
+            <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-2xl font-bold">₹{displayPrice.toFixed(2)}</p>
+                {priceToShowStrikethrough && discount > 0 && (
                   <>
-                    <p className="text-lg text-muted-foreground line-through">MRP ₹{product.mrp.toFixed(2)}</p>
-                    {discount > 0 && <Badge variant="destructive">{discount}% OFF</Badge>}
+                    <p className="text-muted-foreground line-through">MRP ₹{priceToShowStrikethrough.toFixed(2)}</p>
+                    <Badge variant="destructive">{discount}% OFF</Badge>
                   </>
-                )}
-                 {isWholesaler && product.mrp && !showStrikethrough && (
-                    <p className="text-lg text-muted-foreground"> (Base MRP: ₹{product.mrp.toFixed(2)})</p>
                 )}
             </div>
             

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Product, WholesalePrice } from "@/types";
+import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2, Minus, Plus, ChevronDown } from "lucide-react";
@@ -32,20 +32,14 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
 
   const displayPrice = isWholesaler ? (selectedWholesalePriceInfo?.price ?? product.retailPrice) : product.retailPrice;
     
-  // Intelligent Strikethrough Logic:
-  // Show strikethrough only if the MRP is higher than the price for the *same unit*.
-  let showStrikethrough = false;
+  let priceToShowStrikethrough: number | undefined = undefined;
   if (product.mrp && product.mrp > displayPrice) {
-    if (!isWholesaler) { // Retail user always compares to retail price
-      showStrikethrough = true;
-    } else { // Wholesaler only compares if the selected unit is the base unit
-      if (selectedWholesaleUnit.toLowerCase() === product.unit.toLowerCase()) {
-        showStrikethrough = true;
-      }
-    }
+    priceToShowStrikethrough = product.mrp;
+  } else if (!isWholesaler && product.mrp && product.mrp > product.retailPrice) {
+    priceToShowStrikethrough = product.mrp;
   }
   
-  const discount = showStrikethrough && product.mrp ? Math.round(((product.mrp - displayPrice) / product.mrp) * 100) : 0;
+  const discount = priceToShowStrikethrough ? Math.round(((priceToShowStrikethrough - displayPrice) / priceToShowStrikethrough) * 100) : 0;
   
   const handleIncrease = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -73,7 +67,7 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
   const isPlaceholder = !imageUrl || imageUrl.includes('placehold.co');
 
   return (
-    <Link href={`/products/${product.id}`} onClick={onClick} className="block w-full h-full">
+    <div onClick={onClick} className="block w-full h-full cursor-pointer">
       <div className="bg-card rounded-lg p-2.5 h-full flex flex-col border border-gray-200/80 relative">
         {isLoading && (
             <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
@@ -129,40 +123,37 @@ export default function ProductCard({ product, isLoading, onClick, placeholderIm
         
         <div className="mt-4 flex-grow flex flex-col">
             <div className="flex justify-between items-center text-xs">
-                {isWholesaler && product.wholesalePrices && product.wholesalePrices.length > 0 ? (
+                {isWholesaler && product.wholesalePrices && product.wholesalePrices.length > 1 ? (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-auto p-0 text-blue-600 text-xs font-semibold capitalize" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                            <Button variant="ghost" size="sm" className="h-auto p-0 text-blue-600 text-xs" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                                 {selectedWholesaleUnit} <ChevronDown className="h-3 w-3 ml-1" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                             {product.wholesalePrices.map(wp => (
-                                <DropdownMenuItem key={wp.unit} onSelect={() => setSelectedWholesaleUnit(wp.unit)} className="capitalize">
+                                <DropdownMenuItem key={wp.unit} onSelect={() => setSelectedWholesaleUnit(wp.unit)}>
                                     {wp.unit}
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
-                    <span className="text-blue-600 font-semibold capitalize">{product.unit}</span>
+                    <span className="text-blue-600">{isWholesaler ? selectedWholesaleUnit : product.unit}</span>
                 )}
                 <span className="text-muted-foreground">Stock: <span className="font-bold text-foreground">{product.stock}</span></span>
             </div>
             <h3 className="font-medium text-sm leading-tight mt-1 flex-grow h-10 line-clamp-2">
                 {product.name}
             </h3>
-            <div className="flex items-end justify-between mt-2">
+            <div className="flex items-center justify-between mt-2">
                 <div>
-                    <p className="text-lg font-bold">₹{displayPrice.toFixed(0)}</p>
-                    {showStrikethrough && product.mrp && <p className="text-xs text-gray-500 line-through">₹{product.mrp.toFixed(0)}</p>}
+                    <p className="text-sm font-bold">₹{displayPrice.toFixed(0)}</p>
+                    {priceToShowStrikethrough && <p className="text-xs text-gray-500 line-through">₹{priceToShowStrikethrough.toFixed(0)}</p>}
                 </div>
-                {isWholesaler && product.mrp && !showStrikethrough && (
-                    <p className="text-xs text-muted-foreground">MRP: ₹{product.mrp.toFixed(0)}</p>
-                )}
             </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
